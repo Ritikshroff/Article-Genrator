@@ -46,18 +46,49 @@ function saveErrorLog(text: string) {
   }
 }
 
+function extractFirstJSONObject(str: string): string {
+  const startIdx = str.indexOf("{");
+  if (startIdx === -1) return str;
+  
+  let braceCount = 0;
+  let inQuote = false;
+  
+  for (let i = startIdx; i < str.length; i++) {
+    const char = str[i];
+    if (char === '"') {
+      let backslashCount = 0;
+      let j = i - 1;
+      while (j >= 0 && str[j] === '\\') {
+        backslashCount++;
+        j--;
+      }
+      if (backslashCount % 2 === 0) {
+        inQuote = !inQuote;
+      }
+    }
+    
+    if (!inQuote) {
+      if (char === "{") {
+        braceCount++;
+      } else if (char === "}") {
+        braceCount--;
+        if (braceCount === 0) {
+          return str.substring(startIdx, i + 1);
+        }
+      }
+    }
+  }
+  return str.substring(startIdx);
+}
+
 function cleanAndParseJson(text: string): any {
   let cleaned = text.trim();
   // Remove markdown code block wrappers if present
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   }
-  // Extract only the primary JSON object to ignore leading/trailing garbage text
-  const startIdx = cleaned.indexOf("{");
-  const endIdx = cleaned.lastIndexOf("}");
-  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-    cleaned = cleaned.substring(startIdx, endIdx + 1);
-  }
+  // Extract the first mathematically balanced JSON object
+  cleaned = extractFirstJSONObject(cleaned);
   // Escape raw newlines inside string values
   cleaned = escapeRawNewlinesInJSON(cleaned);
   return JSON.parse(cleaned);
