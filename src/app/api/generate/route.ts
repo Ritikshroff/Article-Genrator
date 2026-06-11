@@ -37,6 +37,15 @@ function escapeRawNewlinesInJSON(str: string): string {
   return escaped;
 }
 
+function saveErrorLog(text: string) {
+  try {
+    const fs = require('fs');
+    fs.writeFileSync('/Users/Apple/Desktop/AI Article Genrator/error-raw-output.txt', text, 'utf8');
+  } catch (fsErr) {
+    console.error("Failed to write error-raw-output.txt", fsErr);
+  }
+}
+
 function cleanAndParseJson(text: string): any {
   let cleaned = text.trim();
   // Remove markdown code block wrappers if present
@@ -132,10 +141,9 @@ Expected JSON Schema:
             newsData = cleanAndParseJson(newsText);
           } catch (e) {
             console.error("News parsing failed. Raw text:", newsText);
+            saveErrorLog(newsText);
             throw new Error(
-              "Failed to parse generated news article into valid JSON. Model response was: " +
-                newsText.substring(0, 150) +
-                "..."
+              "Failed to parse generated news article into valid JSON. Raw output saved to error-raw-output.txt"
             );
           }
 
@@ -190,7 +198,8 @@ Expected JSON Schema:
             seoData = cleanAndParseJson(seoText);
           } catch (e) {
             console.error("SEO parsing failed. Raw text:", seoText);
-            throw new Error("Failed to parse generated SEO metadata into valid JSON.");
+            saveErrorLog(seoText);
+            throw new Error("Failed to parse generated SEO metadata into valid JSON. Raw output saved to error-raw-output.txt");
           }
 
           controller.enqueue(
@@ -246,12 +255,7 @@ Expected JSON Schema:
             impactData = cleanAndParseJson(impactText);
           } catch (e) {
             console.error("Impact parsing failed. Raw text:", impactText);
-            try {
-              const fs = require('fs');
-              fs.writeFileSync('/Users/Apple/Desktop/AI Article Genrator/error-raw-output.txt', impactText, 'utf8');
-            } catch (fsErr) {
-              console.error("Failed to write error-raw-output.txt", fsErr);
-            }
+            saveErrorLog(impactText);
             throw new Error("Failed to parse generated industry impact analysis into valid JSON. Raw output saved to error-raw-output.txt");
           }
 
@@ -304,7 +308,8 @@ Expected JSON Schema:
             interviewData = cleanAndParseJson(interviewText);
           } catch (e) {
             console.error("Interview parsing failed. Raw text:", interviewText);
-            throw new Error("Failed to parse interview opportunities into valid JSON.");
+            saveErrorLog(interviewText);
+            throw new Error("Failed to parse interview opportunities into valid JSON. Raw output saved to error-raw-output.txt");
           }
 
           controller.enqueue(
@@ -363,7 +368,8 @@ Expected JSON Schema:
             reviewData = cleanAndParseJson(reviewText);
           } catch (e) {
             console.error("Review parsing failed. Raw text:", reviewText);
-            throw new Error("Failed to parse editorial review into valid JSON.");
+            saveErrorLog(reviewText);
+            throw new Error("Failed to parse editorial review into valid JSON. Raw output saved to error-raw-output.txt");
           }
 
           controller.enqueue(
