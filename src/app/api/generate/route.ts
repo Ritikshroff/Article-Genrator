@@ -3,6 +3,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+function cleanAndParseJson(text: string): any {
+  let cleaned = text.trim();
+  // Remove markdown code block wrappers if present
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  }
+  // Extract only the primary JSON object to ignore leading/trailing garbage text
+  const startIdx = cleaned.indexOf("{");
+  const endIdx = cleaned.lastIndexOf("}");
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    cleaned = cleaned.substring(startIdx, endIdx + 1);
+  }
+  return JSON.parse(cleaned);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { pressRelease, customApiKey } = await req.json();
@@ -78,7 +93,7 @@ Expected JSON Schema:
           let newsData;
 
           try {
-            newsData = JSON.parse(newsText);
+            newsData = cleanAndParseJson(newsText);
           } catch (e) {
             console.error("News parsing failed. Raw text:", newsText);
             throw new Error(
@@ -136,7 +151,7 @@ Expected JSON Schema:
           let seoData;
 
           try {
-            seoData = JSON.parse(seoText);
+            seoData = cleanAndParseJson(seoText);
           } catch (e) {
             console.error("SEO parsing failed. Raw text:", seoText);
             throw new Error("Failed to parse generated SEO metadata into valid JSON.");
@@ -192,7 +207,7 @@ Expected JSON Schema:
           let impactData;
 
           try {
-            impactData = JSON.parse(impactText);
+            impactData = cleanAndParseJson(impactText);
           } catch (e) {
             console.error("Impact parsing failed. Raw text:", impactText);
             throw new Error("Failed to parse generated industry impact analysis into valid JSON.");
@@ -244,7 +259,7 @@ Expected JSON Schema:
           let interviewData;
 
           try {
-            interviewData = JSON.parse(interviewText);
+            interviewData = cleanAndParseJson(interviewText);
           } catch (e) {
             console.error("Interview parsing failed. Raw text:", interviewText);
             throw new Error("Failed to parse interview opportunities into valid JSON.");
@@ -303,7 +318,7 @@ Expected JSON Schema:
           let reviewData;
 
           try {
-            reviewData = JSON.parse(reviewText);
+            reviewData = cleanAndParseJson(reviewText);
           } catch (e) {
             console.error("Review parsing failed. Raw text:", reviewText);
             throw new Error("Failed to parse editorial review into valid JSON.");
