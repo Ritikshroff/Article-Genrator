@@ -122,6 +122,7 @@ export async function POST(req: NextRequest) {
       model: "gemini-3.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
+        temperature: 0.1,
       },
     });
 
