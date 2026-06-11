@@ -3,6 +3,40 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+function escapeRawNewlinesInJSON(str: string): string {
+  let inQuote = false;
+  let escaped = "";
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (char === '"') {
+      let backslashCount = 0;
+      let j = i - 1;
+      while (j >= 0 && str[j] === '\\') {
+        backslashCount++;
+        j--;
+      }
+      if (backslashCount % 2 === 0) {
+        inQuote = !inQuote;
+      }
+    }
+    
+    if (inQuote) {
+      if (char === '\n') {
+        escaped += '\\n';
+      } else if (char === '\r') {
+        escaped += '\\r';
+      } else if (char === '\t') {
+        escaped += '\\t';
+      } else {
+        escaped += char;
+      }
+    } else {
+      escaped += char;
+    }
+  }
+  return escaped;
+}
+
 function cleanAndParseJson(text: string): any {
   let cleaned = text.trim();
   // Remove markdown code block wrappers if present
@@ -15,6 +49,8 @@ function cleanAndParseJson(text: string): any {
   if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
     cleaned = cleaned.substring(startIdx, endIdx + 1);
   }
+  // Escape raw newlines inside string values
+  cleaned = escapeRawNewlinesInJSON(cleaned);
   return JSON.parse(cleaned);
 }
 
