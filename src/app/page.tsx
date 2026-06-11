@@ -468,7 +468,7 @@ export default function Dashboard() {
       {/* Footer bar */}
       <footer className="border-t border-zinc-200 dark:border-zinc-900 bg-white/30 dark:bg-zinc-950/20 py-4 text-center">
         <p className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-500 font-medium">
-          DQ AI Editorial Copilot POC • Powered by Google Gemini 1.5 Flash • For Editorial Quality Verification
+          DQ AI Editorial Copilot POC • Powered by Google Gemini 3.5 Flash • For Editorial Quality Verification
         </p>
       </footer>
     </div>
