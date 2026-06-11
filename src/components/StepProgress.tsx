@@ -6,6 +6,7 @@ interface StepProgressProps {
   stepMessage: string;
   status: "idle" | "generating" | "completed" | "error";
   errorMessage?: string;
+  hasImageStep?: boolean;
 }
 
 export const StepProgress: React.FC<StepProgressProps> = ({
@@ -13,6 +14,7 @@ export const StepProgress: React.FC<StepProgressProps> = ({
   stepMessage,
   status,
   errorMessage,
+  hasImageStep = true,
 }) => {
   const steps = [
     { id: 1, name: "News Article Generator" },
@@ -20,13 +22,16 @@ export const StepProgress: React.FC<StepProgressProps> = ({
     { id: 3, name: "Industry Impact Analysis" },
     { id: 4, name: "Interview Opportunities" },
     { id: 5, name: "Editorial Review Guidelines" },
+    ...(hasImageStep ? [{ id: 6, name: "Header Banner Creative" }] : []),
   ];
 
   const calculatePercentage = () => {
     if (status === "completed") return 100;
-    if (status === "error") return (currentStep - 1) * 20;
+    const stepsCount = steps.length;
+    const stepWeight = 100 / stepsCount;
+    if (status === "error") return (currentStep - 1) * stepWeight;
     if (status === "generating") {
-      return (currentStep - 1) * 20 + 10; // offset for the active step
+      return (currentStep - 1) * stepWeight + (stepWeight / 2); // offset for the active step
     }
     return 0;
   };

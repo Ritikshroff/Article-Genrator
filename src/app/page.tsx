@@ -24,6 +24,13 @@ export default function Dashboard() {
   const [errorMessage, setErrorMessage] = useState("");
   const [packageData, setPackageData] = useState<EditorialPackage>({});
 
+  // Customization parameters
+  const [topicType, setTopicType] = useState<"Dataquest" | "Explainer" | "Investor" | "Blog">("Dataquest");
+  const [minWords, setMinWords] = useState<number>(500);
+  const [maxWords, setMaxWords] = useState<number>(700);
+  const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [generateImage, setGenerateImage] = useState<boolean>(true);
+
   // Load API key from sessionStorage on mount
   useEffect(() => {
     const savedKey = sessionStorage.getItem("gemini_api_key");
@@ -92,6 +99,11 @@ export default function Dashboard() {
         body: JSON.stringify({
           pressRelease,
           customApiKey: customApiKey.trim() || undefined,
+          topicType,
+          minWords,
+          maxWords,
+          customPrompt,
+          generateImage,
         }),
       });
 
@@ -327,6 +339,88 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Parameter Settings */}
+              <div className="space-y-4 pt-4 border-t border-zinc-200/60 dark:border-zinc-800/60">
+                <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
+                  3. Style & Layout Parameters
+                </label>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Topic Type Selector */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-500 block">
+                      Topic Type
+                    </label>
+                    <select
+                      value={topicType}
+                      onChange={(e) => setTopicType(e.target.value as any)}
+                      className="w-full text-xs px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold cursor-pointer"
+                    >
+                      <option value="Dataquest">Dataquest (News)</option>
+                      <option value="Explainer">Explainer</option>
+                      <option value="Investor">Investor</option>
+                      <option value="Blog">Blog Post</option>
+                    </select>
+                  </div>
+
+                  {/* Word Count Limit */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-500 block">
+                      Word Limits (Min - Max)
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={100}
+                        max={2000}
+                        value={minWords}
+                        onChange={(e) => setMinWords(parseInt(e.target.value) || 0)}
+                        className="w-full text-xs px-2 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center font-mono font-semibold"
+                        placeholder="Min"
+                      />
+                      <span className="text-zinc-400 text-xs">-</span>
+                      <input
+                        type="number"
+                        min={200}
+                        max={3000}
+                        value={maxWords}
+                        onChange={(e) => setMaxWords(parseInt(e.target.value) || 0)}
+                        className="w-full text-xs px-2 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center font-mono font-semibold"
+                        placeholder="Max"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Custom Prompt Textarea */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-zinc-500 block">
+                    Custom Style / Tone Guidelines (Optional)
+                  </label>
+                  <textarea
+                    placeholder="e.g. Focus heavily on security impact; write in a formal tech analyst tone..."
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    rows={2}
+                    className="w-full text-xs p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 focus:outline-none focus:ring-1 focus:ring-indigo-500 leading-normal placeholder:text-zinc-400 font-sans resize-none"
+                  />
+                </div>
+
+                {/* Imagen Banner Checkbox */}
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
+                  <input
+                    type="checkbox"
+                    id="generateImage"
+                    checked={generateImage}
+                    onChange={(e) => setGenerateImage(e.target.checked)}
+                    className="rounded border-zinc-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label htmlFor="generateImage" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
+                    Generate cover banner image (Imagen 4.0)
+                  </label>
+                </div>
+              </div>
+
               {/* Generate Button CTA */}
               <button
                 onClick={handleGenerate}
@@ -342,7 +436,7 @@ export default function Dashboard() {
                 <Sparkles className={`w-4.5 h-4.5 ${status === "generating" ? "animate-spin text-indigo-500" : ""}`} />
                 <span>
                   {status === "generating"
-                    ? `Running Prompt Step ${currentStep}/5...`
+                    ? `Running Prompt Step ${currentStep}/${generateImage ? 6 : 5}...`
                     : "Generate Editorial Package"}
                 </span>
               </button>
@@ -409,6 +503,7 @@ export default function Dashboard() {
                 currentStep={currentStep}
                 stepMessage={stepMessage}
                 status={status}
+                hasImageStep={generateImage}
               />
 
               {/* Dynamic skeleton loader previews */}
@@ -445,6 +540,7 @@ export default function Dashboard() {
                 stepMessage={stepMessage}
                 status={status}
                 errorMessage={errorMessage}
+                hasImageStep={generateImage}
               />
               
               {/* Fallback output show if partial data exists */}

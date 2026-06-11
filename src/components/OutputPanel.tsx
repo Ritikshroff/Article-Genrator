@@ -47,6 +47,10 @@ export interface EditorialPackage {
   impact?: ImpactData;
   interview?: InterviewData;
   review?: ReviewData;
+  creative?: {
+    base64: string;
+    mimeType: string;
+  };
 }
 
 interface OutputPanelProps {
@@ -275,6 +279,17 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
                 {packageData.news.subheadline}
               </p>
             </div>
+
+            {packageData.creative && packageData.creative.base64 && (
+              <div className="w-full relative group rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 shadow-md">
+                <img
+                  src={`data:${packageData.creative.mimeType};base64,${packageData.creative.base64}`}
+                  alt="Article Banner Creative"
+                  className="w-full h-auto max-h-[320px] object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
+              </div>
+            )}
 
             <hr className="border-zinc-200 dark:border-zinc-800" />
 

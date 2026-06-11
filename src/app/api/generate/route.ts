@@ -96,7 +96,7 @@ function cleanAndParseJson(text: string): any {
 
 export async function POST(req: NextRequest) {
   try {
-    const { pressRelease, customApiKey } = await req.json();
+    const { pressRelease, customApiKey, topicType, minWords, maxWords, customPrompt, generateImage } = await req.json();
 
     if (!pressRelease || pressRelease.trim() === "") {
       return NextResponse.json(
@@ -137,18 +137,18 @@ export async function POST(req: NextRequest) {
               JSON.stringify({
                 type: "step",
                 step: 1,
-                message: "Refining press release into Dataquest-style news article...",
+                message: `Refining press release into ${topicType || "Dataquest"}-style news article...`,
               }) + "\n"
             )
           );
 
-          const newsPrompt = `Convert this press release into a Dataquest-style news article.
+          const newsPrompt = `Convert this press release into a ${topicType || "Dataquest"}-style news article.
 
 Requirements:
 - Remove marketing language and hyperbolic claims.
 - Lead with the most important business or technology development (invert the pyramid).
-- Keep article length between 500–700 words.
-- Include industry context and significance.
+- Keep article length between ${minWords || 500}–${maxWords || 700} words.
+${customPrompt ? `- Custom Guidelines: ${customPrompt}\n` : ""}- Include industry context and significance.
 - Add relevant India market perspective and implications where applicable.
 - Suggest a strong headline and descriptive sub-headline.
 - Suggest a category and list of tags.
@@ -414,6 +414,77 @@ Expected JSON Schema:
               }) + "\n"
             )
           );
+
+          // --- STEP 6: Generate Cover Banner Image (Imagen) ---
+          if (generateImage) {
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({
+                  type: "step",
+                  step: 6,
+                  message: "Generating creative cover banner image...",
+                }) + "\n"
+              )
+            );
+
+            try {
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+              
+              // Construct a high-quality visual prompt based on the generated headline
+              const imagePrompt = `A high-quality enterprise news banner image. Flat minimalist vector art style, vibrant gradient background, representing: ${newsData.headline}. Tech, modern, clean, no text, no words, no letters.`;
+
+              const imgBody = {
+                instances: [
+                  {
+                    prompt: imagePrompt
+                  }
+                ],
+                parameters: {
+                  sampleCount: 1,
+                  aspectRatio: "16:9"
+                }
+              };
+
+              const imgRes = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(imgBody)
+              });
+
+              if (imgRes.ok) {
+                const imgData = await imgRes.json();
+                if (imgData.predictions && imgData.predictions.length > 0) {
+                  const pred = imgData.predictions[0];
+                  const base64 = pred.bytesBase64Encoded || (pred.image && pred.image.imageBytes);
+                  const mimeType = pred.mimeType || "image/png";
+
+                  if (base64) {
+                    controller.enqueue(
+                      encoder.encode(
+                        JSON.stringify({
+                          type: "data",
+                          step: 6,
+                          key: "creative",
+                          data: {
+                            base64,
+                            mimeType
+                          }
+                        }) + "\n"
+                      )
+                    );
+                  }
+                } else {
+                  console.warn("Imagen returned empty predictions:", imgData);
+                }
+              } else {
+                console.error("Imagen API call failed. Status:", imgRes.status, await imgRes.text());
+              }
+            } catch (imgErr) {
+              console.error("Error during Imagen generation step:", imgErr);
+            }
+          }
 
           // Done!
           controller.enqueue(
