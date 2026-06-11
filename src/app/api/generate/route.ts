@@ -246,7 +246,13 @@ Expected JSON Schema:
             impactData = cleanAndParseJson(impactText);
           } catch (e) {
             console.error("Impact parsing failed. Raw text:", impactText);
-            throw new Error("Failed to parse generated industry impact analysis into valid JSON.");
+            try {
+              const fs = require('fs');
+              fs.writeFileSync('/Users/Apple/Desktop/AI Article Genrator/error-raw-output.txt', impactText, 'utf8');
+            } catch (fsErr) {
+              console.error("Failed to write error-raw-output.txt", fsErr);
+            }
+            throw new Error("Failed to parse generated industry impact analysis into valid JSON. Raw output saved to error-raw-output.txt");
           }
 
           controller.enqueue(
