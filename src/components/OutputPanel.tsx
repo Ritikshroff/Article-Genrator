@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { 
   Copy, Check, FileDown, Briefcase, Cpu, Award, Users, 
-  HelpCircle, Eye, ShieldAlert, Sparkles, Clipboard, ArrowRight 
+  HelpCircle, Eye, ShieldAlert, Sparkles, Clipboard, ArrowRight,
+  ExternalLink
 } from "lucide-react";
 
 interface NewsData {
@@ -39,6 +40,7 @@ interface ReviewData {
   customer_reference_gaps: string[];
   india_relevance: string;
   fact_check_items: string[];
+  reporting_conflicts: string[];
 }
 
 interface SocialData {
@@ -62,6 +64,41 @@ export interface EditorialPackage {
 interface OutputPanelProps {
   packageData: EditorialPackage;
 }
+
+const renderParagraphWithLinks = (text: string) => {
+  const regex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    if (matchIndex > lastIndex) {
+      parts.push(text.substring(lastIndex, matchIndex));
+    }
+    const anchorText = match[1];
+    const url = match[2];
+    parts.push(
+      <a
+        key={matchIndex}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 underline font-medium inline-flex items-center gap-0.5"
+      >
+        {anchorText}
+        <ExternalLink className="w-3 h-3 inline ml-0.5" />
+      </a>
+    );
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+};
 
 export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
   const [activeTab, setActiveTab] = useState<"news" | "seo" | "social" | "impact" | "interview" | "review">("news");
@@ -162,6 +199,9 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
       md += `### Customer Reference Gaps\n${review.customer_reference_gaps.map(g => `- ${g}`).join("\n")}\n\n`;
       md += `### India Market Relevance\n${review.india_relevance}\n\n`;
       md += `### Fact-Check Checklists\n${review.fact_check_items.map(i => `- ${i}`).join("\n")}\n\n`;
+      if (review.reporting_conflicts && review.reporting_conflicts.length > 0) {
+        md += `### Potential Conflicts with Previous Reporting\n${review.reporting_conflicts.map(i => `- ${i}`).join("\n")}\n\n`;
+      }
     }
 
     return md;
@@ -320,7 +360,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
             <div className="prose prose-zinc dark:prose-invert max-w-none text-zinc-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed space-y-4">
               {packageData.news.article.split("\n\n").map((para, i) => (
                 <p key={i} className="whitespace-pre-wrap">
-                  {para}
+                  {renderParagraphWithLinks(para)}
                 </p>
               ))}
             </div>
@@ -582,6 +622,22 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
                   ))}
                 </div>
               </div>
+
+              {packageData.review.reporting_conflicts && packageData.review.reporting_conflicts.length > 0 && (
+                <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 md:col-span-2 space-y-3 animate-fadeIn">
+                  <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-orange-500 flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-orange-500" /> Potential Conflicts with Previous Reporting
+                  </h4>
+                  <ul className="space-y-2">
+                    {packageData.review.reporting_conflicts.map((conflict, i) => (
+                      <li key={i} className="text-xs text-zinc-700 dark:text-zinc-300 flex items-start gap-1.5">
+                        <span className="text-orange-500 font-bold mt-0.5 select-none">•</span>
+                        <span>{conflict}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         )}

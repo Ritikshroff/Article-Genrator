@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType, Schema } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { getLocalArticlesForCompany } from "@/lib/pcquestArticles";
 
 export const runtime = "nodejs";
 
@@ -94,9 +95,102 @@ function cleanAndParseJson(text: string): any {
   return JSON.parse(cleaned);
 }
 
+async function getPCQuestReferences(company: string, topic: string) {
+  const articles: { title: string; url: string; snippet: string }[] = [];
+
+  // 1. Get from local DB (instant, high accuracy for samples)
+  if (company) {
+    const local = getLocalArticlesForCompany(company);
+    articles.push(...local);
+  }
+
+  // 2. Scan live sitemap index for recent articles (free, real-time)
+  try {
+    const sitemapRes = await fetch("https://www.pcquest.com/sitemap.xml", {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      }
+    });
+    if (sitemapRes.ok) {
+      const sitemapXml = await sitemapRes.text();
+      const subSitemaps = [...sitemapXml.matchAll(/<loc>(https:\/\/www\.pcquest\.com\/sitemap_\d{4}-\d{2}-\d{2}\.xml)<\/loc>/g)].map(m => m[1]);
+      
+      const targetSubSitemaps = subSitemaps.slice(0, 3);
+      for (const subUrl of targetSubSitemaps) {
+        try {
+          const subRes = await fetch(subUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+          });
+          if (subRes.ok) {
+            const subXml = await subRes.text();
+            const urls = [...subXml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+            for (const url of urls) {
+              const slug = url.substring(url.lastIndexOf("/") + 1).toLowerCase();
+              const cleanCompany = company.toLowerCase().replace(/[^a-z0-9]/g, "");
+              if (cleanCompany && slug.includes(cleanCompany)) {
+                const titlePart = slug.replace(/-\d+$/, "");
+                const title = titlePart.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+                if (!articles.some(a => a.url === url)) {
+                  articles.push({
+                    title,
+                    url,
+                    snippet: `Recent coverage about ${company} on PCQuest.`
+                  });
+                }
+              }
+            }
+          }
+        } catch (subErr) {
+          console.error("Error reading daily sitemap:", subUrl, subErr);
+        }
+      }
+    }
+  } catch (sitemapErr) {
+    console.error("Error scanning sitemaps:", sitemapErr);
+  }
+
+  // 3. Optional: Tavily API Search if TAVILY_API_KEY is configured
+  const tavilyKey = process.env.TAVILY_API_KEY;
+  if (tavilyKey && company) {
+    try {
+      const queryStr = `site:pcquest.com ${company} ${topic}`;
+      const tavilyRes = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: tavilyKey,
+          query: queryStr,
+          include_domains: ["pcquest.com"],
+          max_results: 5
+        })
+      });
+      if (tavilyRes.ok) {
+        const tavilyData = await tavilyRes.json();
+        if (tavilyData.results && Array.isArray(tavilyData.results)) {
+          for (const res of tavilyData.results) {
+            if (!articles.some(a => a.url === res.url)) {
+              articles.push({
+                title: res.title || "PCQuest Coverage",
+                url: res.url,
+                snippet: res.content || ""
+              });
+            }
+          }
+        }
+      }
+    } catch (tavilyErr) {
+      console.error("Tavily Search API failed:", tavilyErr);
+    }
+  }
+
+  return articles.slice(0, 5);
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { pressRelease, customApiKey, topicType, minWords, maxWords, customPrompt, generateImage, humanize = true } = await req.json();
+    const { pressRelease, customApiKey, topicType, minWords, maxWords, customPrompt, generateImage, humanize = true, referencePCQuest = true } = await req.json();
 
     if (!pressRelease || pressRelease.trim() === "") {
       return NextResponse.json(
@@ -209,9 +303,10 @@ export async function POST(req: NextRequest) {
         missing_data: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
         customer_reference_gaps: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
         india_relevance: { type: SchemaType.STRING },
-        fact_check_items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        fact_check_items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+        reporting_conflicts: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
       },
-      required: ["marketing_claims", "missing_data", "customer_reference_gaps", "india_relevance", "fact_check_items"]
+      required: ["marketing_claims", "missing_data", "customer_reference_gaps", "india_relevance", "fact_check_items", "reporting_conflicts"]
     };
 
     const socialSchema: Schema = {
@@ -228,6 +323,61 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          let pcQuestArticles: { title: string; url: string; snippet: string }[] = [];
+          
+          if (referencePCQuest) {
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({
+                  type: "step",
+                  step: 1,
+                  message: "Cross-referencing PCQuest coverage...",
+                }) + "\n"
+              )
+            );
+
+            // 1. Extract company name and topic from PR using Gemini
+            let company = "";
+            let topic = "";
+            try {
+              const extractionModel = genAI.getGenerativeModel({
+                model: "gemini-3.5-flash",
+                generationConfig: {
+                  responseMimeType: "application/json",
+                  temperature: 0.1,
+                },
+              });
+              const extractionPrompt = `Analyze this press release and extract the main organization/company/entity name it focuses on (e.g. "HP", "Infosys", "Deloitte") and a 1-3 word main topic. Respond ONLY with a JSON object in this format: {"company": "extracted company name", "topic": "extracted topic"}.
+              
+              Press Release:
+              ${pressRelease}`;
+              
+              const extractRes = await extractionModel.generateContent(extractionPrompt);
+              const text = extractRes.response.text();
+              const obj = JSON.parse(text.trim());
+              company = obj.company || "";
+              topic = obj.topic || "";
+              console.log("Extracted company:", company, "topic:", topic);
+            } catch (err) {
+              console.error("Failed to extract company/topic via Gemini:", err);
+            }
+
+            // 2. Fetch PCQuest articles
+            if (company) {
+              pcQuestArticles = await getPCQuestReferences(company, topic);
+              console.log("Found PCQuest articles:", pcQuestArticles.length);
+            }
+          }
+
+          // Build referencesPrompt
+          let referencesPrompt = "";
+          if (referencePCQuest && pcQuestArticles.length > 0) {
+            referencesPrompt = `\n\nRelated PCQuest Articles (Cross-Referencing Guidance):
+We have fetched the following actual related articles from PCQuest. If any of them are contextually relevant to the paragraphs or topics you are generating, you must naturally embed a markdown reference link inside the article text (e.g., "[Click Here](URL)" or "[Anchor Text](URL)"). Do not reference articles that are not related, and do not make up or hallucinate URLs. ONLY use the exact URLs provided in this list.
+${pcQuestArticles.map((a, idx) => `${idx + 1}. Title: "${a.title}"\n   URL: ${a.url}\n   Snippet: ${a.snippet}`).join("\n")}
+`;
+          }
+
           // Define workflows based on topicType
           let steps: { key: string; name: string; prompt: string; schema: Schema }[] = [];
 
@@ -380,6 +530,7 @@ Requirements:
 - Note any gaps in customer/partner references.
 - Assess the relevance and context provided for the Indian market.
 - Detail potential items that require fact-checking or verification.
+- Detail potential conflicts with previous industry reporting, established facts, or historical timelines.
 ${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
 
 Expected JSON Schema:
@@ -388,7 +539,8 @@ Expected JSON Schema:
   "missing_data": ["string"],
   "customer_reference_gaps": ["string"],
   "india_relevance": "string",
-  "fact_check_items": ["string"]
+  "fact_check_items": ["string"],
+  "reporting_conflicts": ["string"]
 }`
               }
             ];
@@ -545,6 +697,7 @@ Requirements:
 - Note any gaps in customer/partner references.
 - Assess the relevance and context provided for the Indian market.
 - Detail potential items that require fact-checking or verification.
+- Detail potential conflicts with previous industry reporting, established facts, or historical timelines.
 ${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
 
 Expected JSON Schema:
@@ -553,7 +706,8 @@ Expected JSON Schema:
   "missing_data": ["string"],
   "customer_reference_gaps": ["string"],
   "india_relevance": "string",
-  "fact_check_items": ["string"]
+  "fact_check_items": ["string"],
+  "reporting_conflicts": ["string"]
 }`
               }
             ];
@@ -655,6 +809,7 @@ Requirements:
 - Note any gaps in customer/partner references.
 - Assess the relevance and context provided for the Indian market.
 - Detail potential items that require fact-checking or verification.
+- Detail potential conflicts with previous industry reporting, established facts, or historical timelines.
 ${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
 
 Expected JSON Schema:
@@ -663,10 +818,22 @@ Expected JSON Schema:
   "missing_data": ["string"],
   "customer_reference_gaps": ["string"],
   "india_relevance": "string",
-  "fact_check_items": ["string"]
+  "fact_check_items": ["string"],
+  "reporting_conflicts": ["string"]
 }`
               }
             ];
+          }
+
+          // Inject PCQuest references into the "news" step prompt dynamically!
+          if (referencePCQuest && pcQuestArticles.length > 0) {
+            const newsStep = steps.find(s => s.key === "news");
+            if (newsStep) {
+              newsStep.prompt = newsStep.prompt.replace(
+                "Press Release:",
+                `${referencesPrompt}\n\nPress Release:`
+              );
+            }
           }
 
           let newsData: any = null;

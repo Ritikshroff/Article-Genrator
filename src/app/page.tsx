@@ -10,6 +10,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { StepProgress } from "@/components/StepProgress";
 import { OutputPanel, EditorialPackage } from "@/components/OutputPanel";
 
+const defaultPrompts = {
+  News: `Convert this press release into a Dataquest-style news article:\n- Remove marketing language\n- Lead with the most important business or technology development\n- Keep article length between 500–700 words\n- Include industry context\n- Add relevant India market perspective where applicable\n- Suggest headline and sub-headline\n- Suggest category and tags`,
+  Interview: `Convert this press release info into an engaging, structured interview-style or Q&A article:\n- Lead with a brief introductory overview paragraph, then present a structured Q&A format.\n- Identify potential interview candidates.\n- List exactly 10 high-quality, non-generic interview questions.\n- Propose 3 follow-up investigative story opportunities.`,
+  Opinion: `Convert this press release info into an engaging, subjective opinion piece, editor's blog post, or expert analysis piece:\n- Use a strong, personalized perspective.\n- Flag excessive marketing claims and potential conflicts with previous reporting.`,
+  Feature: `Convert this press release info into a comprehensive, long-form tech feature story, explainer, or deep dive:\n- Deeply explain the technical mechanics and market context.\n- Explain why this matters, which industries are affected, and the business, tech, and competitive landscape.`,
+  CaseStudy: `Convert this press release info into a structured corporate case study:\n- Organize the article text strictly into three core sections: CHALLENGE, SOLUTION, and RESULTS.`
+};
+
 export default function Dashboard() {
   const [pressRelease, setPressRelease] = useState("");
   const [selectedSample, setSelectedSample] = useState("");
@@ -25,12 +33,13 @@ export default function Dashboard() {
   const [packageData, setPackageData] = useState<EditorialPackage>({});
 
   // Customization parameters
-  const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy">("News");
+  const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy" | "">("");
   const [minWords, setMinWords] = useState<number>(500);
   const [maxWords, setMaxWords] = useState<number>(700);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generateImage, setGenerateImage] = useState<boolean>(true);
   const [humanize, setHumanize] = useState<boolean>(true);
+  const [referencePCQuest, setReferencePCQuest] = useState<boolean>(true);
 
   // Dynamic word count adjustments based on Topic Type
   useEffect(() => {
@@ -93,7 +102,16 @@ export default function Dashboard() {
   };
 
   const handleGenerate = async () => {
-    if (!pressRelease.trim()) return;
+    if (!topicType) {
+      setErrorMessage("Please select a Topic Type before generating.");
+      setStatus("error");
+      return;
+    }
+    if (!pressRelease.trim()) {
+      setErrorMessage("Please enter or select a Press Release before generating.");
+      setStatus("error");
+      return;
+    }
 
     setStatus("generating");
     setCurrentStep(1);
@@ -116,6 +134,7 @@ export default function Dashboard() {
           customPrompt,
           generateImage,
           humanize,
+          referencePCQuest,
         }),
       });
 
@@ -336,7 +355,7 @@ export default function Dashboard() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                    1. Press Release or Custom Article Content
+                    1. Press Release or Custom Article Content <span className="text-rose-500 font-sans">*</span>
                   </label>
                   {pressRelease.trim() && (
                     <button
@@ -377,13 +396,20 @@ export default function Dashboard() {
                   {/* Topic Type Selector */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-zinc-500 block">
-                      Topic Type
+                      Topic Type <span className="text-rose-500 font-sans">*</span>
                     </label>
                     <select
                       value={topicType}
-                      onChange={(e) => setTopicType(e.target.value as any)}
+                      onChange={(e) => {
+                        const val = e.target.value as any;
+                        setTopicType(val);
+                        if (val && defaultPrompts[val as keyof typeof defaultPrompts]) {
+                          setCustomPrompt(defaultPrompts[val as keyof typeof defaultPrompts]);
+                        }
+                      }}
                       className="w-full text-xs px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold cursor-pointer"
                     >
+                      <option value="" disabled>-- Select Topic Type --</option>
                       <option value="News">News Story</option>
                       <option value="Interview">Interview Q&A</option>
                       <option value="Opinion">Opinion / Editorial</option>
@@ -462,14 +488,28 @@ export default function Dashboard() {
                     Generate cover banner image (Imagen 4.0)
                   </label>
                 </div>
+
+                {/* PCQuest Cross-Reference Checkbox */}
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
+                  <input
+                    type="checkbox"
+                    id="referencePCQuest"
+                    checked={referencePCQuest}
+                    onChange={(e) => setReferencePCQuest(e.target.checked)}
+                    className="rounded border-zinc-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label htmlFor="referencePCQuest" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
+                    Cross-reference PCQuest Coverage
+                  </label>
+                </div>
               </div>
 
               {/* Generate Button CTA */}
               <button
                 onClick={handleGenerate}
-                disabled={status === "generating" || !pressRelease.trim()}
+                disabled={status === "generating" || !pressRelease.trim() || !topicType}
                 className={`w-full py-3 px-4 rounded-xl text-sm font-bold tracking-wide shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2 transition-all select-none ${
-                  !pressRelease.trim()
+                  !pressRelease.trim() || !topicType
                     ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed shadow-none"
                     : status === "generating"
                     ? "bg-zinc-100 dark:bg-zinc-900 text-indigo-500 border border-indigo-500/20 cursor-wait shadow-none"
