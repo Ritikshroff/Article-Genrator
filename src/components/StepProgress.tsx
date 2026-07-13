@@ -6,7 +6,7 @@ interface StepProgressProps {
   stepMessage: string;
   status: "idle" | "generating" | "completed" | "error";
   errorMessage?: string;
-  hasImageStep?: boolean;
+  steps: { id: number; name: string }[];
 }
 
 export const StepProgress: React.FC<StepProgressProps> = ({
@@ -14,17 +14,8 @@ export const StepProgress: React.FC<StepProgressProps> = ({
   stepMessage,
   status,
   errorMessage,
-  hasImageStep = true,
+  steps,
 }) => {
-  const steps = [
-    { id: 1, name: "News Article Generator" },
-    { id: 2, name: "SEO Asset Generator" },
-    { id: 3, name: "Industry Impact Analysis" },
-    { id: 4, name: "Interview Opportunities" },
-    { id: 5, name: "Editorial Review Guidelines" },
-    ...(hasImageStep ? [{ id: 6, name: "Header Banner Creative" }] : []),
-  ];
-
   const calculatePercentage = () => {
     if (status === "completed") return 100;
     const stepsCount = steps.length;
@@ -62,7 +53,7 @@ export const StepProgress: React.FC<StepProgressProps> = ({
               : status === "error"
               ? "An error occurred during generation."
               : status === "completed"
-              ? "All 5 stages completed successfully."
+              ? `All ${steps.length} stages completed successfully.`
               : "Configure parameters on the left to begin."}
           </p>
         </div>

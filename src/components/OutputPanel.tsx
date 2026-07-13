@@ -41,12 +41,18 @@ interface ReviewData {
   fact_check_items: string[];
 }
 
+interface SocialData {
+  linkedin_post: string;
+  twitter_post: string;
+}
+
 export interface EditorialPackage {
   news?: NewsData;
   seo?: SeoData;
   impact?: ImpactData;
   interview?: InterviewData;
   review?: ReviewData;
+  social?: SocialData;
   creative?: {
     base64: string;
     mimeType: string;
@@ -58,8 +64,25 @@ interface OutputPanelProps {
 }
 
 export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
-  const [activeTab, setActiveTab] = useState<"news" | "seo" | "impact" | "interview" | "review">("news");
+  const [activeTab, setActiveTab] = useState<"news" | "seo" | "social" | "impact" | "interview" | "review">("news");
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+
+  const tabOrder: ("news" | "seo" | "social" | "impact" | "interview" | "review")[] = [
+    "news",
+    "seo",
+    "social",
+    "impact",
+    "interview",
+    "review"
+  ];
+
+  const availableTabs = tabOrder.filter(tab => !!packageData[tab]);
+
+  React.useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(activeTab)) {
+      setActiveTab(availableTabs[0]);
+    }
+  }, [packageData]);
 
   const triggerCopy = async (text: string, identifier: string) => {
     try {
@@ -73,8 +96,9 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
 
   const getTabLabel = (key: string) => {
     switch (key) {
-      case "news": return "News Article";
+      case "news": return "Article Text";
       case "seo": return "SEO Metadata";
+      case "social": return "Social Media";
       case "impact": return "Industry Impact";
       case "interview": return "Interview Opportunities";
       case "review": return "Editorial Review";
@@ -84,11 +108,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
 
   // Build markdown structure for export
   const buildMarkdownReport = (): string => {
-    const { news, seo, impact, interview, review } = packageData;
+    const { news, seo, social, impact, interview, review } = packageData;
     let md = `# DQ AI Editorial Copilot - Consolidated Editorial Package\n\n`;
 
     if (news) {
-      md += `## News Article\n\n`;
+      md += `## Article Text\n\n`;
       md += `### ${news.headline}\n`;
       md += `*${news.subheadline}*\n\n`;
       md += `**Category:** ${news.category}  \n`;
@@ -103,6 +127,13 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
       md += `- **Meta Description:** ${seo.meta_description}\n`;
       md += `- **Slug:** ${seo.slug}\n`;
       md += `- **Keywords:** ${seo.keywords.join(", ")}\n\n`;
+      md += `---\n\n`;
+    }
+
+    if (social) {
+      md += `## Social Media Copy\n\n`;
+      md += `### LinkedIn Post\n\n${social.linkedin_post}\n\n`;
+      md += `### Twitter / X Post\n\n${social.twitter_post}\n\n`;
       md += `---\n\n`;
     }
 
@@ -167,6 +198,8 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
         return packageData.news ? `# ${packageData.news.headline}\n## ${packageData.news.subheadline}\n\n${packageData.news.article}` : "";
       case "seo":
         return packageData.seo ? JSON.stringify(packageData.seo, null, 2) : "";
+      case "social":
+        return packageData.social ? `LinkedIn Post:\n${packageData.social.linkedin_post}\n\nTwitter/X Post:\n${packageData.social.twitter_post}` : "";
       case "impact":
         return packageData.impact ? JSON.stringify(packageData.impact, null, 2) : "";
       case "interview":
@@ -224,35 +257,26 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
           </button>
         </div>
       </div>
-
       {/* Tabs list */}
       <div className="flex overflow-x-auto scrollbar-thin border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/20 dark:bg-zinc-950/20">
-        {(["news", "seo", "impact", "interview", "review"] as const).map((tab) => {
+        {availableTabs.map((tab) => {
           const isSelected = activeTab === tab;
-          const isAvailable = !!packageData[tab];
 
           return (
             <button
               key={tab}
-              onClick={() => isAvailable && setActiveTab(tab)}
-              disabled={!isAvailable}
+              onClick={() => setActiveTab(tab)}
               className={`flex-shrink-0 px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all relative ${
                 isSelected
                   ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-white/40 dark:bg-zinc-900/10"
-                  : isAvailable
-                  ? "border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200"
-                  : "border-transparent text-zinc-300 dark:text-zinc-800 cursor-not-allowed"
+                  : "border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200"
               }`}
             >
               {getTabLabel(tab)}
-              {!isAvailable && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-800" />
-              )}
             </button>
           );
         })}
       </div>
-
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroller scrollbar-thin max-h-[550px] sm:max-h-[600px] min-h-[350px]">
         
@@ -558,6 +582,87 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: Social Media Copy */}
+        {activeTab === "social" && packageData.social && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="grid grid-cols-1 gap-6">
+              
+              {/* LinkedIn Box */}
+              <div className="p-5 rounded-2xl border border-[#0a66c2]/20 bg-[#0a66c2]/5 dark:bg-[#0a66c2]/10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-[#0a66c2] text-white flex items-center justify-center font-bold text-sm">
+                      in
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+                        LinkedIn Post Preview
+                      </h4>
+                      <p className="text-[10px] text-zinc-500">
+                        Optimized for professional networks
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => triggerCopy(packageData.social?.linkedin_post || "", "linkedin")}
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded bg-[#0a66c2] hover:bg-[#004182] text-white transition-colors"
+                  >
+                    {copiedSection === "linkedin" ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" /> Copy Post
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans bg-white dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200 dark:border-zinc-900 shadow-inner max-h-[250px] overflow-y-auto">
+                  {packageData.social.linkedin_post}
+                </div>
+              </div>
+
+              {/* Twitter / X Box */}
+              <div className="p-5 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-sm text-center font-serif">
+                      X
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+                        Twitter / X Post Preview
+                      </h4>
+                      <p className="text-[10px] text-zinc-500">
+                        Punchy summary under 280 characters
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => triggerCopy(packageData.social?.twitter_post || "", "twitter")}
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 dark:text-black text-white transition-colors"
+                  >
+                    {copiedSection === "twitter" ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" /> Copy Post
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans bg-white dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200 dark:border-zinc-900 shadow-inner">
+                  {packageData.social.twitter_post}
+                </div>
+              </div>
+
             </div>
           </div>
         )}

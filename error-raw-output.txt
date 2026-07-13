@@ -1,0 +1,13 @@
+{
+  "why_it_matters": "India's government finally admits that writing checks and passing laws won't build a tech empire. Startups are dying too fast. They suffer from messy execution. Founders don't know how to scale. By bringing corporate giants into the official fold, the state is trying to fix this. It's a shift from hands-off funding to hands-on guidance. If this works, it means fewer dead startups and more sustainable businesses.",
+  "industries_affected": [
+    "Venture Capital and Private Equity",
+    "Technology Startups",
+    "Corporate Advisory and Consulting",
+    "Professional Education and Training"
+  ],
+  "business_impact": "Expect big changes in how capital flows. Investors will likely demand that early-stage teams have vetted mentors before writing checks. It's about risk reduction. Big corporations will probably set up formal advisory arms to get early equity in promising startups. Think about it: a small slice of equity in exchange for a few hours of board-level advice becomes a highly lucrative business model. We'll see a shift in corporate budgets. Money will move from generic corporate social responsibility programs directly into structured incubator partnerships.",
+  "technology_impact": "Young tech teams usually build messy codebases. They use whatever trendy framework they find. Experienced mentors will force a shift toward boring, stable enterprise architecture. It's about building to scale from day one. Developers will have to learn strict compliance. They'll need to adopt standardized APIs. Security protocols will become a priority instead of an afterthought. This means fewer custom-built disasters and more reliance on proven cloud infrastructure.",
+  "competitive_landscape": "Here's the catch: independent advisory firms are going to lose their grip. They can't compete with a government-blessed network of elite corporate mentors. Traditional incubators that only offer desk space and Wi-Fi will go under. They'll have to reinvent themselves or die. Meanwhile, established tech giants win big. They get to spot—and buy out—promising competitors before they even pose a threat. It's a fast track to consolidation."
+consolidation."
+}

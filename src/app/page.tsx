@@ -25,12 +25,23 @@ export default function Dashboard() {
   const [packageData, setPackageData] = useState<EditorialPackage>({});
 
   // Customization parameters
-  const [topicType, setTopicType] = useState<"Dataquest" | "Explainer" | "Investor" | "Blog">("Dataquest");
+  const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy">("News");
   const [minWords, setMinWords] = useState<number>(500);
   const [maxWords, setMaxWords] = useState<number>(700);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generateImage, setGenerateImage] = useState<boolean>(true);
+  const [humanize, setHumanize] = useState<boolean>(true);
 
+  // Dynamic word count adjustments based on Topic Type
+  useEffect(() => {
+    if (topicType === "Feature") {
+      setMinWords(800);
+      setMaxWords(1200);
+    } else {
+      setMinWords(500);
+      setMaxWords(700);
+    }
+  }, [topicType]);
   // Load API key from sessionStorage on mount
   useEffect(() => {
     const savedKey = sessionStorage.getItem("gemini_api_key");
@@ -104,6 +115,7 @@ export default function Dashboard() {
           maxWords,
           customPrompt,
           generateImage,
+          humanize,
         }),
       });
 
@@ -171,6 +183,48 @@ export default function Dashboard() {
       setStatus("error");
       setErrorMessage(err.message || "An unexpected error occurred during processing.");
     }
+  };
+
+  const getStepsForTopic = () => {
+    let steps = [];
+    if (topicType === "Interview") {
+      steps = [
+        { id: 1, name: "Interview Q&A" },
+        { id: 2, name: "Interview Prep & Queries" },
+        { id: 3, name: "SEO Asset Generator" },
+      ];
+    } else if (topicType === "Opinion") {
+      steps = [
+        { id: 1, name: "Opinion Piece" },
+        { id: 2, name: "SEO Asset Generator" },
+        { id: 3, name: "Editorial Review Guidelines" },
+      ];
+    } else if (topicType === "Feature") {
+      steps = [
+        { id: 1, name: "Deep-Dive Feature" },
+        { id: 2, name: "Industry Impact Analysis" },
+        { id: 3, name: "SEO Asset Generator" },
+      ];
+    } else if (topicType === "CaseStudy") {
+      steps = [
+        { id: 1, name: "Case Study Generator" },
+        { id: 2, name: "SEO Asset Generator" },
+        { id: 3, name: "Editorial Review Guidelines" },
+      ];
+    } else {
+      // News / Default
+      steps = [
+        { id: 1, name: "News Article Generator" },
+        { id: 2, name: "SEO Asset Generator" },
+        { id: 3, name: "Social Media Asset Generator" },
+        { id: 4, name: "Editorial Review Guidelines" },
+      ];
+    }
+
+    if (generateImage) {
+      steps.push({ id: steps.length + 1, name: "Header Banner Creative" });
+    }
+    return steps;
   };
 
   const wordCount = pressRelease.trim().split(/\s+/).filter(Boolean).length;
@@ -278,37 +332,11 @@ export default function Dashboard() {
           <div className="bg-white dark:bg-zinc-950/40 rounded-2xl border border-zinc-200 dark:border-zinc-900/80 p-5 sm:p-6 shadow-sm backdrop-blur-sm">
             <div className="space-y-4">
               
-              {/* Selector */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                    1. Select Sample Press Release
-                  </label>
-                  {selectedSample && (
-                    <span className="text-[10px] text-indigo-500 font-bold bg-indigo-500/10 px-1.5 py-0.2 rounded">
-                      Sample loaded
-                    </span>
-                  )}
-                </div>
-                <select
-                  value={selectedSample}
-                  onChange={handleSampleChange}
-                  className="w-full text-xs sm:text-sm px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold cursor-pointer"
-                >
-                  <option value="">-- Paste Custom PR or Select Sample --</option>
-                  <option value="deloitte-quantum">Deloitte Quantum Centre QCoDE Launch</option>
-                  <option value="infosys-ai-services">Infosys Investor AI Day Capabilities</option>
-                  <option value="fynd-create">Fynd Launches AI Platform 'Fynd Create'</option>
-                  <option value="mercury-security">Mercury Security MP Controllers Edge App</option>
-                  <option value="krisp-appointment">Krisp Appoints CGO Graham Brown</option>
-                </select>
-              </div>
-
               {/* Textarea */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                    2. Press Release Content
+                    1. Press Release or Custom Article Content
                   </label>
                   {pressRelease.trim() && (
                     <button
@@ -322,7 +350,7 @@ export default function Dashboard() {
                 
                 <div className="relative">
                   <textarea
-                    placeholder="Paste corporate press release here to convert..."
+                    placeholder="Paste corporate press release or article here to convert..."
                     value={pressRelease}
                     onChange={(e) => {
                       setPressRelease(e.target.value);
@@ -342,7 +370,7 @@ export default function Dashboard() {
               {/* Parameter Settings */}
               <div className="space-y-4 pt-4 border-t border-zinc-200/60 dark:border-zinc-800/60">
                 <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                  3. Style & Layout Parameters
+                  2. Style & Layout Parameters
                 </label>
                 
                 <div className="grid grid-cols-2 gap-3">
@@ -356,10 +384,11 @@ export default function Dashboard() {
                       onChange={(e) => setTopicType(e.target.value as any)}
                       className="w-full text-xs px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold cursor-pointer"
                     >
-                      <option value="Dataquest">Dataquest (News)</option>
-                      <option value="Explainer">Explainer</option>
-                      <option value="Investor">Investor</option>
-                      <option value="Blog">Blog Post</option>
+                      <option value="News">News Story</option>
+                      <option value="Interview">Interview Q&A</option>
+                      <option value="Opinion">Opinion / Editorial</option>
+                      <option value="Feature">Feature / Long-form</option>
+                      <option value="CaseStudy">Case Study / Success Story</option>
                     </select>
                   </div>
 
@@ -406,6 +435,20 @@ export default function Dashboard() {
                   />
                 </div>
 
+                {/* Humanize Output Checkbox */}
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
+                  <input
+                    type="checkbox"
+                    id="humanize"
+                    checked={humanize}
+                    onChange={(e) => setHumanize(e.target.checked)}
+                    className="rounded border-zinc-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label htmlFor="humanize" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none flex-1">
+                    Bypass AI Detectors (human-like style & plag-free)
+                  </label>
+                </div>
+
                 {/* Imagen Banner Checkbox */}
                 <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
                   <input
@@ -436,7 +479,7 @@ export default function Dashboard() {
                 <Sparkles className={`w-4.5 h-4.5 ${status === "generating" ? "animate-spin text-indigo-500" : ""}`} />
                 <span>
                   {status === "generating"
-                    ? `Running Prompt Step ${currentStep}/${generateImage ? 6 : 5}...`
+                    ? `Running Prompt Step ${currentStep}/${getStepsForTopic().length}...`
                     : "Generate Editorial Package"}
                 </span>
               </button>
@@ -503,7 +546,7 @@ export default function Dashboard() {
                 currentStep={currentStep}
                 stepMessage={stepMessage}
                 status={status}
-                hasImageStep={generateImage}
+                steps={getStepsForTopic()}
               />
 
               {/* Dynamic skeleton loader previews */}
@@ -540,7 +583,7 @@ export default function Dashboard() {
                 stepMessage={stepMessage}
                 status={status}
                 errorMessage={errorMessage}
-                hasImageStep={generateImage}
+                steps={getStepsForTopic()}
               />
               
               {/* Fallback output show if partial data exists */}
