@@ -258,9 +258,20 @@ export async function POST(req: NextRequest) {
         subheadline: { type: SchemaType.STRING },
         article: { type: SchemaType.STRING },
         category: { type: SchemaType.STRING },
-        tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+        faq: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              question: { type: SchemaType.STRING },
+              answer: { type: SchemaType.STRING }
+            },
+            required: ["question", "answer"]
+          }
+        }
       },
-      required: ["headline", "subheadline", "article", "category", "tags"]
+      required: ["headline", "subheadline", "article", "category", "tags", "faq"]
     };
 
     const seoSchema: Schema = {
@@ -269,9 +280,11 @@ export async function POST(req: NextRequest) {
         seo_title: { type: SchemaType.STRING },
         meta_description: { type: SchemaType.STRING },
         slug: { type: SchemaType.STRING },
-        keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        primary_keyword: { type: SchemaType.STRING },
+        keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+        semantic_keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
       },
-      required: ["seo_title", "meta_description", "slug", "keywords"]
+      required: ["seo_title", "meta_description", "slug", "primary_keyword", "keywords", "semantic_keywords"]
     };
 
     const impactSchema: Schema = {
@@ -387,24 +400,31 @@ ${pcQuestArticles.map((a, idx) => `${idx + 1}. Title: "${a.title}"\n   URL: ${a.
                 key: "news",
                 name: `Refining press release into interview article...`,
                 schema: newsSchema,
-                prompt: `Convert this press release info into an engaging, structured interview-style or Q&A article.
-Lead with a brief introductory overview paragraph, then present a structured Q&A format.
-Requirements:
-- Keep article length between ${minWords || 500}–${maxWords || 700} words.
-${customPrompt ? `- Custom Guidelines: ${customPrompt}\n` : ""}- Suggest a strong headline and descriptive sub-headline.
-- Suggest a category and list of tags.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+                prompt: `Convert this press release into an engaging, SEO-optimised interview-style or Q&A article.
+
+## SEO STRUCTURE RULES (MANDATORY — do not skip any):
+1. HEADING HIERARCHY: Use "# [Headline]" as the single H1, "## [Section Title]" for major sections (minimum 3), and "### [Sub-section]" for sub-points where applicable.
+2. PRIMARY KEYWORD: Identify the single most important search keyword from the topic. Include it naturally within the FIRST 100 WORDS of the article and in at least 2 H2 subheadings.
+3. STRONG INTRO (first 60-80 words): Open with a punchy hook sentence stating the key news fact, followed by 1-2 sentences of context. The primary keyword MUST appear here.
+4. STRUCTURED Q&A BODY: After the intro paragraph, present a structured Q&A with "## Q: [Question]" and "**A:** [Answer]" format. Minimum 5 Q&A pairs. Each question should target a natural long-tail search query a reader might ask.
+5. STRONG CONCLUSION (last 80-100 words): End with a "## What This Means" or "## Key Takeaway" section summarising the significance and a subtle forward-looking statement.
+6. FAQ SECTION (MANDATORY): After the conclusion, add a "## Frequently Asked Questions" section with exactly 4 Q&A pairs. Each question must target a different long-tail search query related to the article topic. Answers should be 2-4 sentences.
+7. KEYWORD DENSITY: Use the primary keyword and closely related terms naturally throughout. Target 1–1.5% keyword density. Never keyword-stuff.
+8. ARTICLE LENGTH: Keep total article length between ${minWords || 600}–${maxWords || 800} words (excluding FAQ section).
+${customPrompt ? `\n## CUSTOM EDITORIAL GUIDELINES:\n${customPrompt}\n` : ""}
+${humanize ? `\n## HUMANIZATION GUIDELINES (To bypass AI content detectors):\n${humanizeInstructions}` : ""}
 
 Press Release:
 ${pressRelease}
 
 Expected JSON Schema:
 {
-  "headline": "string",
-  "subheadline": "string",
-  "article": "string (markdown formatted Q&A or transcript style)",
+  "headline": "string (primary keyword near the start, max 70 chars)",
+  "subheadline": "string (secondary keyword, max 120 chars)",
+  "article": "string (full markdown article with H1/H2/H3 headings, Q&A body, conclusion, and FAQ section at bottom)",
   "category": "string",
-  "tags": ["string"]
+  "tags": ["string"],
+  "faq": [{"question": "string", "answer": "string"}]
 }`
               },
               {
@@ -435,26 +455,29 @@ Expected JSON Schema:
                 key: "seo",
                 name: "Optimizing content and generating SEO assets...",
                 schema: seoSchema,
-                prompt: `Generate SEO meta assets for this interview article.
+                prompt: `Generate comprehensive SEO meta assets for this interview article.
 
 Article:
 Headline: \${headline}
 Subheadline: \${subheadline}
 Article: \${article}
 
-Requirements:
-- Create an engaging SEO headline (under 60 characters).
-- Create a meta description that summarizes the article (under 160 characters).
-- Generate a clean, SEO-friendly URL slug.
-- Identify 5-10 focus keywords.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+SEO Requirements:
+- PRIMARY KEYWORD: Identify the single highest-value search keyword for this article (2-4 words ideally). This must appear in the seo_title.
+- SEO TITLE: Compelling, under 60 characters, starts with or prominently features the primary keyword. Must be click-worthy.
+- META DESCRIPTION: 140-160 characters. Include the primary keyword, communicate the key value/finding, and end with a subtle hook. Must be unique and non-generic.
+- URL SLUG: Lowercase, hyphens only, 3-6 words, built around the primary keyword.
+- FOCUS KEYWORDS: 6-10 specific keywords a user might search for to find this content.
+- SEMANTIC KEYWORDS: 5-8 LSI (Latent Semantic Indexing) related terms and phrases that support the primary topic and help with topical authority. These should be variations, synonyms, and closely related concepts — NOT the same as focus keywords.
 
 Expected JSON Schema:
 {
   "seo_title": "string",
   "meta_description": "string",
   "slug": "string",
-  "keywords": ["string"]
+  "primary_keyword": "string",
+  "keywords": ["string"],
+  "semantic_keywords": ["string"]
 }`
               }
             ];
@@ -464,50 +487,60 @@ Expected JSON Schema:
                 key: "news",
                 name: `Refining press release into opinion piece...`,
                 schema: newsSchema,
-                prompt: `Convert this press release info into an engaging, subjective opinion piece, editor's blog post, or expert analysis piece.
-Use a strong, personalized perspective.
-Requirements:
-- Keep article length between ${minWords || 500}–${maxWords || 700} words.
-${customPrompt ? `- Custom Guidelines: ${customPrompt}\n` : ""}- Suggest a strong headline and descriptive sub-headline.
-- Suggest a category and list of tags.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+                prompt: `Convert this press release into an engaging, SEO-optimised opinion piece or expert editorial.
+
+## SEO STRUCTURE RULES (MANDATORY — do not skip any):
+1. HEADING HIERARCHY: Use "# [Headline]" as the single H1, "## [Section Title]" for major argument sections (minimum 3), and "### [Sub-point]" where needed.
+2. PRIMARY KEYWORD: Identify the single most important search keyword. Include it within the FIRST 100 WORDS and in at least 2 H2 subheadings.
+3. STRONG HOOK INTRO (60-80 words): Open with a bold, opinionated hook sentence stating your editorial stance directly. Include the primary keyword. Follow with 1-2 sentences of supporting context.
+4. STRUCTURED ARGUMENT BODY: Each "## Section" must advance a specific argument point. Back each claim with a fact, statistic, or industry example.
+5. COUNTER-ARGUMENT SECTION ("## The Other Side"): Include at least one section that steelmans the opposing view, then rebuts it. This builds topical authority.
+6. STRONG CONCLUSION ("## The Bottom Line"): End with a direct 2-3 sentence summary of the editorial stance and a clear forward-looking statement. Include primary keyword.
+7. FAQ SECTION (MANDATORY at the end): "## Frequently Asked Questions" with exactly 4 Q&A pairs targeting long-tail search queries around the opinion topic. Answers: 2-4 sentences.
+8. ARTICLE LENGTH: ${minWords || 600}–${maxWords || 800} words (excluding FAQ).
+${customPrompt ? `\n## CUSTOM EDITORIAL GUIDELINES:\n${customPrompt}\n` : ""}
+${humanize ? `\n## HUMANIZATION GUIDELINES:\n${humanizeInstructions}` : ""}
 
 Press Release:
 ${pressRelease}
 
 Expected JSON Schema:
 {
-  "headline": "string",
-  "subheadline": "string",
-  "article": "string (markdown formatted opinion post)",
+  "headline": "string (opinionated, includes primary keyword, max 70 chars)",
+  "subheadline": "string (editorial stance summary, max 120 chars)",
+  "article": "string (full markdown article with H1/H2/H3 structure, counter-argument, conclusion, and FAQ)",
   "category": "string",
-  "tags": ["string"]
+  "tags": ["string"],
+  "faq": [{"question": "string", "answer": "string"}]
 }`
               },
               {
                 key: "seo",
                 name: "Optimizing content and generating SEO assets...",
                 schema: seoSchema,
-                prompt: `Generate SEO meta assets for this editorial article.
+                prompt: `Generate comprehensive SEO meta assets for this editorial article.
 
 Article:
-Headline: \dots \${headline}
-Subheadline: \dots \${subheadline}
-Article: \dots \${article}
+Headline: \${headline}
+Subheadline: \${subheadline}
+Article: \${article}
 
-Requirements:
-- Create an engaging SEO headline (under 60 characters).
-- Create a meta description that summarizes the article (under 160 characters).
-- Generate a clean, SEO-friendly URL slug.
-- Identify 5-10 focus keywords.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+SEO Requirements:
+- PRIMARY KEYWORD: The single highest-value search keyword for this opinion piece (2-4 words). Must appear in seo_title.
+- SEO TITLE: Under 60 characters, starts with or prominently features the primary keyword. Click-worthy and opinionated.
+- META DESCRIPTION: 140-160 characters. Include primary keyword, communicate the editorial stance, end with a hook. Non-generic.
+- URL SLUG: Lowercase, hyphens only, 3-6 words, primary keyword-based.
+- FOCUS KEYWORDS: 6-10 specific keywords.
+- SEMANTIC KEYWORDS: 5-8 LSI related terms and phrases that support topical authority.
 
 Expected JSON Schema:
 {
   "seo_title": "string",
   "meta_description": "string",
   "slug": "string",
-  "keywords": ["string"]
+  "primary_keyword": "string",
+  "keywords": ["string"],
+  "semantic_keywords": ["string"]
 }`
               },
               {
@@ -550,24 +583,31 @@ Expected JSON Schema:
                 key: "news",
                 name: `Refining press release into deep-dive feature...`,
                 schema: newsSchema,
-                prompt: `Convert this press release info into a comprehensive, long-form tech feature story, explainer, or deep dive.
-Requirements:
-- Keep article length between ${minWords || 800}–${maxWords || 1200} words.
-- Deeply explain the technical mechanics and market context.
-${customPrompt ? `- Custom Guidelines: ${customPrompt}\n` : ""}- Suggest a strong headline and descriptive sub-headline.
-- Suggest a category and list of tags.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+                prompt: `Convert this press release into a comprehensive, SEO-optimised long-form tech feature story or deep dive.
+
+## SEO STRUCTURE RULES (MANDATORY — do not skip any):
+1. HEADING HIERARCHY: Use "# [Headline]" as the single H1, "## [Section Title]" for major topic sections (minimum 4-5), and "### [Sub-section]" for technical deep-dives within sections.
+2. PRIMARY KEYWORD: Identify the single most important search keyword. Include it within the FIRST 100 WORDS and in at least 3 H2 subheadings across the feature.
+3. STRONG HOOK INTRO (80-100 words): Open with a compelling scene-setter or surprising fact. State the key development. Include primary keyword. Then provide 2 sentences of industry context.
+4. DEEP-DIVE BODY: Each "## Section" must cover a distinct aspect: e.g. "## How It Works", "## Market Context", "## Why India Matters Here", "## Who Benefits", "## Challenges Ahead". Each section: 150-200 words minimum.
+5. DATA & SPECIFICS: Every section must include at least one specific statistic, market figure, or technical detail. Vague claims are not acceptable.
+6. STRONG CONCLUSION ("## The Bigger Picture"): 80-100 words. Synthesise the key insights and end with a forward-looking statement about the topic's trajectory.
+7. FAQ SECTION (MANDATORY at the end): "## Frequently Asked Questions" with exactly 5 Q&A pairs. Questions must target long-tail search queries a reader researching this topic would ask. Answers: 3-5 sentences each.
+8. ARTICLE LENGTH: ${minWords || 900}–${maxWords || 1400} words (excluding FAQ section).
+${customPrompt ? `\n## CUSTOM EDITORIAL GUIDELINES:\n${customPrompt}\n` : ""}
+${humanize ? `\n## HUMANIZATION GUIDELINES:\n${humanizeInstructions}` : ""}
 
 Press Release:
 ${pressRelease}
 
 Expected JSON Schema:
 {
-  "headline": "string",
-  "subheadline": "string",
-  "article": "string (markdown formatted feature story)",
+  "headline": "string (primary keyword near start, compelling, max 70 chars)",
+  "subheadline": "string (supporting keyword, value proposition clear, max 130 chars)",
+  "article": "string (full markdown feature with H1/H2/H3 structure, data points, conclusion, and FAQ at end)",
   "category": "string",
-  "tags": ["string"]
+  "tags": ["string"],
+  "faq": [{"question": "string", "answer": "string"}]
 }`
               },
               {
@@ -602,26 +642,29 @@ Expected JSON Schema:
                 key: "seo",
                 name: "Optimizing content and generating SEO assets...",
                 schema: seoSchema,
-                prompt: `Generate SEO meta assets for this feature article.
+                prompt: `Generate comprehensive SEO meta assets for this long-form feature article.
 
 Article:
 Headline: \${headline}
 Subheadline: \${subheadline}
 Article: \${article}
 
-Requirements:
-- Create an engaging SEO headline (under 60 characters).
-- Create a meta description that summarizes the article (under 160 characters).
-- Generate a clean, SEO-friendly URL slug.
-- Identify 5-10 focus keywords.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+SEO Requirements:
+- PRIMARY KEYWORD: Single highest-value search keyword (2-4 words). Must appear in seo_title.
+- SEO TITLE: Under 60 characters, primary keyword prominent, informative and click-worthy.
+- META DESCRIPTION: 140-160 characters. Primary keyword included, explains the depth of coverage, ends with a curiosity hook.
+- URL SLUG: Lowercase, hyphens only, 4-6 words, keyword-rich.
+- FOCUS KEYWORDS: 8-10 specific target keywords for this content.
+- SEMANTIC KEYWORDS: 6-8 LSI related terms, synonyms, and contextual phrases that support topical authority for this feature.
 
 Expected JSON Schema:
 {
   "seo_title": "string",
   "meta_description": "string",
   "slug": "string",
-  "keywords": ["string"]
+  "primary_keyword": "string",
+  "keywords": ["string"],
+  "semantic_keywords": ["string"]
 }`
               }
             ];
@@ -631,50 +674,63 @@ Expected JSON Schema:
                 key: "news",
                 name: `Refining press release into corporate case study...`,
                 schema: newsSchema,
-                prompt: `Convert this press release info into a structured corporate case study.
-Requirements:
-- Organize the article text strictly into three core sections: CHALLENGE, SOLUTION, and RESULTS.
-- Keep article length between ${minWords || 500}–${maxWords || 700} words.
-${customPrompt ? `- Custom Guidelines: ${customPrompt}\n` : ""}- Suggest a strong headline and descriptive sub-headline.
-- Suggest a category and list of tags.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+                prompt: `Convert this press release into a structured, SEO-optimised corporate case study.
+
+## SEO STRUCTURE RULES (MANDATORY — do not skip any):
+1. HEADING HIERARCHY: Use "# [Headline]" as H1. Use the mandatory H2 sections below. Use "### [Sub-point]" for specifics within sections.
+2. PRIMARY KEYWORD: Identify the single most important search keyword (usually combines company name + outcome/technology). Include it within the FIRST 100 WORDS and in the H2 subheadings for CHALLENGE and RESULTS sections.
+3. MANDATORY CASE STUDY STRUCTURE (use exactly these H2 headings in this order):
+   - "## The Challenge" — Describe the problem the company faced. What was at stake? Include any relevant metrics on the difficulty (e.g. "costs were 40% above industry average").
+   - "## The Solution" — How was the challenge addressed? What technology/approach/partner was involved? Be specific about features and implementation.
+   - "## The Results" — Quantify outcomes with hard numbers wherever possible (%, time saved, revenue impact, scale achieved). This is the most SEO-valuable section.
+   - "## Key Lessons" — 3-4 bullet points of transferable insights from this case study.
+4. STRONG INTRO (60-80 words): Before the first H2, write a scene-setting paragraph naming the company, the problem, and the headline result. Include primary keyword.
+5. STRONG CONCLUSION ("## What This Proves"): 60-80 words. Reinforce the key outcome and broaden its significance to the industry.
+6. FAQ SECTION (MANDATORY at the end): "## Frequently Asked Questions" with exactly 4 Q&A pairs targeting long-tail queries someone researching this case study topic would ask.
+7. ARTICLE LENGTH: ${minWords || 500}–${maxWords || 750} words (excluding FAQ).
+${customPrompt ? `\n## CUSTOM EDITORIAL GUIDELINES:\n${customPrompt}\n` : ""}
+${humanize ? `\n## HUMANIZATION GUIDELINES:\n${humanizeInstructions}` : ""}
 
 Press Release:
 ${pressRelease}
 
 Expected JSON Schema:
 {
-  "headline": "string",
-  "subheadline": "string",
-  "article": "string (markdown formatted case study with CHALLENGE, SOLUTION, and RESULTS)",
+  "headline": "string (result-focused, primary keyword prominent, max 70 chars)",
+  "subheadline": "string (company + key outcome summary, max 120 chars)",
+  "article": "string (full markdown case study with H1, Challenge/Solution/Results/Lessons H2 sections, conclusion, and FAQ at end)",
   "category": "string",
-  "tags": ["string"]
+  "tags": ["string"],
+  "faq": [{"question": "string", "answer": "string"}]
 }`
               },
               {
                 key: "seo",
                 name: "Optimizing content and generating SEO assets...",
                 schema: seoSchema,
-                prompt: `Generate SEO meta assets for this case study.
+                prompt: `Generate comprehensive SEO meta assets for this case study.
 
 Article:
 Headline: \${headline}
 Subheadline: \${subheadline}
 Article: \${article}
 
-Requirements:
-- Create an engaging SEO headline (under 60 characters).
-- Create a meta description that summarizes the case study (under 160 characters).
-- Generate a clean, SEO-friendly URL slug.
-- Identify 5-10 focus keywords.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+SEO Requirements:
+- PRIMARY KEYWORD: Single highest-value search keyword. Should combine the company/technology with the business outcome (e.g., "cloud migration cost savings"). Must appear in seo_title.
+- SEO TITLE: Under 60 characters, result-focused, primary keyword prominent.
+- META DESCRIPTION: 140-160 characters. Include primary keyword, highlight the quantified result, create curiosity.
+- URL SLUG: Lowercase, hyphens only, 4-6 words, outcome-keyword-focused.
+- FOCUS KEYWORDS: 6-10 specific keywords someone researching this case study would search.
+- SEMANTIC KEYWORDS: 5-8 LSI terms (related technologies, industries, outcomes) supporting topical authority.
 
 Expected JSON Schema:
 {
   "seo_title": "string",
   "meta_description": "string",
   "slug": "string",
-  "keywords": ["string"]
+  "primary_keyword": "string",
+  "keywords": ["string"],
+  "semantic_keywords": ["string"]
 }`
               },
               {
@@ -718,53 +774,62 @@ Expected JSON Schema:
                 key: "news",
                 name: `Refining press release into news article...`,
                 schema: newsSchema,
-                prompt: `Convert this press release into a Dataquest-style news article.
-Requirements:
-- Remove marketing language and hyperbolic claims.
-- Lead with the most important business or technology development (invert the pyramid).
-- Keep article length between ${minWords || 500}–${maxWords || 700} words.
-${customPrompt ? `- Custom Guidelines: ${customPrompt}\n` : ""}- Include industry context and significance.
-- Add relevant India market perspective and implications where applicable.
-- Suggest a strong headline and descriptive sub-headline.
-- Suggest a category and list of tags.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+                prompt: `Convert this press release into a Dataquest-style news article that is fully optimised for SEO and Google ranking.
+
+## SEO STRUCTURE RULES (MANDATORY — do not skip any):
+1. HEADING HIERARCHY: Use "# [Headline]" as the single H1, "## [Section Title]" for major news sections (minimum 3), and "### [Sub-section]" for specifics. NEVER use flat paragraph-only structure.
+2. PRIMARY KEYWORD: Identify the single most important search keyword. Include it within the FIRST 100 WORDS of the article and in at least 2 H2 subheadings.
+3. INVERTED PYRAMID INTRO (60-80 words): The very first paragraph (before any H2) must answer Who, What, Where, When, Why — the most important fact first. Include primary keyword. Remove ALL marketing language.
+4. STRUCTURED NEWS BODY: Use H2 sections such as "## What Happened", "## What This Means for the Industry", "## India Perspective", "## What Experts Are Saying" (if applicable), "## What Comes Next". Each section: 80-120 words minimum.
+5. INDIA MARKET ANGLE: At least ONE dedicated H2 section must address India-specific implications, market context, or regional impact.
+6. DATA-DRIVEN WRITING: Every section must include at least one specific fact, statistic, product detail, or market figure from the press release. No vague generalisations.
+7. STRONG CONCLUSION ("## What This Means"): 60-80 words. Synthesise the development's significance and end with a forward-looking statement.
+8. FAQ SECTION (MANDATORY at the end): "## Frequently Asked Questions" with exactly 4 Q&A pairs targeting long-tail search queries a reader would ask about this news. Answers: 2-4 sentences each.
+9. REMOVE ALL MARKETING LANGUAGE: Strip phrases like "world-class", "industry-leading", "cutting-edge", "innovative solution", "best-in-class". Replace with neutral, factual language.
+10. ARTICLE LENGTH: ${minWords || 550}–${maxWords || 750} words (excluding FAQ section).
+${customPrompt ? `\n## CUSTOM EDITORIAL GUIDELINES:\n${customPrompt}\n` : ""}
+${humanize ? `\n## HUMANIZATION GUIDELINES (To bypass AI content detectors):\n${humanizeInstructions}` : ""}
 
 Press Release:
 ${pressRelease}
 
 Expected JSON Schema:
 {
-  "headline": "string",
-  "subheadline": "string",
-  "article": "string (markdown formatted paragraphs)",
+  "headline": "string (primary keyword near start, news-focused, max 70 chars)",
+  "subheadline": "string (supporting context, secondary keyword, max 130 chars)",
+  "article": "string (full markdown article with # H1, ## H2 sections, conclusion, and FAQ at end)",
   "category": "string",
-  "tags": ["string"]
+  "tags": ["string"],
+  "faq": [{"question": "string", "answer": "string"}]
 }`
               },
               {
                 key: "seo",
                 name: "Optimizing content and generating SEO assets...",
                 schema: seoSchema,
-                prompt: `Generate SEO meta assets for this news article.
+                prompt: `Generate comprehensive SEO meta assets for this news article.
 
 Article:
 Headline: \${headline}
-Subheadline: \dots \${subheadline}
-Article: \dots \${article}
+Subheadline: \${subheadline}
+Article: \${article}
 
-Requirements:
-- Create an engaging SEO headline (under 60 characters).
-- Create a meta description that summarizes the article and encourages clicks (under 160 characters).
-- Generate a clean, SEO-friendly URL slug.
-- Identify 5-10 focus keywords.
-${humanize ? `\nStylistic Guidelines (To bypass AI content detectors and ensure uniqueness):\n${humanizeInstructions}` : ""}
+SEO Requirements:
+- PRIMARY KEYWORD: The single highest-value search keyword for this news article (2-4 words ideally). This MUST appear in the seo_title.
+- SEO TITLE: Under 60 characters. Starts with or prominently features the primary keyword. Must be click-worthy and news-oriented (use power words like "Launches", "Reveals", "Why", "How", numbers).
+- META DESCRIPTION: 140-160 characters. Include primary keyword in first half. Communicate the key news fact. End with a subtle hook or question. Must be unique — NOT a copy of the headline.
+- URL SLUG: Lowercase, hyphens only, 3-6 words, built around the primary keyword. No stop words.
+- FOCUS KEYWORDS: 6-10 specific keywords a journalist or reader would search to find this article.
+- SEMANTIC KEYWORDS: 5-8 LSI (Latent Semantic Indexing) related terms — synonyms, related products, technologies, industry terms — that strengthen topical authority. These must be different from focus keywords.
 
 Expected JSON Schema:
 {
   "seo_title": "string",
   "meta_description": "string",
   "slug": "string",
-  "keywords": ["string"]
+  "primary_keyword": "string",
+  "keywords": ["string"],
+  "semantic_keywords": ["string"]
 }`
               },
               {

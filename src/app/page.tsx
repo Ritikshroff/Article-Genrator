@@ -11,12 +11,13 @@ import { StepProgress } from "@/components/StepProgress";
 import { OutputPanel, EditorialPackage } from "@/components/OutputPanel";
 
 const defaultPrompts = {
-  News: `Convert this press release into a Dataquest-style news article:\n- Remove marketing language\n- Lead with the most important business or technology development\n- Keep article length between 500–700 words\n- Include industry context\n- Add relevant India market perspective where applicable\n- Suggest headline and sub-headline\n- Suggest category and tags`,
-  Interview: `Convert this press release info into an engaging, structured interview-style or Q&A article:\n- Lead with a brief introductory overview paragraph, then present a structured Q&A format.\n- Identify potential interview candidates.\n- List exactly 10 high-quality, non-generic interview questions.\n- Propose 3 follow-up investigative story opportunities.`,
-  Opinion: `Convert this press release info into an engaging, subjective opinion piece, editor's blog post, or expert analysis piece:\n- Use a strong, personalized perspective.\n- Flag excessive marketing claims and potential conflicts with previous reporting.`,
-  Feature: `Convert this press release info into a comprehensive, long-form tech feature story, explainer, or deep dive:\n- Deeply explain the technical mechanics and market context.\n- Explain why this matters, which industries are affected, and the business, tech, and competitive landscape.`,
-  CaseStudy: `Convert this press release info into a structured corporate case study:\n- Organize the article text strictly into three core sections: CHALLENGE, SOLUTION, and RESULTS.`
+  News: `SEO-optimised Dataquest news article:\n- Use H1/H2/H3 heading structure (## What Happened, ## India Perspective, ## What This Means, etc.)\n- Lead with inverted pyramid intro (Who, What, Where, When, Why in first 80 words)\n- Include primary keyword in first 100 words and in 2+ subheadings\n- Add India market angle section\n- End with FAQ section (4 Q&A pairs targeting long-tail queries)\n- Strip all marketing language`,
+  Interview: `SEO-optimised interview-style or Q&A article:\n- Use H1/H2/H3 heading structure\n- Include primary keyword in first 100 words and in 2+ H2 subheadings\n- Structure Q&A with ## Q: [Question] and **A:** [Answer] format (min 5 pairs)\n- End with ## Key Takeaway section and FAQ (4 pairs)`,
+  Opinion: `SEO-optimised expert opinion or editorial:\n- Use H1/H2/H3 heading structure\n- Include primary keyword in first 100 words and in subheadings\n- Include a ## The Other Side counter-argument section\n- End with ## The Bottom Line conclusion and FAQ (4 pairs)`,
+  Feature: `SEO-optimised long-form feature or deep-dive:\n- Use H1/H2/H3 heading structure (## How It Works, ## Market Context, ## Why India Matters, etc.)\n- Include primary keyword in first 100 words and in 3+ subheadings\n- Every section must include a specific statistic or market figure\n- End with ## The Bigger Picture conclusion and FAQ (5 pairs)`,
+  CaseStudy: `SEO-optimised corporate case study:\n- Use exact H2 structure: ## The Challenge → ## The Solution → ## The Results → ## Key Lessons\n- Include primary keyword in first 100 words and in Challenge + Results headings\n- Quantify outcomes in Results with hard numbers (%, time saved, scale)\n- End with ## What This Proves conclusion and FAQ (4 pairs)`
 };
+
 
 export default function Dashboard() {
   const [pressRelease, setPressRelease] = useState("");

@@ -11,13 +11,16 @@ interface NewsData {
   article: string;
   category: string;
   tags: string[];
+  faq?: { question: string; answer: string }[];
 }
 
 interface SeoData {
   seo_title: string;
   meta_description: string;
   slug: string;
+  primary_keyword?: string;
   keywords: string[];
+  semantic_keywords?: string[];
 }
 
 interface ImpactData {
@@ -160,11 +163,15 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
 
     if (seo) {
       md += `## SEO Metadata\n\n`;
+      if (seo.primary_keyword) md += `- **Primary Keyword:** ${seo.primary_keyword}\n`;
       md += `- **SEO Title:** ${seo.seo_title}\n`;
       md += `- **Meta Description:** ${seo.meta_description}\n`;
       md += `- **Slug:** ${seo.slug}\n`;
-      md += `- **Keywords:** ${seo.keywords.join(", ")}\n\n`;
-      md += `---\n\n`;
+      md += `- **Focus Keywords:** ${seo.keywords.join(", ")}\n`;
+      if (seo.semantic_keywords && seo.semantic_keywords.length > 0) {
+        md += `- **Semantic/LSI Keywords:** ${seo.semantic_keywords.join(", ")}\n`;
+      }
+      md += `\n---\n\n`;
     }
 
     if (social) {
@@ -357,13 +364,52 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
 
             <hr className="border-zinc-200 dark:border-zinc-800" />
 
-            <div className="prose prose-zinc dark:prose-invert max-w-none text-zinc-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed space-y-4">
-              {packageData.news.article.split("\n\n").map((para, i) => (
-                <p key={i} className="whitespace-pre-wrap">
-                  {renderParagraphWithLinks(para)}
-                </p>
-              ))}
+            <div className="prose prose-zinc dark:prose-invert max-w-none text-sm sm:text-base leading-relaxed">
+              {packageData.news.article.split("\n").map((line, i) => {
+                if (line.startsWith("### ")) {
+                  return <h3 key={i} className="text-base font-bold text-zinc-800 dark:text-zinc-100 mt-5 mb-2">{line.replace(/^### /, "")}</h3>;
+                } else if (line.startsWith("## ")) {
+                  return <h2 key={i} className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mt-6 mb-2 border-b border-zinc-100 dark:border-zinc-800 pb-1">{line.replace(/^## /, "")}</h2>;
+                } else if (line.startsWith("# ")) {
+                  return <h1 key={i} className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-50 mt-2 mb-3">{line.replace(/^# /, "")}</h1>;
+                } else if (line.startsWith("**A:**") || line.startsWith("**A: ")) {
+                  return <p key={i} className="text-zinc-700 dark:text-zinc-300 mb-2 pl-3 border-l-2 border-indigo-300 dark:border-indigo-700">{renderParagraphWithLinks(line.replace(/^\*\*A:\*\*\s*/, ""))}</p>;
+                } else if (line.startsWith("- ") || line.startsWith("* ")) {
+                  return <li key={i} className="text-zinc-700 dark:text-zinc-300 ml-4 list-disc">{renderParagraphWithLinks(line.replace(/^[-*] /, ""))}</li>;
+                } else if (line.trim() === "") {
+                  return <div key={i} className="h-3" />;
+                } else {
+                  return <p key={i} className="text-zinc-700 dark:text-zinc-300 mb-1 whitespace-pre-wrap">{renderParagraphWithLinks(line)}</p>;
+                }
+              })}
             </div>
+
+            {/* FAQ Accordion */}
+            {packageData.news.faq && packageData.news.faq.length > 0 && (
+              <div className="mt-6 space-y-3 animate-fadeIn">
+                <div className="flex items-center gap-2 mb-3">
+                  <HelpCircle className="w-4 h-4 text-indigo-500" />
+                  <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-wider">Frequently Asked Questions</h3>
+                </div>
+                {packageData.news.faq.map((item, i) => (
+                  <details
+                    key={i}
+                    className="group border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900/30"
+                  >
+                    <summary className="flex items-center justify-between px-4 py-3 cursor-pointer text-sm font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors list-none gap-2">
+                      <span className="flex items-center gap-2">
+                        <span className="text-indigo-500 font-bold text-xs w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                        {item.question}
+                      </span>
+                      <span className="text-zinc-400 text-xs group-open:rotate-180 transition-transform duration-200">▼</span>
+                    </summary>
+                    <div className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20 leading-relaxed">
+                      {item.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -391,6 +437,17 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {packageData.seo.primary_keyword && (
+                <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/20 md:col-span-2 space-y-1.5">
+                  <div className="text-xs font-semibold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5" /> Primary Keyword
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded-lg">
+                    🎯 {packageData.seo.primary_keyword}
+                  </span>
+                </div>
+              )}
+
               <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 space-y-1.5">
                 <div className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                   SEO Title
@@ -421,6 +478,22 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ packageData }) => {
                   ))}
                 </div>
               </div>
+
+              {packageData.seo.semantic_keywords && packageData.seo.semantic_keywords.length > 0 && (
+                <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 md:col-span-2 space-y-3">
+                  <div className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5" /> Semantic / LSI Keywords
+                    <span className="ml-1 text-[9px] font-normal normal-case text-zinc-400">(Topical Authority Support)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {packageData.seo.semantic_keywords.map((kw, i) => (
+                      <span key={i} className="px-2.5 py-1 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium rounded-md border border-emerald-500/20">
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
