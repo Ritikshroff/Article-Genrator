@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI, SchemaType, Schema } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { getLocalArticlesForCompany } from "@/lib/pcquestArticles";
+import { getDQArticlesForCompany } from "@/lib/dqindiaArticles";
+import { getVnDArticlesForCompany } from "@/lib/voicendataArticles";
+import { magazines, MagazineKey } from "@/lib/magazineConfig";
 
 export const runtime = "nodejs";
 
@@ -95,26 +98,38 @@ function cleanAndParseJson(text: string): any {
   return JSON.parse(cleaned);
 }
 
-async function getPCQuestReferences(company: string, topic: string) {
+async function getMagazineReferences(
+  company: string,
+  topic: string,
+  magazineKey: MagazineKey
+) {
   const articles: { title: string; url: string; snippet: string }[] = [];
+  const mag = magazines[magazineKey];
 
   // 1. Get from local DB (instant, high accuracy for samples)
   if (company) {
-    const local = getLocalArticlesForCompany(company);
+    let local: { title: string; url: string; snippet: string }[] = [];
+    if (magazineKey === "PCQuest") {
+      local = getLocalArticlesForCompany(company);
+    } else if (magazineKey === "DataQuest") {
+      local = getDQArticlesForCompany(company);
+    } else if (magazineKey === "VoiceData") {
+      local = getVnDArticlesForCompany(company);
+    }
     articles.push(...local);
   }
 
   // 2. Scan live sitemap index for recent articles (free, real-time)
   try {
-    const sitemapRes = await fetch("https://www.pcquest.com/sitemap.xml", {
+    const sitemapRes = await fetch(mag.sitemapUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
       }
     });
     if (sitemapRes.ok) {
       const sitemapXml = await sitemapRes.text();
-      const subSitemaps = [...sitemapXml.matchAll(/<loc>(https:\/\/www\.pcquest\.com\/sitemap_\d{4}-\d{2}-\d{2}\.xml)<\/loc>/g)].map(m => m[1]);
-      
+      const subSitemaps = [...sitemapXml.matchAll(/<loc>([^<]+sitemap[^<]*\.xml)<\/loc>/g)].map(m => m[1]);
+
       const targetSubSitemaps = subSitemaps.slice(0, 3);
       for (const subUrl of targetSubSitemaps) {
         try {
@@ -136,7 +151,7 @@ async function getPCQuestReferences(company: string, topic: string) {
                   articles.push({
                     title,
                     url,
-                    snippet: `Recent coverage about ${company} on PCQuest.`
+                    snippet: `Recent coverage about ${company} on ${mag.name}.`
                   });
                 }
               }
@@ -155,14 +170,14 @@ async function getPCQuestReferences(company: string, topic: string) {
   const tavilyKey = process.env.TAVILY_API_KEY;
   if (tavilyKey && company) {
     try {
-      const queryStr = `site:pcquest.com ${company} ${topic}`;
+      const queryStr = `site:${mag.domain} ${company} ${topic}`;
       const tavilyRes = await fetch("https://api.tavily.com/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           api_key: tavilyKey,
           query: queryStr,
-          include_domains: ["pcquest.com"],
+          include_domains: [mag.domain],
           max_results: 5
         })
       });
@@ -172,7 +187,7 @@ async function getPCQuestReferences(company: string, topic: string) {
           for (const res of tavilyData.results) {
             if (!articles.some(a => a.url === res.url)) {
               articles.push({
-                title: res.title || "PCQuest Coverage",
+                title: res.title || `${mag.name} Coverage`,
                 url: res.url,
                 snippet: res.content || ""
               });
@@ -190,7 +205,9 @@ async function getPCQuestReferences(company: string, topic: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { pressRelease, customApiKey, topicType, minWords, maxWords, customPrompt, generateImage, humanize = true, referencePCQuest = true } = await req.json();
+    const { pressRelease, customApiKey, topicType, minWords, maxWords, customPrompt, generateImage, humanize = true, referencePCQuest = true, magazine: rawMagazine } = await req.json();
+    const magazine: MagazineKey = (rawMagazine as MagazineKey) || "PCQuest";
+    const mag = magazines[magazine];
 
     if (!pressRelease || pressRelease.trim() === "") {
       return NextResponse.json(
@@ -344,7 +361,7 @@ export async function POST(req: NextRequest) {
                 JSON.stringify({
                   type: "step",
                   step: 1,
-                  message: "Cross-referencing PCQuest coverage...",
+                  message: `Cross-referencing ${mag.name} coverage...`,
                 }) + "\n"
               )
             );
@@ -375,18 +392,18 @@ export async function POST(req: NextRequest) {
               console.error("Failed to extract company/topic via Gemini:", err);
             }
 
-            // 2. Fetch PCQuest articles
+            // 2. Fetch magazine reference articles
             if (company) {
-              pcQuestArticles = await getPCQuestReferences(company, topic);
-              console.log("Found PCQuest articles:", pcQuestArticles.length);
+              pcQuestArticles = await getMagazineReferences(company, topic, magazine);
+              console.log(`Found ${mag.name} articles:`, pcQuestArticles.length);
             }
           }
 
           // Build referencesPrompt
           let referencesPrompt = "";
           if (referencePCQuest && pcQuestArticles.length > 0) {
-            referencesPrompt = `\n\nRelated PCQuest Articles (Cross-Referencing Guidance):
-We have fetched the following actual related articles from PCQuest. If any of them are contextually relevant to the paragraphs or topics you are generating, you must naturally embed a markdown reference link inside the article text (e.g., "[Click Here](URL)" or "[Anchor Text](URL)"). Do not reference articles that are not related, and do not make up or hallucinate URLs. ONLY use the exact URLs provided in this list.
+            referencesPrompt = `\n\nRelated ${mag.name} Articles (Cross-Referencing Guidance):
+We have fetched the following actual related articles from ${mag.name}. If any of them are contextually relevant to the paragraphs or topics you are generating, you must naturally embed a markdown reference link inside the article text (e.g., "[Click Here](URL)" or "[Anchor Text](URL)"). Do not reference articles that are not related, and do not make up or hallucinate URLs. ONLY use the exact URLs provided in this list.
 ${pcQuestArticles.map((a, idx) => `${idx + 1}. Title: "${a.title}"\n   URL: ${a.url}\n   Snippet: ${a.snippet}`).join("\n")}
 `;
           }
@@ -890,10 +907,17 @@ Expected JSON Schema:
             ];
           }
 
-          // Inject PCQuest references into the "news" step prompt dynamically!
-          if (referencePCQuest && pcQuestArticles.length > 0) {
-            const newsStep = steps.find(s => s.key === "news");
-            if (newsStep) {
+          // Inject magazine editorial style + references into the "news" step prompt dynamically!
+          const newsStep = steps.find(s => s.key === "news");
+          if (newsStep) {
+            // Always inject the magazine editorial style guide
+            const editorialBlock = `\n\n${mag.editorialStyle}\n`;
+            newsStep.prompt = newsStep.prompt.replace(
+              "Press Release:",
+              `${editorialBlock}\n\nPress Release:`
+            );
+            // Additionally inject reference articles if available
+            if (referencePCQuest && pcQuestArticles.length > 0) {
               newsStep.prompt = newsStep.prompt.replace(
                 "Press Release:",
                 `${referencesPrompt}\n\nPress Release:`

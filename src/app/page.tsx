@@ -9,6 +9,7 @@ import { samplePRs, SamplePR } from "@/lib/samplePRs";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StepProgress } from "@/components/StepProgress";
 import { OutputPanel, EditorialPackage } from "@/components/OutputPanel";
+import { magazineList, MagazineKey } from "@/lib/magazineConfig";
 
 const defaultPrompts = {
   News: `SEO-optimised Dataquest news article:\n- Use H1/H2/H3 heading structure (## What Happened, ## India Perspective, ## What This Means, etc.)\n- Lead with inverted pyramid intro (Who, What, Where, When, Why in first 80 words)\n- Include primary keyword in first 100 words and in 2+ subheadings\n- Add India market angle section\n- End with FAQ section (4 Q&A pairs targeting long-tail queries)\n- Strip all marketing language`,
@@ -20,6 +21,10 @@ const defaultPrompts = {
 
 
 export default function Dashboard() {
+  // ── Magazine segment state ───────────────────────────────────
+  const [magazine, setMagazine] = useState<MagazineKey>("PCQuest");
+  const mag = magazineList.find(m => m.key === magazine)!;
+
   const [pressRelease, setPressRelease] = useState("");
   const [selectedSample, setSelectedSample] = useState("");
   const [customApiKey, setCustomApiKey] = useState("");
@@ -34,13 +39,16 @@ export default function Dashboard() {
   const [packageData, setPackageData] = useState<EditorialPackage>({});
 
   // Customization parameters
-  const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy" | "">("");
+  const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy" | "">("" );
   const [minWords, setMinWords] = useState<number>(500);
   const [maxWords, setMaxWords] = useState<number>(700);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generateImage, setGenerateImage] = useState<boolean>(true);
   const [humanize, setHumanize] = useState<boolean>(true);
   const [referencePCQuest, setReferencePCQuest] = useState<boolean>(true);
+
+  // Filter sample PRs to the currently selected magazine
+  const filteredSamples = samplePRs.filter(pr => pr.magazine === magazine);
 
   // Dynamic word count adjustments based on Topic Type
   useEffect(() => {
@@ -82,7 +90,7 @@ export default function Dashboard() {
     if (val === "") {
       setPressRelease("");
     } else {
-      const found = samplePRs.find((p) => p.id === val);
+      const found = filteredSamples.find((p) => p.id === val);
       if (found) {
         setPressRelease(found.content);
       }
@@ -136,6 +144,7 @@ export default function Dashboard() {
           generateImage,
           humanize,
           referencePCQuest,
+          magazine,
         }),
       });
 
@@ -177,13 +186,13 @@ export default function Dashboard() {
               }));
             } else if (payload.type === "done") {
               setStatus("completed");
-              // Trigger success confetti effect
+              // Trigger success confetti effect using magazine accent colour
               import("canvas-confetti").then((module) => {
                 module.default({
                   particleCount: 150,
                   spread: 80,
                   origin: { y: 0.6 },
-                  colors: ["#3b82f6", "#6366f1", "#a855f7", "#ec4899"],
+                  colors: [mag.accentHex, "#ffffff", "#111111", "#f4f4f4"],
                 });
               });
             } else if (payload.type === "error") {
@@ -252,23 +261,54 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-300">
       
+      {/* MAGAZINE SEGMENT SWITCHER BAR */}
+      <div className="border-b border-zinc-200 dark:border-zinc-900 bg-white dark:bg-zinc-950 sticky top-0 z-[60] shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest mr-2 shrink-0">Magazine:</span>
+            {magazineList.map((m) => (
+              <button
+                key={m.key}
+                id={`segment-${m.key}`}
+                onClick={() => {
+                  setMagazine(m.key);
+                  // clear sample selection when switching magazines
+                  setSelectedSample("");
+                  setPressRelease("");
+                  handleReset();
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 border ${
+                  magazine === m.key
+                    ? "bg-red-600 text-white border-red-600 shadow-sm"
+                    : "bg-transparent text-zinc-500 dark:text-zinc-400 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-800 dark:hover:text-zinc-200"
+                }`}
+              >
+                <span className={`text-[10px] font-black px-1 py-0.5 rounded ${
+                  magazine === m.key ? "bg-white/20" : "bg-zinc-100 dark:bg-zinc-800"
+                }`}>{m.shortName}</span>
+                {m.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* HEADER SECTION */}
-      <header className="border-b border-zinc-200 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-zinc-200 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-[44px] z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 dark:bg-indigo-500/10 text-white dark:text-indigo-400 p-2 rounded-xl border border-indigo-600 dark:border-indigo-500/20 shadow-md">
+            <div className="bg-red-600 text-white p-2 rounded-xl border border-red-700 shadow-md">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-50 dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
-                DQ AI Editorial Copilot
+                {mag.name} AI Editorial Copilot
               </h1>
               <p className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                Transform Press Releases into Dataquest-style editorial content
+                {mag.tagline}
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
             
             {/* API Key configuration control */}
@@ -387,6 +427,26 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Sample PR Selector — filtered by active magazine */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
+                  Load Sample PR ({mag.shortName})
+                </label>
+                <select
+                  id="sample-pr-selector"
+                  value={selectedSample}
+                  onChange={handleSampleChange}
+                  className="w-full text-xs px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium cursor-pointer"
+                >
+                  <option value="">-- Select a sample press release --</option>
+                  {filteredSamples.map((pr) => (
+                    <option key={pr.id} value={pr.id}>
+                      {pr.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Parameter Settings */}
               <div className="space-y-4 pt-4 border-t border-zinc-200/60 dark:border-zinc-800/60">
                 <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
@@ -490,17 +550,17 @@ export default function Dashboard() {
                   </label>
                 </div>
 
-                {/* PCQuest Cross-Reference Checkbox */}
+                {/* Cross-reference checkbox — label changes with magazine */}
                 <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
                   <input
                     type="checkbox"
                     id="referencePCQuest"
                     checked={referencePCQuest}
                     onChange={(e) => setReferencePCQuest(e.target.checked)}
-                    className="rounded border-zinc-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                    className="rounded border-zinc-300 dark:border-zinc-800 text-red-600 focus:ring-red-500 w-4 h-4 cursor-pointer"
                   />
                   <label htmlFor="referencePCQuest" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
-                    Cross-reference PCQuest Coverage
+                    Cross-reference {mag.name} Coverage
                   </label>
                 </div>
               </div>
@@ -509,19 +569,19 @@ export default function Dashboard() {
               <button
                 onClick={handleGenerate}
                 disabled={status === "generating" || !pressRelease.trim() || !topicType}
-                className={`w-full py-3 px-4 rounded-xl text-sm font-bold tracking-wide shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2 transition-all select-none ${
+                className={`w-full py-3 px-4 rounded-xl text-sm font-bold tracking-wide shadow-lg shadow-red-500/10 flex items-center justify-center gap-2 transition-all select-none ${
                   !pressRelease.trim() || !topicType
                     ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed shadow-none"
                     : status === "generating"
-                    ? "bg-zinc-100 dark:bg-zinc-900 text-indigo-500 border border-indigo-500/20 cursor-wait shadow-none"
-                    : "bg-indigo-600 hover:bg-indigo-500 text-white hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                    ? "bg-zinc-100 dark:bg-zinc-900 text-red-500 border border-red-500/20 cursor-wait shadow-none"
+                    : "bg-red-600 hover:bg-red-500 text-white hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                 }`}
               >
-                <Sparkles className={`w-4.5 h-4.5 ${status === "generating" ? "animate-spin text-indigo-500" : ""}`} />
+                <Sparkles className={`w-4.5 h-4.5 ${status === "generating" ? "animate-spin text-red-500" : ""}`} />
                 <span>
                   {status === "generating"
                     ? `Running Prompt Step ${currentStep}/${getStepsForTopic().length}...`
-                    : "Generate Editorial Package"}
+                    : `Generate ${mag.shortName} Editorial Package`}
                 </span>
               </button>
 
@@ -648,7 +708,7 @@ export default function Dashboard() {
       {/* Footer bar */}
       <footer className="border-t border-zinc-200 dark:border-zinc-900 bg-white/30 dark:bg-zinc-950/20 py-4 text-center">
         <p className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-500 font-medium">
-          DQ AI Editorial Copilot POC • Powered by Google Gemini 3.5 Flash • For Editorial Quality Verification
+          {mag.name} AI Editorial Copilot POC • Powered by Google Gemini 3.5 Flash • For Editorial Quality Verification
         </p>
       </footer>
     </div>
