@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, Loader2, Circle, AlertCircle } from "lucide-react";
+import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
 interface StepProgressProps {
   currentStep: number;
@@ -16,66 +16,84 @@ export const StepProgress: React.FC<StepProgressProps> = ({
   errorMessage,
   steps,
 }) => {
-  const calculatePercentage = () => {
+  const percentage = (() => {
     if (status === "completed") return 100;
-    const stepsCount = steps.length;
-    const stepWeight = 100 / stepsCount;
-    if (status === "error") return (currentStep - 1) * stepWeight;
-    if (status === "generating") {
-      return (currentStep - 1) * stepWeight + (stepWeight / 2); // offset for the active step
-    }
+    const w = 100 / steps.length;
+    if (status === "error") return (currentStep - 1) * w;
+    if (status === "generating") return (currentStep - 1) * w + w / 2;
     return 0;
-  };
+  })();
 
-  const percentage = calculatePercentage();
+  const statusLabel =
+    status === "generating"
+      ? "PROCESSING"
+      : status === "error"
+      ? "HALTED"
+      : status === "completed"
+      ? "COMPLETE"
+      : "READY";
+
+  const statusDot =
+    status === "generating"
+      ? "bg-[#e30613] animate-pulse"
+      : status === "error"
+      ? "bg-amber-500"
+      : status === "completed"
+      ? "bg-emerald-500"
+      : "bg-zinc-400";
 
   return (
-    <div className="w-full rounded-2xl border border-white/10 dark:border-white/5 bg-white/40 dark:bg-black/40 backdrop-blur-md p-6 shadow-xl relative overflow-hidden transition-all duration-300">
-      {/* Decorative top pulse */}
-      {status === "generating" && (
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 animate-pulse" />
-      )}
-
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            {status === "generating"
-              ? "Generating Editorial Package"
-              : status === "error"
-              ? "Generation Halted"
-              : status === "completed"
-              ? "Editorial Package Ready"
-              : "Ready to Process"}
-          </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            {status === "generating"
-              ? stepMessage
-              : status === "error"
-              ? "An error occurred during generation."
-              : status === "completed"
-              ? `All ${steps.length} stages completed successfully.`
-              : "Configure parameters on the left to begin."}
-          </p>
-        </div>
-        
-        {status === "generating" && (
-          <div className="flex items-center gap-1 bg-blue-500/10 text-blue-500 px-2 py-1 rounded-full text-[10px] font-medium tracking-wide uppercase animate-pulse">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Generating
+    <div className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#161616] animate-fadeIn">
+      {/* ── Header bar ── */}
+      <div className="px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDot}`} />
+          <div>
+            <p className="text-[11px] font-bold tracking-[0.1em] uppercase text-zinc-400 dark:text-zinc-500">
+              Pipeline Status
+            </p>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight mt-0.5">
+              {status === "generating"
+                ? stepMessage
+                : status === "error"
+                ? "Generation halted — see error below"
+                : status === "completed"
+                ? `All ${steps.length} stages completed`
+                : "Awaiting input"}
+            </p>
           </div>
+        </div>
+
+        {/* Status badge */}
+        <span
+          className={`text-[10px] font-bold tracking-widest px-2 py-1 border ${
+            status === "generating"
+              ? "text-[#e30613] border-[#e30613]/30 bg-[#e30613]/5"
+              : status === "error"
+              ? "text-amber-600 border-amber-500/30 bg-amber-500/5"
+              : status === "completed"
+              ? "text-emerald-600 border-emerald-500/30 bg-emerald-500/5"
+              : "text-zinc-400 border-zinc-300 dark:border-zinc-700 bg-transparent"
+          }`}
+        >
+          {statusLabel}
+        </span>
+      </div>
+
+      {/* ── Progress bar (thin 2px line) ── */}
+      <div className="pipeline-track">
+        <div
+          className="pipeline-fill"
+          style={{ width: `${percentage}%` }}
+        />
+        {/* Scanning shimmer when generating */}
+        {status === "generating" && (
+          <div className="absolute top-0 h-full w-16 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-scan" />
         )}
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full mb-8 overflow-hidden">
-        <div
-          className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-
-      {/* Steps List */}
-      <div className="space-y-4">
+      {/* ── Step list ── */}
+      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
         {steps.map((step) => {
           const isCompleted = currentStep > step.id || status === "completed";
           const isActive = status === "generating" && currentStep === step.id;
@@ -85,74 +103,86 @@ export const StepProgress: React.FC<StepProgressProps> = ({
           return (
             <div
               key={step.id}
-              className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? "bg-zinc-100 dark:bg-zinc-900/50 border border-blue-500/20"
-                  : isCompleted
-                  ? "bg-zinc-50/50 dark:bg-zinc-950/20"
-                  : ""
+              className={`flex items-center justify-between px-5 py-3 transition-colors ${
+                isActive ? "bg-zinc-50 dark:bg-white/[0.03]" : ""
               }`}
             >
               <div className="flex items-center gap-3">
-                {isCompleted ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                ) : isActive ? (
-                  <Loader2 className="w-5 h-5 text-blue-500 animate-spin flex-shrink-0" />
-                ) : isFailed ? (
-                  <AlertCircle className="w-5 h-5 text-rose-500 flex-shrink-0" />
-                ) : (
-                  <Circle className="w-5 h-5 text-zinc-400 dark:text-zinc-600 flex-shrink-0" />
-                )}
-                
+                {/* Step number / icon */}
+                <div
+                  className={`w-6 h-6 flex items-center justify-center flex-shrink-0 text-[10px] font-black border ${
+                    isCompleted
+                      ? "border-emerald-500 text-emerald-500"
+                      : isActive
+                      ? "border-[#e30613] text-[#e30613]"
+                      : isFailed
+                      ? "border-amber-500 text-amber-500"
+                      : "border-zinc-300 dark:border-zinc-700 text-zinc-400"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  ) : isActive ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : isFailed ? (
+                    <AlertCircle className="w-3.5 h-3.5" />
+                  ) : (
+                    String(step.id).padStart(2, "0")
+                  )}
+                </div>
+
                 <span
-                  className={`text-sm font-medium ${
+                  className={`text-[13px] font-medium ${
                     isActive
                       ? "text-zinc-900 dark:text-zinc-100"
                       : isCompleted
-                      ? "text-zinc-700 dark:text-zinc-300"
+                      ? "text-zinc-500 dark:text-zinc-400"
                       : isFailed
-                      ? "text-rose-500"
+                      ? "text-amber-600 dark:text-amber-400"
                       : "text-zinc-400 dark:text-zinc-600"
                   }`}
                 >
-                  Step {step.id}: {step.name}
+                  {step.name}
                 </span>
               </div>
 
-              <div className="text-xs">
-                {isCompleted && (
-                  <span className="text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded">
-                    Completed
-                  </span>
-                )}
-                {isActive && (
-                  <span className="text-blue-500 font-medium animate-pulse bg-blue-500/10 px-2 py-0.5 rounded">
-                    Running...
-                  </span>
-                )}
-                {isFailed && (
-                  <span className="text-rose-500 font-medium bg-rose-500/10 px-2 py-0.5 rounded">
-                    Failed
-                  </span>
-                )}
-                {isPending && (
-                  <span className="text-zinc-400 dark:text-zinc-600">
-                    Pending
-                  </span>
-                )}
-              </div>
+              {/* Right status pill */}
+              <span
+                className={`text-[10px] font-semibold tracking-wide uppercase ${
+                  isCompleted
+                    ? "text-emerald-500"
+                    : isActive
+                    ? "text-[#e30613]"
+                    : isFailed
+                    ? "text-amber-500"
+                    : "text-zinc-300 dark:text-zinc-700"
+                }`}
+              >
+                {isCompleted
+                  ? "✓ Done"
+                  : isActive
+                  ? "Running"
+                  : isFailed
+                  ? "! Failed"
+                  : "—"}
+              </span>
             </div>
           );
         })}
       </div>
 
+      {/* ── Error message ── */}
       {status === "error" && errorMessage && (
-        <div className="mt-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <div className="font-semibold">Error Occurred</div>
-            <div className="mt-1 text-xs text-rose-600 dark:text-rose-400 leading-relaxed font-mono">
-              {errorMessage}
+        <div className="mx-5 mb-5 mt-4 p-4 border border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-400">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-[11px] font-bold tracking-wider uppercase mb-1">
+                Error Detail
+              </p>
+              <p className="text-xs font-mono leading-relaxed break-all">
+                {errorMessage}
+              </p>
             </div>
           </div>
         </div>

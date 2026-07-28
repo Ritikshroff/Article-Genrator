@@ -384,7 +384,7 @@ export async function POST(req: NextRequest) {
               
               const extractRes = await extractionModel.generateContent(extractionPrompt);
               const text = extractRes.response.text();
-              const obj = JSON.parse(text.trim());
+              const obj = cleanAndParseJson(text);
               company = obj.company || "";
               topic = obj.topic || "";
               console.log("Extracted company:", company, "topic:", topic);

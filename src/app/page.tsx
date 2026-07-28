@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Sparkles, Key, FileText, ChevronRight, AlertCircle, Trash2, 
-  BookOpen, HelpCircle, FileJson, CheckCircle2, RotateCcw 
+import {
+  Sparkles, Key, FileText, AlertCircle, Trash2,
+  CheckCircle2, RotateCcw, ChevronRight
 } from "lucide-react";
-import { samplePRs, SamplePR } from "@/lib/samplePRs";
+import { samplePRs } from "@/lib/samplePRs";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StepProgress } from "@/components/StepProgress";
 import { OutputPanel, EditorialPackage } from "@/components/OutputPanel";
@@ -16,14 +16,16 @@ const defaultPrompts = {
   Interview: `SEO-optimised interview-style or Q&A article:\n- Use H1/H2/H3 heading structure\n- Include primary keyword in first 100 words and in 2+ H2 subheadings\n- Structure Q&A with ## Q: [Question] and **A:** [Answer] format (min 5 pairs)\n- End with ## Key Takeaway section and FAQ (4 pairs)`,
   Opinion: `SEO-optimised expert opinion or editorial:\n- Use H1/H2/H3 heading structure\n- Include primary keyword in first 100 words and in subheadings\n- Include a ## The Other Side counter-argument section\n- End with ## The Bottom Line conclusion and FAQ (4 pairs)`,
   Feature: `SEO-optimised long-form feature or deep-dive:\n- Use H1/H2/H3 heading structure (## How It Works, ## Market Context, ## Why India Matters, etc.)\n- Include primary keyword in first 100 words and in 3+ subheadings\n- Every section must include a specific statistic or market figure\n- End with ## The Bigger Picture conclusion and FAQ (5 pairs)`,
-  CaseStudy: `SEO-optimised corporate case study:\n- Use exact H2 structure: ## The Challenge → ## The Solution → ## The Results → ## Key Lessons\n- Include primary keyword in first 100 words and in Challenge + Results headings\n- Quantify outcomes in Results with hard numbers (%, time saved, scale)\n- End with ## What This Proves conclusion and FAQ (4 pairs)`
+  CaseStudy: `SEO-optimised corporate case study:\n- Use exact H2 structure: ## The Challenge → ## The Solution → ## The Results → ## Key Lessons\n- Include primary keyword in first 100 words and in Challenge + Results headings\n- Quantify outcomes in Results with hard numbers (%, time saved, scale)\n- End with ## What This Proves conclusion and FAQ (4 pairs)`,
 };
 
-
 export default function Dashboard() {
-  // ── Magazine segment state ───────────────────────────────────
-  const [magazine, setMagazine] = useState<MagazineKey>("PCQuest");
-  const mag = magazineList.find(m => m.key === magazine)!;
+  // ── Magazine segment state ───────────────────────────────────────────
+  // NOTE: Locked to DataQuest for editorial review.
+  // To re-enable the switcher, change "DataQuest" back to "PCQuest"
+  // and un-hide the switcher bar below.
+  const [magazine, setMagazine] = useState<MagazineKey>("DataQuest");
+  const mag = magazineList.find((m) => m.key === magazine)!;
 
   const [pressRelease, setPressRelease] = useState("");
   const [selectedSample, setSelectedSample] = useState("");
@@ -39,7 +41,7 @@ export default function Dashboard() {
   const [packageData, setPackageData] = useState<EditorialPackage>({});
 
   // Customization parameters
-  const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy" | "">("" );
+  const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy" | "">("");
   const [minWords, setMinWords] = useState<number>(500);
   const [maxWords, setMaxWords] = useState<number>(700);
   const [customPrompt, setCustomPrompt] = useState<string>("");
@@ -47,26 +49,17 @@ export default function Dashboard() {
   const [humanize, setHumanize] = useState<boolean>(true);
   const [referencePCQuest, setReferencePCQuest] = useState<boolean>(true);
 
-  // Filter sample PRs to the currently selected magazine
-  const filteredSamples = samplePRs.filter(pr => pr.magazine === magazine);
+  const filteredSamples = samplePRs.filter((pr) => pr.magazine === magazine);
+  const wordCount = pressRelease.trim().split(/\s+/).filter(Boolean).length;
 
-  // Dynamic word count adjustments based on Topic Type
   useEffect(() => {
-    if (topicType === "Feature") {
-      setMinWords(800);
-      setMaxWords(1200);
-    } else {
-      setMinWords(500);
-      setMaxWords(700);
-    }
+    if (topicType === "Feature") { setMinWords(800); setMaxWords(1200); }
+    else { setMinWords(500); setMaxWords(700); }
   }, [topicType]);
-  // Load API key from sessionStorage on mount
+
   useEffect(() => {
-    const savedKey = sessionStorage.getItem("gemini_api_key");
-    if (savedKey) {
-      setCustomApiKey(savedKey);
-      setIsApiKeySaved(true);
-    }
+    const saved = sessionStorage.getItem("gemini_api_key");
+    if (saved) { setCustomApiKey(saved); setIsApiKeySaved(true); }
   }, []);
 
   const handleSaveApiKey = (e: React.FormEvent) => {
@@ -87,20 +80,12 @@ export default function Dashboard() {
   const handleSampleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setSelectedSample(val);
-    if (val === "") {
-      setPressRelease("");
-    } else {
-      const found = filteredSamples.find((p) => p.id === val);
-      if (found) {
-        setPressRelease(found.content);
-      }
-    }
+    if (!val) { setPressRelease(""); return; }
+    const found = filteredSamples.find((p) => p.id === val);
+    if (found) setPressRelease(found.content);
   };
 
-  const handleClearPR = () => {
-    setPressRelease("");
-    setSelectedSample("");
-  };
+  const handleClearPR = () => { setPressRelease(""); setSelectedSample(""); };
 
   const handleReset = () => {
     setStatus("idle");
@@ -111,16 +96,8 @@ export default function Dashboard() {
   };
 
   const handleGenerate = async () => {
-    if (!topicType) {
-      setErrorMessage("Please select a Topic Type before generating.");
-      setStatus("error");
-      return;
-    }
-    if (!pressRelease.trim()) {
-      setErrorMessage("Please enter or select a Press Release before generating.");
-      setStatus("error");
-      return;
-    }
+    if (!topicType) { setErrorMessage("Please select a Topic Type before generating."); setStatus("error"); return; }
+    if (!pressRelease.trim()) { setErrorMessage("Please enter or select a Press Release before generating."); setStatus("error"); return; }
 
     setStatus("generating");
     setCurrentStep(1);
@@ -131,32 +108,22 @@ export default function Dashboard() {
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pressRelease,
           customApiKey: customApiKey.trim() || undefined,
-          topicType,
-          minWords,
-          maxWords,
-          customPrompt,
-          generateImage,
-          humanize,
-          referencePCQuest,
-          magazine,
+          topicType, minWords, maxWords, customPrompt,
+          generateImage, humanize, referencePCQuest, magazine,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate editorial package.");
+        const err = await response.json();
+        throw new Error(err.error || "Failed to generate editorial package.");
       }
 
       const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("No response reader available from the stream.");
-      }
+      if (!reader) throw new Error("No response reader available from the stream.");
 
       const decoder = new TextDecoder();
       let buffer = "";
@@ -164,46 +131,25 @@ export default function Dashboard() {
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        // Save the last potentially incomplete line back to the buffer
         buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.trim() === "") continue;
-
+          if (!line.trim()) continue;
           try {
             const payload = JSON.parse(line);
-
-            if (payload.type === "step") {
-              setCurrentStep(payload.step);
-              setStepMessage(payload.message);
-            } else if (payload.type === "data") {
-              setPackageData((prev) => ({
-                ...prev,
-                [payload.key]: payload.data,
-              }));
-            } else if (payload.type === "done") {
+            if (payload.type === "step") { setCurrentStep(payload.step); setStepMessage(payload.message); }
+            else if (payload.type === "data") { setPackageData((prev) => ({ ...prev, [payload.key]: payload.data })); }
+            else if (payload.type === "done") {
               setStatus("completed");
-              // Trigger success confetti effect using magazine accent colour
-              import("canvas-confetti").then((module) => {
-                module.default({
-                  particleCount: 150,
-                  spread: 80,
-                  origin: { y: 0.6 },
-                  colors: [mag.accentHex, "#ffffff", "#111111", "#f4f4f4"],
-                });
-              });
-            } else if (payload.type === "error") {
-              throw new Error(payload.message);
-            }
+              import("canvas-confetti").then((m) =>
+                m.default({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: [mag.accentHex, "#ffffff", "#111111"] })
+              );
+            } else if (payload.type === "error") { throw new Error(payload.message); }
           } catch (jsonErr: any) {
-            console.error("Failed to parse stream chunk:", line, jsonErr);
-            // Ignore parse errors on incomplete payloads, but propagate model execution issues
-            if (line.includes('"type":"error"')) {
-              throw new Error(jsonErr.message || "Model execution error.");
-            }
+            console.error("Stream parse error:", line, jsonErr);
+            if (line.includes('"type":"error"')) throw new Error(jsonErr.message || "Model execution error.");
           }
         }
       }
@@ -215,168 +161,136 @@ export default function Dashboard() {
   };
 
   const getStepsForTopic = () => {
-    let steps = [];
-    if (topicType === "Interview") {
-      steps = [
-        { id: 1, name: "Interview Q&A" },
-        { id: 2, name: "Interview Prep & Queries" },
-        { id: 3, name: "SEO Asset Generator" },
-      ];
-    } else if (topicType === "Opinion") {
-      steps = [
-        { id: 1, name: "Opinion Piece" },
-        { id: 2, name: "SEO Asset Generator" },
-        { id: 3, name: "Editorial Review Guidelines" },
-      ];
-    } else if (topicType === "Feature") {
-      steps = [
-        { id: 1, name: "Deep-Dive Feature" },
-        { id: 2, name: "Industry Impact Analysis" },
-        { id: 3, name: "SEO Asset Generator" },
-      ];
-    } else if (topicType === "CaseStudy") {
-      steps = [
-        { id: 1, name: "Case Study Generator" },
-        { id: 2, name: "SEO Asset Generator" },
-        { id: 3, name: "Editorial Review Guidelines" },
-      ];
-    } else {
-      // News / Default
-      steps = [
-        { id: 1, name: "News Article Generator" },
-        { id: 2, name: "SEO Asset Generator" },
-        { id: 3, name: "Social Media Asset Generator" },
-        { id: 4, name: "Editorial Review Guidelines" },
-      ];
-    }
-
-    if (generateImage) {
-      steps.push({ id: steps.length + 1, name: "Header Banner Creative" });
-    }
+    let steps: { id: number; name: string }[] = [];
+    if (topicType === "Interview") steps = [{ id: 1, name: "Interview Q&A" }, { id: 2, name: "Interview Prep & Queries" }, { id: 3, name: "SEO Asset Generator" }];
+    else if (topicType === "Opinion") steps = [{ id: 1, name: "Opinion Piece" }, { id: 2, name: "SEO Asset Generator" }, { id: 3, name: "Editorial Review" }];
+    else if (topicType === "Feature") steps = [{ id: 1, name: "Deep-Dive Feature" }, { id: 2, name: "Industry Impact Analysis" }, { id: 3, name: "SEO Asset Generator" }];
+    else if (topicType === "CaseStudy") steps = [{ id: 1, name: "Case Study Generator" }, { id: 2, name: "SEO Asset Generator" }, { id: 3, name: "Editorial Review" }];
+    else steps = [{ id: 1, name: "News Article Generator" }, { id: 2, name: "SEO Asset Generator" }, { id: 3, name: "Social Media Assets" }, { id: 4, name: "Editorial Review" }];
+    if (generateImage) steps.push({ id: steps.length + 1, name: "Header Banner Creative" });
     return steps;
   };
 
-  const wordCount = pressRelease.trim().split(/\s+/).filter(Boolean).length;
+  // ─── Shared label style ────────────────────────────────────────────
+  const sectionLabel = "text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500 block mb-2";
+  const inputCls = "w-full text-[13px] px-3 py-2 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#e30613] transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-[Inter]";
+  const selectCls = `${inputCls} cursor-pointer appearance-none`;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-300">
-      
-      {/* MAGAZINE SEGMENT SWITCHER BAR */}
-      <div className="border-b border-zinc-200 dark:border-zinc-900 bg-white dark:bg-zinc-950 sticky top-0 z-[60] shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
-            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest mr-2 shrink-0">Magazine:</span>
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0d0d0d] text-zinc-900 dark:text-zinc-100 flex flex-col transition-colors duration-200">
+
+      {/* ── MAGAZINE SEGMENT SWITCHER — hidden for DQ editorial review ── */}
+      <div className="hidden">
+        <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111] sticky top-0 z-[60]">
+          <div className="max-w-screen-xl mx-auto px-6 flex items-center gap-1 py-2">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mr-3 shrink-0">Edition:</span>
             {magazineList.map((m) => (
               <button
                 key={m.key}
                 id={`segment-${m.key}`}
-                onClick={() => {
-                  setMagazine(m.key);
-                  // clear sample selection when switching magazines
-                  setSelectedSample("");
-                  setPressRelease("");
-                  handleReset();
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 border ${
+                onClick={() => { setMagazine(m.key); setSelectedSample(""); setPressRelease(""); handleReset(); }}
+                className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider border transition-colors ${
                   magazine === m.key
-                    ? "bg-red-600 text-white border-red-600 shadow-sm"
-                    : "bg-transparent text-zinc-500 dark:text-zinc-400 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    ? "bg-[#e30613] text-white border-[#e30613]"
+                    : "text-zinc-500 border-transparent hover:text-zinc-900 dark:hover:text-zinc-100"
                 }`}
               >
-                <span className={`text-[10px] font-black px-1 py-0.5 rounded ${
-                  magazine === m.key ? "bg-white/20" : "bg-zinc-100 dark:bg-zinc-800"
-                }`}>{m.shortName}</span>
-                {m.name}
+                {m.shortName}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* HEADER SECTION */}
-      <header className="border-b border-zinc-200 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-[44px] z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-red-600 text-white p-2 rounded-xl border border-red-700 shadow-md">
-              <Sparkles className="w-5 h-5" />
-            </div>
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111] sticky top-0 z-50">
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+
+          {/* Left: Brand */}
+          <div className="flex items-center gap-0">
+            {/* DQ red left-border accent mark */}
+            <div className="w-1 self-stretch bg-[#e30613] mr-4 flex-shrink-0" />
             <div>
-              <h1 className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-50 dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
-                {mag.name} AI Editorial Copilot
-              </h1>
-              <p className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+              <div className="flex items-center gap-2">
+                <span className="font-serif text-[17px] font-black leading-none text-zinc-900 dark:text-zinc-50 tracking-tight">
+                  {mag.name}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 border-l border-zinc-300 dark:border-zinc-700 pl-2 ml-0.5">
+                  Editorial AI
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 tracking-wide">
                 {mag.tagline}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            
-            {/* API Key configuration control */}
-            <div className="relative">
-              {isApiKeySaved ? (
-                <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-xs font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">API Key Ready</span>
-                  <button 
-                    onClick={handleClearApiKey}
-                    className="ml-1 hover:text-rose-500 text-zinc-400 dark:text-zinc-500 font-bold text-xs"
-                    title="Remove API Key"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                    showApiKey 
-                      ? "bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800" 
-                      : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800/80 hover:bg-zinc-50 dark:hover:bg-zinc-900/60"
-                  }`}
-                >
-                  <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                  <span>Configure Gemini API Key</span>
-                </button>
-              )}
 
-              {/* API Key Popover form */}
-              {showApiKey && !isApiKeySaved && (
-                <div className="absolute right-0 mt-2 w-72 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xl backdrop-blur-md z-50 animate-fadeIn">
-                  <form onSubmit={handleSaveApiKey} className="space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+          {/* Right: Controls */}
+          <div className="flex items-center gap-2">
+            {/* API Key — hidden for editorial review */}
+            <div className="hidden">
+              <div className="relative">
+                {isApiKeySaved ? (
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">API Key Set</span>
+                    <button
+                      onClick={handleClearApiKey}
+                      className="ml-1 text-zinc-400 hover:text-[#e30613] transition-colors text-xs font-bold"
+                      title="Remove API Key"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                  >
+                    <Key className="w-3 h-3" />
+                    API Key
+                  </button>
+                )}
+
+                {/* API Key Dropdown */}
+                {showApiKey && !isApiKeySaved && (
+                  <div className="absolute right-0 mt-2 w-80 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#1a1a1a] shadow-xl z-50 animate-slideDown">
+                    <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                         Google Gemini API Key
-                      </label>
+                      </p>
+                    </div>
+                    <form onSubmit={handleSaveApiKey} className="p-4 space-y-3">
                       <input
                         type="password"
-                        placeholder="Paste key starting with AIza..."
+                        placeholder="AIza..."
                         value={customApiKey}
                         onChange={(e) => setCustomApiKey(e.target.value)}
-                        className="w-full text-xs px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                        className={inputCls + " font-mono text-xs"}
                         required
                       />
-                    </div>
-                    <p className="text-[10px] text-zinc-500 leading-normal">
-                      Stored locally in your temporary session storage. If not set, the app defaults to the system's <code>GEMINI_API_KEY</code> environment variable.
-                    </p>
-                    <div className="flex justify-end gap-1.5 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowApiKey(false)}
-                        className="px-2.5 py-1.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 dark:text-zinc-400 font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-sm"
-                      >
-                        Save Key
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
+                      <p className="text-[10px] text-zinc-400 leading-relaxed">
+                        Stored in session only. Falls back to server <code className="text-[#e30613]">GEMINI_API_KEY</code> if not set.
+                      </p>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKey(false)}
+                          className="flex-1 py-2 text-[11px] font-semibold uppercase tracking-wide border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 py-2 text-[11px] font-bold uppercase tracking-wide bg-[#e30613] text-white hover:bg-[#b8040f] transition-colors"
+                        >
+                          Save Key
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </div>
             </div>
 
             <ThemeToggle />
@@ -384,81 +298,88 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* DASHBOARD BODY */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* LEFT COLUMN: Input Form (5 cols) */}
-        <section className="lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-zinc-950/40 rounded-2xl border border-zinc-200 dark:border-zinc-900/80 p-5 sm:p-6 shadow-sm backdrop-blur-sm">
-            <div className="space-y-4">
-              
-              {/* Textarea */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                    1. Press Release or Custom Article Content <span className="text-rose-500 font-sans">*</span>
-                  </label>
-                  {pressRelease.trim() && (
-                    <button
-                      onClick={handleClearPR}
-                      className="text-[10px] font-semibold text-rose-500 hover:underline flex items-center gap-1"
-                    >
-                      <Trash2 className="w-3 h-3" /> Clear Text
-                    </button>
-                  )}
-                </div>
-                
-                <div className="relative">
-                  <textarea
-                    placeholder="Paste corporate press release or article here to convert..."
-                    value={pressRelease}
-                    onChange={(e) => {
-                      setPressRelease(e.target.value);
-                      setSelectedSample(""); // remove selection status on manual input edit
-                    }}
-                    rows={12}
-                    className="w-full text-xs sm:text-sm p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono resize-y leading-relaxed placeholder:text-zinc-400"
-                  />
-                  {pressRelease.trim() && (
-                    <div className="absolute bottom-3 right-3 text-[10px] font-bold bg-zinc-200/80 dark:bg-zinc-900/80 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
-                      {wordCount} words
-                    </div>
-                  )}
-                </div>
-              </div>
+      {/* ── MAIN LAYOUT ─────────────────────────────────────────────────── */}
+      <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-px items-start lg:border-x border-zinc-200 dark:border-zinc-800">
 
-              {/* Sample PR Selector — filtered by active magazine */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                  Load Sample PR ({mag.shortName})
-                </label>
+        {/* ─── LEFT COLUMN: Input Form ─────────────────────────────────── */}
+        <section className="lg:col-span-5 lg:border-r border-zinc-200 dark:border-zinc-800">
+
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-200 dark:border-zinc-800">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400">
+              Input — Press Release
+            </p>
+            {pressRelease.trim() && (
+              <button
+                onClick={handleClearPR}
+                className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 hover:text-[#e30613] transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div className="px-5 py-5 space-y-5">
+
+            {/* — Textarea — */}
+            <div>
+              <label className={sectionLabel}>
+                Press Release Content <span className="text-[#e30613]">*</span>
+              </label>
+              <div className="relative">
+                <textarea
+                  placeholder="Paste corporate press release or raw article text here..."
+                  value={pressRelease}
+                  onChange={(e) => { setPressRelease(e.target.value); setSelectedSample(""); }}
+                  rows={11}
+                  className="textarea-editor scroller"
+                  spellCheck={false}
+                />
+                {pressRelease.trim() && (
+                  <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-zinc-400 dark:text-zinc-600 pointer-events-none">
+                    {wordCount.toLocaleString()} words
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* — Sample PR Selector — */}
+            <div>
+              <label className={sectionLabel} htmlFor="sample-pr-selector">
+                Or load a sample ({mag.shortName})
+              </label>
+              <div className="relative">
                 <select
                   id="sample-pr-selector"
                   value={selectedSample}
                   onChange={handleSampleChange}
-                  className="w-full text-xs px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium cursor-pointer"
+                  className={selectCls}
                 >
-                  <option value="">-- Select a sample press release --</option>
+                  <option value="">— Select sample press release —</option>
                   {filteredSamples.map((pr) => (
-                    <option key={pr.id} value={pr.id}>
-                      {pr.title}
-                    </option>
+                    <option key={pr.id} value={pr.id}>{pr.title}</option>
                   ))}
                 </select>
+                <ChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none rotate-90" />
               </div>
+            </div>
 
-              {/* Parameter Settings */}
-              <div className="space-y-4 pt-4 border-t border-zinc-200/60 dark:border-zinc-800/60">
-                <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">
-                  2. Style & Layout Parameters
-                </label>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Topic Type Selector */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-zinc-500 block">
-                      Topic Type <span className="text-rose-500 font-sans">*</span>
-                    </label>
+            {/* ─── Divider ── */}
+            <hr className="rule-editorial" />
+
+            {/* — Parameters section — */}
+            <div>
+              <p className={sectionLabel}>Generation Parameters</p>
+
+              <div className="grid grid-cols-2 gap-3">
+
+                {/* Topic Type */}
+                <div>
+                  <label className="text-[10px] text-zinc-400 block mb-1.5 tracking-wide">
+                    Topic Type <span className="text-[#e30613]">*</span>
+                  </label>
+                  <div className="relative">
                     <select
                       value={topicType}
                       onChange={(e) => {
@@ -468,181 +389,163 @@ export default function Dashboard() {
                           setCustomPrompt(defaultPrompts[val as keyof typeof defaultPrompts]);
                         }
                       }}
-                      className="w-full text-xs px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold cursor-pointer"
+                      className={selectCls}
                     >
-                      <option value="" disabled>-- Select Topic Type --</option>
+                      <option value="" disabled>— Select —</option>
                       <option value="News">News Story</option>
                       <option value="Interview">Interview Q&A</option>
                       <option value="Opinion">Opinion / Editorial</option>
                       <option value="Feature">Feature / Long-form</option>
-                      <option value="CaseStudy">Case Study / Success Story</option>
+                      <option value="CaseStudy">Case Study</option>
                     </select>
-                  </div>
-
-                  {/* Word Count Limit */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-zinc-500 block">
-                      Word Limits (Min - Max)
-                    </label>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min={100}
-                        max={2000}
-                        value={minWords}
-                        onChange={(e) => setMinWords(parseInt(e.target.value) || 0)}
-                        className="w-full text-xs px-2 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center font-mono font-semibold"
-                        placeholder="Min"
-                      />
-                      <span className="text-zinc-400 text-xs">-</span>
-                      <input
-                        type="number"
-                        min={200}
-                        max={3000}
-                        value={maxWords}
-                        onChange={(e) => setMaxWords(parseInt(e.target.value) || 0)}
-                        className="w-full text-xs px-2 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center font-mono font-semibold"
-                        placeholder="Max"
-                      />
-                    </div>
+                    <ChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none rotate-90" />
                   </div>
                 </div>
 
-                {/* Custom Prompt Textarea */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-zinc-500 block">
-                    Custom Style / Tone Guidelines (Optional)
+                {/* Word count */}
+                <div>
+                  <label className="text-[10px] text-zinc-400 block mb-1.5 tracking-wide">
+                    Word Range
                   </label>
-                  <textarea
-                    placeholder="e.g. Focus heavily on security impact; write in a formal tech analyst tone..."
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    rows={2}
-                    className="w-full text-xs p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 focus:outline-none focus:ring-1 focus:ring-indigo-500 leading-normal placeholder:text-zinc-400 font-sans resize-none"
-                  />
-                </div>
-
-                {/* Humanize Output Checkbox */}
-                <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
-                  <input
-                    type="checkbox"
-                    id="humanize"
-                    checked={humanize}
-                    onChange={(e) => setHumanize(e.target.checked)}
-                    className="rounded border-zinc-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                  />
-                  <label htmlFor="humanize" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none flex-1">
-                    Bypass AI Detectors (human-like style & plag-free)
-                  </label>
-                </div>
-
-                {/* Imagen Banner Checkbox */}
-                <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
-                  <input
-                    type="checkbox"
-                    id="generateImage"
-                    checked={generateImage}
-                    onChange={(e) => setGenerateImage(e.target.checked)}
-                    className="rounded border-zinc-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                  />
-                  <label htmlFor="generateImage" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
-                    Generate cover banner image (Imagen 4.0)
-                  </label>
-                </div>
-
-                {/* Cross-reference checkbox — label changes with magazine */}
-                <div className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/60 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-900/10">
-                  <input
-                    type="checkbox"
-                    id="referencePCQuest"
-                    checked={referencePCQuest}
-                    onChange={(e) => setReferencePCQuest(e.target.checked)}
-                    className="rounded border-zinc-300 dark:border-zinc-800 text-red-600 focus:ring-red-500 w-4 h-4 cursor-pointer"
-                  />
-                  <label htmlFor="referencePCQuest" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
-                    Cross-reference {mag.name} Coverage
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number" min={100} max={2000} value={minWords}
+                      onChange={(e) => setMinWords(parseInt(e.target.value) || 0)}
+                      className={inputCls + " text-center font-mono"}
+                      placeholder="Min"
+                    />
+                    <span className="text-zinc-300 dark:text-zinc-700 text-sm flex-shrink-0">–</span>
+                    <input
+                      type="number" min={200} max={3000} value={maxWords}
+                      onChange={(e) => setMaxWords(parseInt(e.target.value) || 0)}
+                      className={inputCls + " text-center font-mono"}
+                      placeholder="Max"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Generate Button CTA */}
+              {/* Custom tone prompt */}
+              <div className="mt-3">
+                <label className="text-[10px] text-zinc-400 block mb-1.5 tracking-wide">
+                  Custom Style / Tone Notes
+                  <span className="ml-1 text-zinc-300 dark:text-zinc-700">(optional)</span>
+                </label>
+                <textarea
+                  placeholder="e.g. Focus on cybersecurity impact; formal analyst tone..."
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  rows={2}
+                  className={inputCls + " resize-none text-[12px]"}
+                />
+              </div>
+            </div>
+
+            {/* ─── Divider ── */}
+            <hr className="rule-editorial" />
+
+            {/* — Option toggles — */}
+            <div>
+              <p className={sectionLabel}>Options</p>
+              <div className="space-y-2.5">
+                {[
+                  { id: "humanize", checked: humanize, onChange: setHumanize, label: "Bypass AI detectors — human-like style" },
+                  { id: "generateImage", checked: generateImage, onChange: setGenerateImage, label: "Generate cover banner (Imagen 4.0)" },
+                  { id: "referencePCQuest", checked: referencePCQuest, onChange: setReferencePCQuest, label: `Cross-reference ${mag.name} coverage` },
+                ].map((opt) => (
+                  <label
+                    key={opt.id}
+                    htmlFor={opt.id}
+                    className="flex items-center gap-2.5 cursor-pointer group"
+                  >
+                    <input
+                      type="checkbox"
+                      id={opt.id}
+                      checked={opt.checked}
+                      onChange={(e) => opt.onChange(e.target.checked)}
+                      className="checkbox-editorial"
+                    />
+                    <span className="text-[12px] text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors select-none leading-tight">
+                      {opt.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* ─── Divider ── */}
+            <hr className="rule-editorial" />
+
+            {/* — Generate CTA — */}
+            <div className="space-y-2">
               <button
                 onClick={handleGenerate}
                 disabled={status === "generating" || !pressRelease.trim() || !topicType}
-                className={`w-full py-3 px-4 rounded-xl text-sm font-bold tracking-wide shadow-lg shadow-red-500/10 flex items-center justify-center gap-2 transition-all select-none ${
-                  !pressRelease.trim() || !topicType
-                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed shadow-none"
-                    : status === "generating"
-                    ? "bg-zinc-100 dark:bg-zinc-900 text-red-500 border border-red-500/20 cursor-wait shadow-none"
-                    : "bg-red-600 hover:bg-red-500 text-white hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                className={`btn-primary ${
+                  status === "generating"
+                    ? "!bg-zinc-100 dark:!bg-zinc-900 !text-zinc-400 dark:!text-zinc-600 !cursor-wait"
+                    : !pressRelease.trim() || !topicType
+                    ? "!bg-zinc-100 dark:!bg-zinc-900 !text-zinc-400 dark:!text-zinc-600 !cursor-not-allowed"
+                    : ""
                 }`}
               >
-                <Sparkles className={`w-4.5 h-4.5 ${status === "generating" ? "animate-spin text-red-500" : ""}`} />
-                <span>
-                  {status === "generating"
-                    ? `Running Prompt Step ${currentStep}/${getStepsForTopic().length}...`
-                    : `Generate ${mag.shortName} Editorial Package`}
-                </span>
+                <Sparkles className={`w-3.5 h-3.5 ${status === "generating" ? "animate-spin" : ""}`} />
+                {status === "generating"
+                  ? `Step ${currentStep} of ${getStepsForTopic().length} — Processing`
+                  : `Generate ${mag.shortName} Editorial Package`}
               </button>
 
               {status !== "idle" && (
-                <button
-                  onClick={handleReset}
-                  className="w-full py-2 px-4 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Reset Dashboard
+                <button onClick={handleReset} className="btn-ghost">
+                  <RotateCcw className="w-3 h-3" />
+                  Reset
                 </button>
               )}
-
             </div>
+
           </div>
         </section>
 
-        {/* RIGHT COLUMN: Stepper or Outputs (7 cols) */}
-        <section className="lg:col-span-7 flex flex-col h-full min-h-[500px]">
-          
-          {/* 1. Idle placeholder state */}
+        {/* ─── RIGHT COLUMN: Output panel ──────────────────────────────── */}
+        <section className="lg:col-span-7 min-h-[500px] flex flex-col">
+
+          {/* 1. Idle state */}
           {status === "idle" && (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-900 bg-white/40 dark:bg-zinc-950/20 backdrop-blur-sm text-center space-y-6">
-              <div className="bg-zinc-100 dark:bg-zinc-900/80 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-md">
-                <FileText className="w-10 h-10 text-zinc-400 dark:text-zinc-500" />
-              </div>
-              <div className="space-y-2 max-w-sm">
-                <h3 className="text-base sm:text-lg font-bold text-zinc-800 dark:text-zinc-200">
-                  Awaiting Input Press Release
-                </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Select a predefined template or paste your own press release on the left. The copilot will process it sequentially across 5 Gemini AI stages.
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-lg w-full text-left pt-4">
-                {[
-                  "News Article Conversion",
-                  "SEO Metadata Generation",
-                  "Broader Industry Impact",
-                  "Interview Angles & Qs",
-                  "Editorial Review Warnings"
-                ].map((item, idx) => (
-                  <div key={idx} className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-900 bg-white dark:bg-zinc-950/50 flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 font-bold text-[9px] flex items-center justify-center flex-shrink-0">
-                      {idx + 1}
+            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center border border-dashed border-zinc-200 dark:border-zinc-800 m-4 lg:m-0 lg:border-0 lg:border-dashed">
+              {/* Editorial masthead placeholder */}
+              <div className="w-full max-w-sm space-y-6">
+                <div className="space-y-1 border-b-2 border-zinc-900 dark:border-zinc-100 pb-4">
+                  <p className="label-editorial">Dataquest AI Editorial Copilot</p>
+                  <h2 className="font-serif text-2xl font-black text-zinc-900 dark:text-zinc-100 leading-tight">
+                    Awaiting Input
+                  </h2>
+                  <p className="text-xs text-zinc-400 leading-relaxed mt-2">
+                    Paste a press release on the left and configure your parameters to begin generating a full editorial package.
+                  </p>
+                </div>
+
+                {/* What will be generated */}
+                <div className="text-left space-y-2">
+                  {[
+                    ["01", "News Article / Feature / Opinion"],
+                    ["02", "SEO Metadata & Keywords"],
+                    ["03", "Social Media Assets"],
+                    ["04", "Editorial Review Checklist"],
+                    ["05", "AI-generated Cover Banner"],
+                  ].map(([num, label]) => (
+                    <div key={num} className="flex items-center gap-3 py-2 border-b border-zinc-100 dark:border-zinc-800/60">
+                      <span className="text-[10px] font-black text-zinc-300 dark:text-zinc-700 font-mono w-5 shrink-0">{num}</span>
+                      <span className="text-[12px] text-zinc-500 dark:text-zinc-400">{label}</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 truncate">
-                      {item}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* 2. Generating / Progress Stepper state */}
+          {/* 2. Generating state */}
           {status === "generating" && (
-            <div className="space-y-6 flex-1 flex flex-col">
-              
-              {/* Stepper tracker */}
+            <div className="p-4 lg:p-5 space-y-4 flex-1 flex flex-col">
               <StepProgress
                 currentStep={currentStep}
                 stepMessage={stepMessage}
@@ -650,35 +553,37 @@ export default function Dashboard() {
                 steps={getStepsForTopic()}
               />
 
-              {/* Dynamic skeleton loader previews */}
-              <div className="flex-1 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-900 bg-white/50 dark:bg-zinc-950/30 backdrop-blur-md space-y-4 animate-pulse">
-                <div className="flex gap-2">
-                  <div className="w-16 h-4 bg-zinc-200 dark:bg-zinc-800 rounded" />
-                  <div className="w-24 h-4 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              {/* Skeleton article preview */}
+              <div className="flex-1 border border-zinc-200 dark:border-zinc-800 p-5 space-y-4 animate-pulse">
+                <div className="h-3 w-20 bg-zinc-100 dark:bg-zinc-800" />
+                <div className="h-5 w-3/4 bg-zinc-200 dark:bg-zinc-700" />
+                <div className="h-3 w-1/2 bg-zinc-100 dark:bg-zinc-800" />
+                <hr className="border-zinc-100 dark:border-zinc-800" />
+                <div className="space-y-2 pt-1">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className={`h-2.5 bg-zinc-100 dark:bg-zinc-800 ${i % 3 === 2 ? "w-4/5" : "w-full"}`} />
+                  ))}
                 </div>
-                <div className="h-6 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded" />
-                <div className="h-4 w-1/2 bg-zinc-200 dark:bg-zinc-800 rounded" />
-                <hr className="border-zinc-200 dark:border-zinc-800" />
-                <div className="space-y-2 pt-2">
-                  <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-full" />
-                  <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-5/6" />
-                  <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-11/12" />
-                  <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-4/5" />
+                <div className="h-4 w-1/3 bg-zinc-100 dark:bg-zinc-800 mt-2" />
+                <div className="space-y-2">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className={`h-2.5 bg-zinc-100 dark:bg-zinc-800 ${i % 4 === 3 ? "w-2/3" : "w-full"}`} />
+                  ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* 3. Success / Complete state */}
+          {/* 3. Completed state */}
           {status === "completed" && (
-            <div className="flex-1 animate-fadeIn flex flex-col">
+            <div className="flex-1 flex flex-col animate-fadeIn">
               <OutputPanel packageData={packageData} />
             </div>
           )}
 
           {/* 4. Error state */}
           {status === "error" && (
-            <div className="space-y-6 flex-1 flex flex-col">
+            <div className="p-4 lg:p-5 space-y-4 flex-1 flex flex-col">
               <StepProgress
                 currentStep={currentStep}
                 stepMessage={stepMessage}
@@ -686,13 +591,12 @@ export default function Dashboard() {
                 errorMessage={errorMessage}
                 steps={getStepsForTopic()}
               />
-              
-              {/* Fallback output show if partial data exists */}
+
               {Object.keys(packageData).length > 0 && (
-                <div className="flex-1 border border-rose-500/10 rounded-2xl overflow-hidden flex flex-col">
-                  <div className="bg-rose-500/5 px-4 py-2 border-b border-rose-500/10 text-xs font-semibold text-rose-500 flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    Partial content generated before failure is listed below:
+                <div className="flex-1 border border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                    Partial output — generated before failure
                   </div>
                   <div className="flex-1">
                     <OutputPanel packageData={packageData} />
@@ -704,13 +608,19 @@ export default function Dashboard() {
 
         </section>
       </main>
-      
-      {/* Footer bar */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-900 bg-white/30 dark:bg-zinc-950/20 py-4 text-center">
-        <p className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-500 font-medium">
-          {mag.name} AI Editorial Copilot POC • Powered by Google Gemini 3.5 Flash • For Editorial Quality Verification
-        </p>
+
+      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+      <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111]">
+        <div className="max-w-screen-xl mx-auto px-6 h-10 flex items-center justify-between">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
+            {mag.name} · AI Editorial Copilot
+          </p>
+          <p className="text-[10px] text-zinc-300 dark:text-zinc-600">
+            Powered by Google Gemini · Internal Tool
+          </p>
+        </div>
       </footer>
+
     </div>
   );
 }
