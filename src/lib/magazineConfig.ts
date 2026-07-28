@@ -57,7 +57,8 @@ export const magazines: Record<MagazineKey, MagazineConfig> = {
 - Tone: Practical, hands-on, technically detailed yet accessible. Use concrete specs and benchmarks.
 - Coverage focus: Hardware reviews, software tutorials, enterprise IT solutions, cybersecurity, networking, Indian SMB technology adoption.
 - Writing style: Direct, factual, jargon where necessary (explained on first use). Avoid corporate fluff.
-- India context: Always localise pricing (INR), compare to Indian market alternatives, reference Indian regulations where applicable.`,
+- India context: Always localise pricing (INR), compare to Indian market alternatives, reference Indian regulations where applicable.
+- NOTE: Editorial style guide pending. Replace when official PCQuest guide is received.`,
     sitemapUrl: "https://www.pcquest.com/sitemap.xml",
   },
 
@@ -78,8 +79,7 @@ export const magazines: Record<MagazineKey, MagazineConfig> = {
 - Coverage focus: Enterprise IT strategy, government digital initiatives (BharatNet, Digital India, IndiaStack), semiconductors, data governance, AI/ML enterprise adoption, IT services sector, industry rankings (DQ Top 20, DQ Best Employer).
 - Writing style: Executive-level language. Lead with business outcomes and strategic significance. Include market figures and analyst perspectives.
 - India context: Strong focus on Indian IT industry, government schemes, NASSCOM data, IT exports, and public sector digitisation.
-- Sections to use: "Government & Policy", "Data & AI", "Business Technologies", "Semiconductors", "Leadership Insights", "Upskilling".
-- NOTE: Editorial style guide pending — placeholder above based on public website analysis. Replace when official guide is received.`,
+- Sections to use: "Government & Policy", "Data & AI", "Business Technologies", "Semiconductors", "Leadership Insights", "Upskilling".`,
     sitemapUrl: "https://www.dqindia.com/sitemap.xml",
   },
 

@@ -2,9 +2,7 @@
 // dqindiaArticles.ts
 // Reference article database for DataQuest (dqindia.com).
 //
-// STATUS: PLACEHOLDER — seeded with representative entries.
-// Replace / extend once editorial team shares the actual article list.
-// Structure must match PCQuestArticle interface exactly.
+// STATUS: OFFICIAL — populated from the official DQ document.
 // ─────────────────────────────────────────────────────────────
 
 export interface DQArticle {

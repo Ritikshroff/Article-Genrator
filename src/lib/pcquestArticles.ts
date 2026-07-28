@@ -1,3 +1,11 @@
+// ─────────────────────────────────────────────────────────────
+// pcquestArticles.ts
+// Reference article database for PCQuest (pcquest.com).
+//
+// STATUS: PLACEHOLDER — seeded with representative entries.
+// Replace / extend once editorial team shares the actual article list.
+// ─────────────────────────────────────────────────────────────
+
 export interface PCQuestArticle {
   title: string;
   url: string;
