@@ -245,7 +245,7 @@
   border-radius: 2px;
   padding: 12px 14px;
   color: var(--foreground);
-  resize: vertical;
+  resize: none;
   width: 100%;
   outline: none;
   transition: border-color 0.15s;

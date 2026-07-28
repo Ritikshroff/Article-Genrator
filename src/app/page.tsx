@@ -2,14 +2,23 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Sparkles, Key, FileText, AlertCircle, Trash2,
-  CheckCircle2, RotateCcw, ChevronRight
+  Sparkles, Key, AlertCircle, Trash2,
+  CheckCircle2, RotateCcw, ChevronDown, ChevronUp, Settings2,
+  Newspaper, Mic, PenTool, BookOpen, BarChart3, Info
 } from "lucide-react";
 import { samplePRs } from "@/lib/samplePRs";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StepProgress } from "@/components/StepProgress";
 import { OutputPanel, EditorialPackage } from "@/components/OutputPanel";
 import { magazineList, MagazineKey } from "@/lib/magazineConfig";
+
+const articleTypes = [
+  { id: "News", label: "News Story", desc: "Factual news report", icon: Newspaper },
+  { id: "Interview", label: "Interview Q&A", desc: "Question & answer format", icon: Mic },
+  { id: "Opinion", label: "Opinion Piece", desc: "Expert viewpoint / editorial", icon: PenTool },
+  { id: "Feature", label: "Feature Story", desc: "Long-form deep dive", icon: BookOpen },
+  { id: "CaseStudy", label: "Case Study", desc: "Outcome & success report", icon: BarChart3 },
+];
 
 const defaultPrompts = {
   News: `SEO-optimised Dataquest news article:\n- Use H1/H2/H3 heading structure (## What Happened, ## India Perspective, ## What This Means, etc.)\n- Lead with inverted pyramid intro (Who, What, Where, When, Why in first 80 words)\n- Include primary keyword in first 100 words and in 2+ subheadings\n- Add India market angle section\n- End with FAQ section (4 Q&A pairs targeting long-tail queries)\n- Strip all marketing language`,
@@ -19,11 +28,41 @@ const defaultPrompts = {
   CaseStudy: `SEO-optimised corporate case study:\n- Use exact H2 structure: ## The Challenge → ## The Solution → ## The Results → ## Key Lessons\n- Include primary keyword in first 100 words and in Challenge + Results headings\n- Quantify outcomes in Results with hard numbers (%, time saved, scale)\n- End with ## What This Proves conclusion and FAQ (4 pairs)`,
 };
 
+// Word length presets — mapped to human-friendly labels
+const wordPresets = {
+  short:  { label: "Short (approx. 500 words)",     min: 400,  max: 600  },
+  medium: { label: "Medium (approx. 700 words)",    min: 600,  max: 800  },
+  long:   { label: "Long (approx. 1,000 words)",    min: 900,  max: 1100 },
+  feature:{ label: "Feature article (1,200+ words)",min: 1100, max: 1400 },
+};
+
+const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-flex items-center ml-1.5 align-middle">
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onClick={() => setShow(!show)}
+        aria-label="Information"
+        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors p-0.5 rounded focus:outline-none"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {show && (
+        <span className="absolute left-0 sm:left-1/2 sm:-translate-x-1/2 top-full mt-2 w-64 p-2.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-[11px] font-normal leading-relaxed shadow-2xl border border-zinc-700 dark:border-zinc-300 z-[999] animate-fadeIn pointer-events-none rounded-sm block text-left">
+          {text}
+          <span className="absolute bottom-full left-4 sm:left-1/2 sm:-translate-x-1/2 -mb-px border-4 border-transparent border-b-zinc-900 dark:border-b-zinc-100 block" />
+        </span>
+      )}
+    </span>
+  );
+};
+
 export default function Dashboard() {
-  // ── Magazine segment state ───────────────────────────────────────────
+  // ── Magazine segment state ───────────────────────────────────────
   // NOTE: Locked to DataQuest for editorial review.
-  // To re-enable the switcher, change "DataQuest" back to "PCQuest"
-  // and un-hide the switcher bar below.
   const [magazine, setMagazine] = useState<MagazineKey>("DataQuest");
   const mag = magazineList.find((m) => m.key === magazine)!;
 
@@ -40,21 +79,34 @@ export default function Dashboard() {
   const [errorMessage, setErrorMessage] = useState("");
   const [packageData, setPackageData] = useState<EditorialPackage>({});
 
-  // Customization parameters
+  // Parameters
   const [topicType, setTopicType] = useState<"News" | "Interview" | "Opinion" | "Feature" | "CaseStudy" | "">("");
-  const [minWords, setMinWords] = useState<number>(500);
-  const [maxWords, setMaxWords] = useState<number>(700);
+  const [wordPreset, setWordPreset] = useState<keyof typeof wordPresets>("medium");
+  const [minWords, setMinWords] = useState<number>(600);
+  const [maxWords, setMaxWords] = useState<number>(800);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generateImage, setGenerateImage] = useState<boolean>(true);
   const [humanize, setHumanize] = useState<boolean>(true);
   const [referencePCQuest, setReferencePCQuest] = useState<boolean>(true);
 
+  // Advanced options toggle (hidden by default)
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const filteredSamples = samplePRs.filter((pr) => pr.magazine === magazine);
   const wordCount = pressRelease.trim().split(/\s+/).filter(Boolean).length;
+  const canGenerate = !!pressRelease.trim() && !!topicType && status !== "generating";
 
+  // Sync word preset → actual min/max
   useEffect(() => {
-    if (topicType === "Feature") { setMinWords(800); setMaxWords(1200); }
-    else { setMinWords(500); setMaxWords(700); }
+    const preset = wordPresets[wordPreset];
+    setMinWords(preset.min);
+    setMaxWords(preset.max);
+  }, [wordPreset]);
+
+  // Feature type → auto-switch to long preset
+  useEffect(() => {
+    if (topicType === "Feature") setWordPreset("feature");
+    else if (wordPreset === "feature") setWordPreset("medium");
   }, [topicType]);
 
   useEffect(() => {
@@ -70,7 +122,6 @@ export default function Dashboard() {
       setShowApiKey(false);
     }
   };
-
   const handleClearApiKey = () => {
     sessionStorage.removeItem("gemini_api_key");
     setCustomApiKey("");
@@ -96,12 +147,12 @@ export default function Dashboard() {
   };
 
   const handleGenerate = async () => {
-    if (!topicType) { setErrorMessage("Please select a Topic Type before generating."); setStatus("error"); return; }
-    if (!pressRelease.trim()) { setErrorMessage("Please enter or select a Press Release before generating."); setStatus("error"); return; }
+    if (!topicType) { setErrorMessage("Please select an Article Type first."); setStatus("error"); return; }
+    if (!pressRelease.trim()) { setErrorMessage("Please paste a press release first."); setStatus("error"); return; }
 
     setStatus("generating");
     setCurrentStep(1);
-    setStepMessage("Initializing connection to Gemini API...");
+    setStepMessage("Connecting to Gemini AI...");
     setErrorMessage("");
     setPackageData({});
 
@@ -119,11 +170,11 @@ export default function Dashboard() {
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error || "Failed to generate editorial package.");
+        throw new Error(err.error || "Generation failed.");
       }
 
       const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response reader available from the stream.");
+      if (!reader) throw new Error("Stream not available.");
 
       const decoder = new TextDecoder();
       let buffer = "";
@@ -148,459 +199,483 @@ export default function Dashboard() {
               );
             } else if (payload.type === "error") { throw new Error(payload.message); }
           } catch (jsonErr: any) {
-            console.error("Stream parse error:", line, jsonErr);
-            if (line.includes('"type":"error"')) throw new Error(jsonErr.message || "Model execution error.");
+            if (line.includes('"type":"error"')) throw new Error(jsonErr.message || "Error.");
           }
         }
       }
     } catch (err: any) {
-      console.error("Generation failed:", err);
       setStatus("error");
-      setErrorMessage(err.message || "An unexpected error occurred during processing.");
+      setErrorMessage(err.message || "An unexpected error occurred.");
     }
   };
 
   const getStepsForTopic = () => {
     let steps: { id: number; name: string }[] = [];
-    if (topicType === "Interview") steps = [{ id: 1, name: "Interview Q&A" }, { id: 2, name: "Interview Prep & Queries" }, { id: 3, name: "SEO Asset Generator" }];
-    else if (topicType === "Opinion") steps = [{ id: 1, name: "Opinion Piece" }, { id: 2, name: "SEO Asset Generator" }, { id: 3, name: "Editorial Review" }];
-    else if (topicType === "Feature") steps = [{ id: 1, name: "Deep-Dive Feature" }, { id: 2, name: "Industry Impact Analysis" }, { id: 3, name: "SEO Asset Generator" }];
-    else if (topicType === "CaseStudy") steps = [{ id: 1, name: "Case Study Generator" }, { id: 2, name: "SEO Asset Generator" }, { id: 3, name: "Editorial Review" }];
-    else steps = [{ id: 1, name: "News Article Generator" }, { id: 2, name: "SEO Asset Generator" }, { id: 3, name: "Social Media Assets" }, { id: 4, name: "Editorial Review" }];
-    if (generateImage) steps.push({ id: steps.length + 1, name: "Header Banner Creative" });
+    if (topicType === "Interview") steps = [{ id: 1, name: "Interview Q&A" }, { id: 2, name: "Interview Prep & Queries" }, { id: 3, name: "SEO Assets" }];
+    else if (topicType === "Opinion") steps = [{ id: 1, name: "Opinion Piece" }, { id: 2, name: "SEO Assets" }, { id: 3, name: "Editorial Review" }];
+    else if (topicType === "Feature") steps = [{ id: 1, name: "Feature Article" }, { id: 2, name: "Industry Impact Analysis" }, { id: 3, name: "SEO Assets" }];
+    else if (topicType === "CaseStudy") steps = [{ id: 1, name: "Case Study" }, { id: 2, name: "SEO Assets" }, { id: 3, name: "Editorial Review" }];
+    else steps = [{ id: 1, name: "News Article" }, { id: 2, name: "SEO Assets" }, { id: 3, name: "Social Media" }, { id: 4, name: "Editorial Review" }];
+    if (generateImage) steps.push({ id: steps.length + 1, name: "Cover Banner" });
     return steps;
   };
 
-  // ─── Shared label style ────────────────────────────────────────────
-  const sectionLabel = "text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500 block mb-2";
-  const inputCls = "w-full text-[13px] px-3 py-2 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#e30613] transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-[Inter]";
-  const selectCls = `${inputCls} cursor-pointer appearance-none`;
+  // ── Shared styles ────────────────────────────────────────────────
+  const labelCls = "block text-[13px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1.5";
+  const inputCls = "w-full text-[14px] px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#e30613] transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-600";
+  const selectCls = `${inputCls} cursor-pointer appearance-none pr-9`;
+  const stepBadge = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#e30613] text-white text-[11px] font-black flex-shrink-0 mr-2";
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0d0d0d] text-zinc-900 dark:text-zinc-100 flex flex-col transition-colors duration-200">
+    <div className="min-h-screen lg:h-screen lg:max-h-screen bg-[#f5f5f5] dark:bg-[#0d0d0d] text-zinc-900 dark:text-zinc-100 flex flex-col lg:overflow-hidden">
 
-      {/* ── MAGAZINE SEGMENT SWITCHER — hidden for DQ editorial review ── */}
+      {/* ── MAGAZINE SWITCHER — hidden for DQ editorial review ── */}
       <div className="hidden">
-        <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111] sticky top-0 z-[60]">
-          <div className="max-w-screen-xl mx-auto px-6 flex items-center gap-1 py-2">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mr-3 shrink-0">Edition:</span>
-            {magazineList.map((m) => (
-              <button
-                key={m.key}
-                id={`segment-${m.key}`}
-                onClick={() => { setMagazine(m.key); setSelectedSample(""); setPressRelease(""); handleReset(); }}
-                className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider border transition-colors ${
-                  magazine === m.key
-                    ? "bg-[#e30613] text-white border-[#e30613]"
-                    : "text-zinc-500 border-transparent hover:text-zinc-900 dark:hover:text-zinc-100"
-                }`}
-              >
-                {m.shortName}
-              </button>
-            ))}
-          </div>
-        </div>
+        {magazineList.map((m) => (
+          <button key={m.key} id={`segment-${m.key}`}
+            onClick={() => { setMagazine(m.key); setSelectedSample(""); setPressRelease(""); handleReset(); }}>
+            {m.shortName}
+          </button>
+        ))}
       </div>
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
-      <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111] sticky top-0 z-50">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-
-          {/* Left: Brand */}
+      {/* ── HEADER ────────────────────────────────────────────────── */}
+      <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between">
+          {/* Brand */}
           <div className="flex items-center gap-0">
-            {/* DQ red left-border accent mark */}
             <div className="w-1 self-stretch bg-[#e30613] mr-4 flex-shrink-0" />
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-serif text-[17px] font-black leading-none text-zinc-900 dark:text-zinc-50 tracking-tight">
+              <div className="flex items-baseline gap-2.5">
+                <span className="font-serif text-[19px] font-black text-zinc-900 dark:text-zinc-50 leading-none">
                   {mag.name}
                 </span>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 border-l border-zinc-300 dark:border-zinc-700 pl-2 ml-0.5">
+                <span className="text-[10px] font-semibold text-zinc-400 tracking-wider uppercase">
                   Editorial AI
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 tracking-wide">
-                {mag.tagline}
-              </p>
+              <p className="text-[10px] text-zinc-400 mt-0.5">{mag.tagline}</p>
             </div>
           </div>
-
-          {/* Right: Controls */}
-          <div className="flex items-center gap-2">
-            {/* API Key — hidden for editorial review */}
+          {/* Right */}
+          <div className="flex items-center gap-3">
+            {/* API Key — hidden */}
             <div className="hidden">
               <div className="relative">
                 {isApiKeySaved ? (
-                  <div className="flex items-center gap-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">API Key Set</span>
-                    <button
-                      onClick={handleClearApiKey}
-                      className="ml-1 text-zinc-400 hover:text-[#e30613] transition-colors text-xs font-bold"
-                      title="Remove API Key"
-                    >
-                      ×
-                    </button>
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-3.5 h-3.5" />API Key Set
+                    <button onClick={handleClearApiKey} className="text-zinc-400 hover:text-[#e30613] ml-1 font-bold">×</button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-                  >
-                    <Key className="w-3 h-3" />
-                    API Key
+                  <button onClick={() => setShowApiKey(!showApiKey)} className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+                    <Key className="w-3 h-3" /> API Key
                   </button>
                 )}
-
-                {/* API Key Dropdown */}
                 {showApiKey && !isApiKeySaved && (
                   <div className="absolute right-0 mt-2 w-80 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#1a1a1a] shadow-xl z-50 animate-slideDown">
                     <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                        Google Gemini API Key
-                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Gemini API Key</p>
                     </div>
                     <form onSubmit={handleSaveApiKey} className="p-4 space-y-3">
-                      <input
-                        type="password"
-                        placeholder="AIza..."
-                        value={customApiKey}
+                      <input type="password" placeholder="AIza..." value={customApiKey}
                         onChange={(e) => setCustomApiKey(e.target.value)}
-                        className={inputCls + " font-mono text-xs"}
-                        required
-                      />
-                      <p className="text-[10px] text-zinc-400 leading-relaxed">
-                        Stored in session only. Falls back to server <code className="text-[#e30613]">GEMINI_API_KEY</code> if not set.
-                      </p>
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setShowApiKey(false)}
-                          className="flex-1 py-2 text-[11px] font-semibold uppercase tracking-wide border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="flex-1 py-2 text-[11px] font-bold uppercase tracking-wide bg-[#e30613] text-white hover:bg-[#b8040f] transition-colors"
-                        >
-                          Save Key
-                        </button>
+                        className={inputCls + " font-mono text-xs"} required />
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => setShowApiKey(false)}
+                          className="flex-1 py-2 text-[11px] font-semibold border border-zinc-200 dark:border-zinc-700 text-zinc-500 uppercase tracking-wide">Cancel</button>
+                        <button type="submit"
+                          className="flex-1 py-2 text-[11px] font-bold bg-[#e30613] text-white hover:bg-[#b8040f] uppercase tracking-wide transition-colors">Save</button>
                       </div>
                     </form>
                   </div>
                 )}
               </div>
             </div>
-
             <ThemeToggle />
           </div>
         </div>
       </header>
 
-      {/* ── MAIN LAYOUT ─────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-px items-start lg:border-x border-zinc-200 dark:border-zinc-800">
+      {/* ── MAIN ──────────────────────────────────────────────────── */}
+      <main className="flex-1 min-h-0 max-w-6xl mx-auto w-full px-4 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:items-stretch lg:overflow-hidden">
 
-        {/* ─── LEFT COLUMN: Input Form ─────────────────────────────────── */}
-        <section className="lg:col-span-5 lg:border-r border-zinc-200 dark:border-zinc-800">
+        {/* ─── LEFT: INPUT FORM ──────────────────────────────────── */}
+        <section className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 flex flex-col h-full min-h-0 overflow-hidden">
 
-          {/* Panel header */}
-          <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-200 dark:border-zinc-800">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400">
-              Input — Press Release
+          {/* Panel title */}
+          <div className="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-[#1a1a1a] flex-shrink-0">
+            <h2 className="text-[14px] font-bold text-zinc-800 dark:text-zinc-200">
+              Create Article
+            </h2>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              Follow the 3 steps below to generate a ready-to-publish article.
             </p>
-            {pressRelease.trim() && (
-              <button
-                onClick={handleClearPR}
-                className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 hover:text-[#e30613] transition-colors"
-              >
-                <Trash2 className="w-3 h-3" />
-                Clear
-              </button>
-            )}
           </div>
 
-          <div className="px-5 py-5 space-y-5">
+          <div className="flex-1 min-h-0 overflow-y-auto scroller px-5 py-5 space-y-6">
 
-            {/* — Textarea — */}
+            {/* ── STEP 1: Paste Press Release ── */}
             <div>
-              <label className={sectionLabel}>
-                Press Release Content <span className="text-[#e30613]">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="flex items-center text-[14px] font-bold text-zinc-800 dark:text-zinc-200">
+                  <span className={stepBadge}>1</span>
+                  Paste the Press Release
+                  <InfoTooltip text="Paste the full press release, product announcement, or raw article text. The AI will extract facts, executive quotes, and India market angles to write the story." />
+                </h3>
+                {pressRelease.trim() && (
+                  <button onClick={handleClearPR}
+                    className="flex items-center gap-1 text-[12px] text-zinc-400 hover:text-[#e30613] transition-colors font-medium">
+                    <Trash2 className="w-3.5 h-3.5" /> Clear
+                  </button>
+                )}
+              </div>
+              <p className="text-[12px] text-zinc-400 mb-3 ml-8">
+                Copy the full press release text and paste it below.
+              </p>
               <div className="relative">
                 <textarea
-                  placeholder="Paste corporate press release or raw article text here..."
+                  placeholder="Paste the full press release or article text here..."
                   value={pressRelease}
                   onChange={(e) => { setPressRelease(e.target.value); setSelectedSample(""); }}
-                  rows={11}
-                  className="textarea-editor scroller"
+                  rows={8}
+                  className="textarea-editor scroller w-full resize-none"
                   spellCheck={false}
                 />
                 {pressRelease.trim() && (
-                  <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-zinc-400 dark:text-zinc-600 pointer-events-none">
+                  <div className="absolute bottom-3 right-3 text-[11px] font-mono bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 text-zinc-400">
                     {wordCount.toLocaleString()} words
                   </div>
                 )}
               </div>
             </div>
 
-            {/* — Sample PR Selector — */}
+            {/* Divider */}
+            <hr className="border-zinc-100 dark:border-zinc-800" />
+
+            {/* ── STEP 2: Choose Article Type ── */}
             <div>
-              <label className={sectionLabel} htmlFor="sample-pr-selector">
-                Or load a sample ({mag.shortName})
-              </label>
-              <div className="relative">
-                <select
-                  id="sample-pr-selector"
-                  value={selectedSample}
-                  onChange={handleSampleChange}
-                  className={selectCls}
-                >
-                  <option value="">— Select sample press release —</option>
-                  {filteredSamples.map((pr) => (
-                    <option key={pr.id} value={pr.id}>{pr.title}</option>
-                  ))}
-                </select>
-                <ChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none rotate-90" />
+              <h3 className="flex items-center text-[14px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                <span className={stepBadge}>2</span>
+                Choose Article Type
+                <InfoTooltip text="Select the editorial format: News Story for breaking news, Interview Q&A for question-and-answer format, Opinion for expert viewpoints, Feature for deep-dive analysis, or Case Study for customer success stories." />
+              </h3>
+              <p className="text-[12px] text-zinc-400 mb-3 ml-8">
+                Select the format that best matches the press release content.
+              </p>
+              <div className="ml-8 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {articleTypes.map((type) => {
+                  const IconComponent = type.icon;
+                  const isSelected = topicType === type.id;
+                  return (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => {
+                        setTopicType(type.id as any);
+                        if (defaultPrompts[type.id as keyof typeof defaultPrompts]) {
+                          setCustomPrompt(defaultPrompts[type.id as keyof typeof defaultPrompts]);
+                        }
+                      }}
+                      className={`flex items-start gap-3 p-3 border text-left transition-all ${
+                        isSelected
+                          ? "border-[#e30613] bg-[#e30613]/5 text-zinc-900 dark:text-zinc-100"
+                          : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111] hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-700 dark:text-zinc-300"
+                      }`}
+                    >
+                      <div className={`p-1.5 border flex-shrink-0 mt-0.5 ${
+                        isSelected ? "border-[#e30613] bg-[#e30613] text-white" : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                      }`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold leading-tight">{type.label}</p>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 leading-snug">{type.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* ─── Divider ── */}
-            <hr className="rule-editorial" />
+            {/* Divider */}
+            <hr className="border-zinc-100 dark:border-zinc-800" />
 
-            {/* — Parameters section — */}
+            {/* ── STEP 3: Settings ── */}
             <div>
-              <p className={sectionLabel}>Generation Parameters</p>
+              <h3 className="flex items-center text-[14px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                <span className={stepBadge}>3</span>
+                Article Settings
+                <InfoTooltip text="Fine-tune word length, writing tone, custom cover image generation, and internal publication links." />
+              </h3>
+              <p className="text-[12px] text-zinc-400 mb-4 ml-8">
+                Adjust these options before generating. The defaults work well for most articles.
+              </p>
 
-              <div className="grid grid-cols-2 gap-3">
-
-                {/* Topic Type */}
+              <div className="ml-8 space-y-4">
+                {/* Article length */}
                 <div>
-                  <label className="text-[10px] text-zinc-400 block mb-1.5 tracking-wide">
-                    Topic Type <span className="text-[#e30613]">*</span>
+                  <label className={labelCls} htmlFor="word-preset">
+                    Article Length
+                    <InfoTooltip text="Choose your target word count: Short (~500w), Medium (~700w), Long (~1000w), or Feature (1200+w)." />
                   </label>
                   <div className="relative">
                     <select
-                      value={topicType}
-                      onChange={(e) => {
-                        const val = e.target.value as any;
-                        setTopicType(val);
-                        if (val && defaultPrompts[val as keyof typeof defaultPrompts]) {
-                          setCustomPrompt(defaultPrompts[val as keyof typeof defaultPrompts]);
-                        }
-                      }}
+                      id="word-preset"
+                      value={wordPreset}
+                      onChange={(e) => setWordPreset(e.target.value as keyof typeof wordPresets)}
                       className={selectCls}
                     >
-                      <option value="" disabled>— Select —</option>
-                      <option value="News">News Story</option>
-                      <option value="Interview">Interview Q&A</option>
-                      <option value="Opinion">Opinion / Editorial</option>
-                      <option value="Feature">Feature / Long-form</option>
-                      <option value="CaseStudy">Case Study</option>
+                      {Object.entries(wordPresets).map(([key, { label }]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
                     </select>
-                    <ChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none rotate-90" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
                   </div>
                 </div>
 
-                {/* Word count */}
-                <div>
-                  <label className="text-[10px] text-zinc-400 block mb-1.5 tracking-wide">
-                    Word Range
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="number" min={100} max={2000} value={minWords}
-                      onChange={(e) => setMinWords(parseInt(e.target.value) || 0)}
-                      className={inputCls + " text-center font-mono"}
-                      placeholder="Min"
-                    />
-                    <span className="text-zinc-300 dark:text-zinc-700 text-sm flex-shrink-0">–</span>
-                    <input
-                      type="number" min={200} max={3000} value={maxWords}
-                      onChange={(e) => setMaxWords(parseInt(e.target.value) || 0)}
-                      className={inputCls + " text-center font-mono"}
-                      placeholder="Max"
-                    />
-                  </div>
+                {/* Checkboxes */}
+                <div className="space-y-3">
+                  {[
+                    {
+                      id: "humanize",
+                      checked: humanize,
+                      onChange: setHumanize,
+                      label: "Write in a natural, human tone",
+                      hint: "Makes the article sound like it was written by a journalist, not a machine.",
+                      info: "Uses advanced writing patterns to ensure the article sounds like a senior Dataquest journalist and bypasses automated AI detectors."
+                    },
+                    {
+                      id: "generateImage",
+                      checked: generateImage,
+                      onChange: setGenerateImage,
+                      label: "Generate a cover image",
+                      hint: "Automatically creates a banner image for the article.",
+                      info: "Uses Google Imagen 4.0 AI to automatically render a custom header banner for your article."
+                    },
+                    {
+                      id: "referencePCQuest",
+                      checked: referencePCQuest,
+                      onChange: setReferencePCQuest,
+                      label: `Link to related ${mag.name} articles`,
+                      hint: "Adds links to relevant past coverage from our publication.",
+                      info: "Embeds internal hyperlinks and references to relevant past reporting to boost SEO topical authority."
+                    },
+                  ].map((opt) => (
+                    <label key={opt.id} htmlFor={opt.id} className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        id={opt.id}
+                        checked={opt.checked}
+                        onChange={(e) => opt.onChange(e.target.checked)}
+                        className="checkbox-editorial mt-0.5"
+                      />
+                      <div>
+                        <p className="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors inline-flex items-center">
+                          {opt.label}
+                          <InfoTooltip text={opt.info} />
+                        </p>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 leading-snug">
+                          {opt.hint}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
                 </div>
-              </div>
 
-              {/* Custom tone prompt */}
-              <div className="mt-3">
-                <label className="text-[10px] text-zinc-400 block mb-1.5 tracking-wide">
-                  Custom Style / Tone Notes
-                  <span className="ml-1 text-zinc-300 dark:text-zinc-700">(optional)</span>
-                </label>
-                <textarea
-                  placeholder="e.g. Focus on cybersecurity impact; formal analyst tone..."
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  rows={2}
-                  className={inputCls + " resize-none text-[12px]"}
-                />
-              </div>
-            </div>
+                {/* Advanced toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center gap-1.5 text-[12px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mt-1"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  {showAdvanced ? "Hide" : "Show"} advanced options
+                  {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
 
-            {/* ─── Divider ── */}
-            <hr className="rule-editorial" />
-
-            {/* — Option toggles — */}
-            <div>
-              <p className={sectionLabel}>Options</p>
-              <div className="space-y-2.5">
-                {[
-                  { id: "humanize", checked: humanize, onChange: setHumanize, label: "Bypass AI detectors — human-like style" },
-                  { id: "generateImage", checked: generateImage, onChange: setGenerateImage, label: "Generate cover banner (Imagen 4.0)" },
-                  { id: "referencePCQuest", checked: referencePCQuest, onChange: setReferencePCQuest, label: `Cross-reference ${mag.name} coverage` },
-                ].map((opt) => (
-                  <label
-                    key={opt.id}
-                    htmlFor={opt.id}
-                    className="flex items-center gap-2.5 cursor-pointer group"
-                  >
-                    <input
-                      type="checkbox"
-                      id={opt.id}
-                      checked={opt.checked}
-                      onChange={(e) => opt.onChange(e.target.checked)}
-                      className="checkbox-editorial"
+                {showAdvanced && (
+                  <div className="border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 animate-fadeIn">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Advanced — Editorial Tone Notes</p>
+                    <p className="text-[12px] text-zinc-400">
+                      Optionally add specific instructions for the AI. For example: "Focus on cybersecurity impact" or "Use a formal analyst tone."
+                    </p>
+                    <textarea
+                      placeholder="Optional: Add any specific tone or focus instructions here..."
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      rows={3}
+                      className={inputCls + " resize-none text-[13px]"}
                     />
-                    <span className="text-[12px] text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors select-none leading-tight">
-                      {opt.label}
-                    </span>
-                  </label>
-                ))}
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Custom Word Range</p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <label className="text-[11px] text-zinc-400 block mb-1">Min words</label>
+                          <input type="number" min={100} max={2000} value={minWords}
+                            onChange={(e) => setMinWords(parseInt(e.target.value) || 0)}
+                            className={inputCls + " text-center font-mono"} />
+                        </div>
+                        <span className="text-zinc-300 dark:text-zinc-600 mt-4 text-lg">–</span>
+                        <div className="flex-1">
+                          <label className="text-[11px] text-zinc-400 block mb-1">Max words</label>
+                          <input type="number" min={200} max={3000} value={maxWords}
+                            onChange={(e) => setMaxWords(parseInt(e.target.value) || 0)}
+                            className={inputCls + " text-center font-mono"} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* ─── Divider ── */}
-            <hr className="rule-editorial" />
+            {/* Divider */}
+            <hr className="border-zinc-100 dark:border-zinc-800" />
 
-            {/* — Generate CTA — */}
-            <div className="space-y-2">
+            {/* ── GENERATE BUTTON ── */}
+            <div className="space-y-3">
+              {/* Validation hints */}
+              {!pressRelease.trim() && (
+                <p className="text-[12px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Step 1: Paste a press release first.
+                </p>
+              )}
+              {pressRelease.trim() && !topicType && (
+                <p className="text-[12px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Step 2: Select an article type above.
+                </p>
+              )}
+
               <button
                 onClick={handleGenerate}
-                disabled={status === "generating" || !pressRelease.trim() || !topicType}
-                className={`btn-primary ${
-                  status === "generating"
-                    ? "!bg-zinc-100 dark:!bg-zinc-900 !text-zinc-400 dark:!text-zinc-600 !cursor-wait"
-                    : !pressRelease.trim() || !topicType
-                    ? "!bg-zinc-100 dark:!bg-zinc-900 !text-zinc-400 dark:!text-zinc-600 !cursor-not-allowed"
-                    : ""
-                }`}
+                disabled={!canGenerate}
+                className={`btn-primary text-[13px] py-4 gap-2.5 ${!canGenerate ? "!bg-zinc-200 dark:!bg-zinc-800 !text-zinc-400 !cursor-not-allowed" : ""}`}
               >
-                <Sparkles className={`w-3.5 h-3.5 ${status === "generating" ? "animate-spin" : ""}`} />
+                <Sparkles className={`w-4 h-4 ${status === "generating" ? "animate-spin" : ""}`} />
                 {status === "generating"
-                  ? `Step ${currentStep} of ${getStepsForTopic().length} — Processing`
-                  : `Generate ${mag.shortName} Editorial Package`}
+                  ? `Processing step ${currentStep} of ${getStepsForTopic().length}...`
+                  : "Generate Article"}
               </button>
 
               {status !== "idle" && (
-                <button onClick={handleReset} className="btn-ghost">
-                  <RotateCcw className="w-3 h-3" />
-                  Reset
+                <button onClick={handleReset} className="btn-ghost text-[12px] py-2.5">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Start over
                 </button>
+              )}
+
+              {status === "error" && errorMessage && !Object.keys(packageData).length && (
+                <div className="flex items-start gap-2 p-3 border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 text-[12px]">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{errorMessage}</span>
+                </div>
               )}
             </div>
 
           </div>
         </section>
 
-        {/* ─── RIGHT COLUMN: Output panel ──────────────────────────────── */}
-        <section className="lg:col-span-7 min-h-[500px] flex flex-col">
+        {/* ─── RIGHT: OUTPUT ─────────────────────────────────────── */}
+        <section className="h-full flex flex-col min-h-0 overflow-hidden">
 
-          {/* 1. Idle state */}
+          {/* 1. Idle */}
           {status === "idle" && (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center border border-dashed border-zinc-200 dark:border-zinc-800 m-4 lg:m-0 lg:border-0 lg:border-dashed">
-              {/* Editorial masthead placeholder */}
-              <div className="w-full max-w-sm space-y-6">
-                <div className="space-y-1 border-b-2 border-zinc-900 dark:border-zinc-100 pb-4">
-                  <p className="label-editorial">Dataquest AI Editorial Copilot</p>
-                  <h2 className="font-serif text-2xl font-black text-zinc-900 dark:text-zinc-100 leading-tight">
-                    Awaiting Input
-                  </h2>
-                  <p className="text-xs text-zinc-400 leading-relaxed mt-2">
-                    Paste a press release on the left and configure your parameters to begin generating a full editorial package.
-                  </p>
-                </div>
+            <div className="h-full flex flex-col bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 min-h-0 overflow-hidden">
+              {/* Header */}
+              <div className="px-6 py-3.5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-[#1a1a1a] flex-shrink-0">
+                <h2 className="text-[14px] font-bold text-zinc-800 dark:text-zinc-200">Article Preview</h2>
+                <p className="text-[11px] text-zinc-400 mt-0.5">Your generated article will appear here.</p>
+              </div>
 
-                {/* What will be generated */}
-                <div className="text-left space-y-2">
-                  {[
-                    ["01", "News Article / Feature / Opinion"],
-                    ["02", "SEO Metadata & Keywords"],
-                    ["03", "Social Media Assets"],
-                    ["04", "Editorial Review Checklist"],
-                    ["05", "AI-generated Cover Banner"],
-                  ].map(([num, label]) => (
-                    <div key={num} className="flex items-center gap-3 py-2 border-b border-zinc-100 dark:border-zinc-800/60">
-                      <span className="text-[10px] font-black text-zinc-300 dark:text-zinc-700 font-mono w-5 shrink-0">{num}</span>
-                      <span className="text-[12px] text-zinc-500 dark:text-zinc-400">{label}</span>
-                    </div>
-                  ))}
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 text-center flex flex-col items-center justify-center scroller">
+                <div className="w-full max-w-xs space-y-5">
+                  {/* Masthead icon */}
+                  <div className="mx-auto w-16 h-16 border-2 border-zinc-200 dark:border-zinc-700 flex items-center justify-center">
+                    <span className="font-serif text-2xl font-black text-zinc-300 dark:text-zinc-700">DQ</span>
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-[18px] font-black text-zinc-700 dark:text-zinc-400 mb-2">
+                      Ready when you are
+                    </h3>
+                    <p className="text-[13px] text-zinc-400 dark:text-zinc-500 leading-relaxed">
+                      Complete the 3 steps on the left and click <strong>"Generate Article"</strong> to get started.
+                    </p>
+                  </div>
+
+                  {/* What you'll get */}
+                  <div className="text-left border-t border-zinc-100 dark:border-zinc-800 pt-5 space-y-3">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">What you'll receive</p>
+                    {[
+                      "Full article text — ready to publish",
+                      "SEO title, meta description & keywords",
+                      "LinkedIn & Twitter posts",
+                      "Editorial review checklist",
+                      "AI-generated cover image",
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-2.5 text-[13px] text-zinc-500 dark:text-zinc-400">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#e30613] flex-shrink-0" />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 2. Generating state */}
+          {/* 2. Generating */}
           {status === "generating" && (
-            <div className="p-4 lg:p-5 space-y-4 flex-1 flex flex-col">
-              <StepProgress
-                currentStep={currentStep}
-                stepMessage={stepMessage}
-                status={status}
-                steps={getStepsForTopic()}
-              />
-
-              {/* Skeleton article preview */}
-              <div className="flex-1 border border-zinc-200 dark:border-zinc-800 p-5 space-y-4 animate-pulse">
-                <div className="h-3 w-20 bg-zinc-100 dark:bg-zinc-800" />
-                <div className="h-5 w-3/4 bg-zinc-200 dark:bg-zinc-700" />
-                <div className="h-3 w-1/2 bg-zinc-100 dark:bg-zinc-800" />
+            <div className="space-y-4 h-full flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-shrink-0">
+                <StepProgress
+                  currentStep={currentStep}
+                  stepMessage={stepMessage}
+                  status={status}
+                  steps={getStepsForTopic()}
+                />
+              </div>
+              {/* Skeleton */}
+              <div className="flex-1 min-h-0 overflow-y-auto scroller bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 p-6 space-y-4 animate-pulse">
+                <div className="h-3 w-24 bg-zinc-100 dark:bg-zinc-800" />
+                <div className="h-6 w-3/4 bg-zinc-200 dark:bg-zinc-700" />
+                <div className="h-4 w-1/2 bg-zinc-100 dark:bg-zinc-800" />
                 <hr className="border-zinc-100 dark:border-zinc-800" />
-                <div className="space-y-2 pt-1">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className={`h-2.5 bg-zinc-100 dark:bg-zinc-800 ${i % 3 === 2 ? "w-4/5" : "w-full"}`} />
-                  ))}
-                </div>
-                <div className="h-4 w-1/3 bg-zinc-100 dark:bg-zinc-800 mt-2" />
-                <div className="space-y-2">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className={`h-2.5 bg-zinc-100 dark:bg-zinc-800 ${i % 4 === 3 ? "w-2/3" : "w-full"}`} />
-                  ))}
-                </div>
+                {[...Array(7)].map((_, i) => (
+                  <div key={i} className={`h-3 bg-zinc-100 dark:bg-zinc-800 ${i % 3 === 2 ? "w-4/5" : "w-full"}`} />
+                ))}
               </div>
             </div>
           )}
 
-          {/* 3. Completed state */}
+          {/* 3. Completed */}
           {status === "completed" && (
-            <div className="flex-1 flex flex-col animate-fadeIn">
+            <div className="flex-1 h-full min-h-0 flex flex-col animate-fadeIn overflow-hidden">
               <OutputPanel packageData={packageData} />
             </div>
           )}
 
-          {/* 4. Error state */}
+          {/* 4. Error */}
           {status === "error" && (
-            <div className="p-4 lg:p-5 space-y-4 flex-1 flex flex-col">
-              <StepProgress
-                currentStep={currentStep}
-                stepMessage={stepMessage}
-                status={status}
-                errorMessage={errorMessage}
-                steps={getStepsForTopic()}
-              />
-
+            <div className="space-y-4 h-full flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-shrink-0">
+                <StepProgress
+                  currentStep={currentStep}
+                  stepMessage={stepMessage}
+                  status={status}
+                  errorMessage={errorMessage}
+                  steps={getStepsForTopic()}
+                />
+              </div>
               {Object.keys(packageData).length > 0 && (
-                <div className="flex-1 border border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                <div className="flex-1 min-h-0 border border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 text-[12px] font-semibold text-zinc-500 uppercase tracking-wide flex-shrink-0">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                     Partial output — generated before failure
                   </div>
-                  <div className="flex-1">
-                    <OutputPanel packageData={packageData} />
-                  </div>
+                  <div className="flex-1 min-h-0 overflow-hidden"><OutputPanel packageData={packageData} /></div>
                 </div>
               )}
             </div>
@@ -609,13 +684,13 @@ export default function Dashboard() {
         </section>
       </main>
 
-      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+      {/* ── FOOTER ────────────────────────────────────────────────── */}
       <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111]">
-        <div className="max-w-screen-xl mx-auto px-6 h-10 flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 h-10 flex items-center justify-between">
+          <p className="text-[11px] font-semibold text-zinc-300 dark:text-zinc-600 uppercase tracking-widest">
             {mag.name} · AI Editorial Copilot
           </p>
-          <p className="text-[10px] text-zinc-300 dark:text-zinc-600">
+          <p className="text-[11px] text-zinc-300 dark:text-zinc-600">
             Powered by Google Gemini · Internal Tool
           </p>
         </div>
