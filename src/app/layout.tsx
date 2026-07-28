@@ -10,6 +10,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Dataquest AI Editorial Copilot",
   description: "Transform press releases into Dataquest-quality editorial content — powered by Google Gemini.",
+  icons: {
+    icon: "/feviconicon.webp",
+    shortcut: "/feviconicon.webp",
+    apple: "/feviconicon.webp",
+  },
 };
 
 export default function RootLayout({
