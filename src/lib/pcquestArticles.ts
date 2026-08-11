@@ -1,107 +1,233 @@
 // ─────────────────────────────────────────────────────────────
 // pcquestArticles.ts
-// Reference article database for PCQuest (pcquest.com).
-//
-// STATUS: PLACEHOLDER — seeded with representative entries.
-// Replace / extend once editorial team shares the actual article list.
+// Official Reference article database for PCQuest (pcquest.com).
+// Populated directly from PCQ (2).csv
 // ─────────────────────────────────────────────────────────────
 
-export interface PCQuestArticle {
+export interface PCQArticle {
   title: string;
   url: string;
   snippet: string;
 }
 
-export const pcquestArticlesDb: Record<string, PCQuestArticle[]> = {
-  hp: [
+export const pcquestArticlesDb: Record<string, PCQArticle[]> = {
+  "smartphones": [
     {
-      title: "HP CES 2026 Announcements: Focus on AI Laptops, Gaming Upgrades, and Chromebook Innovations",
-      url: "https://www.pcquest.com/news-launches/hp-ces-2026-announcements-focus-on-ai-laptops-gaming-upgrades-and-chromebook-innovations-10975233",
-      snippet: "HP showcases its latest AI-powered OmniBook laptops, new HyperX gaming peripherals, and refreshed enterprise EliteBook models at CES 2026."
+      "title": "Choose the Best Smartphone: List of 30+ Mobiles",
+      "url": "https://www.pcquest.com/choose-the-best-smartphone-list-of-30-mobiles/",
+      "snippet": "Buying guide covering processor, RAM, display, camera, battery for 30+ mobiles from budget to flagship."
     },
     {
-      title: "Best HP Laptops Under 50,000 in India",
-      url: "https://www.pcquest.com/computers-laptops/best-hp-laptops-under-50000-8919695",
-      snippet: "A detailed guide on top budget-friendly HP laptops under Rs 50,000 in India, covering hardware configurations, performance metrics, and build quality."
-    },
-    {
-      title: "Top 5 Laptops Under 50,000 in India for 2025",
-      url: "https://www.pcquest.com/computers-laptops/top-5-laptops-under-50000-in-india-for-2025-8688605",
-      snippet: "Comparing leading laptop brands in India under the 50K budget, highlighting HP Victus and HP 15s performance and value."
+      "title": "June 2026 smartphone launches in India are changing what buyers can expect",
+      "url": "https://www.pcquest.com/smartphones/june-2026-smartphone-launches-in-india-are-changing-what-buyers-can-expect/",
+      "snippet": "June 2026 cycle unusually competitive with flagships and budget launches arriving together."
     }
   ],
-  infosys: [
+  "infinix": [
     {
-      title: "Infosys Nia: Next-Generation Artificial Intelligence Platform Launched",
-      url: "https://www.pcquest.com/it-services/infosys-nia-next-generation-artificial-intelligence-platform-launched-912345",
-      snippet: "Infosys launches Nia, a unified AI platform that helps enterprises automate complex business tasks, predict customer behavior, and scale operations."
-    },
-    {
-      title: "Infosys Invests in Indian Drone Startup ideaForge",
-      url: "https://www.pcquest.com/it-services/infosys-invests-in-ideaforge-drone-startup-812345",
-      snippet: "Infosys announces a strategic investment in ideaForge to integrate advanced unmanned aerial systems (UAVs) with industrial AI and cloud solutions."
-    },
-    {
-      title: "Infosys Redesigns Corporate Website to be Mobile-Responsive on Azure",
-      url: "https://www.pcquest.com/it-services/infosys-redesigns-corporate-website-on-azure-712345",
-      snippet: "Infosys migrates its global online portal to Microsoft Azure and Akamai CDN, delivering adaptive web layouts and instant load speeds globally."
+      "title": "Infinix GT 30 Pro: What makes the latest Infinix phone, a gaming phone?",
+      "url": "https://www.pcquest.com/smartphones/infinix-gt-30-pro-what-makes-the-latest-infinix-phone-a-gaming-phone-9308720",
+      "snippet": "144Hz AMOLED, 520Hz shoulder triggers, RGB LEDs, Dimensity 8350 Ultimate, 120fps BGMI support."
     }
   ],
-  deloitte: [
+  "oneplus": [
     {
-      title: "Deloitte India and Zoho Partner to Drive Digital Transformation",
-      url: "https://www.pcquest.com/news-launches/deloitte-india-partners-with-zoho-to-accelerate-digital-transformation-10123456",
-      snippet: "Deloitte India collaborates with Zoho to deploy enterprise SaaS solutions, custom AI systems, and automated ERP workflows across key industries."
-    },
-    {
-      title: "Indian Sports Tech Market Projected to Reach $495 Billion by 2029: FIFS-Deloitte Report",
-      url: "https://www.pcquest.com/sports-tech/sports-technology-sector-in-india-to-reach-495-billion-by-2029-fifs-deloitte-report-10111222",
-      snippet: "FIFS and Deloitte joint report highlights rapid adoption of sports analytics, fantasy gaming, and digital broadcasting tech in India."
-    },
-    {
-      title: "Ransomware Group Brain Cipher Targets Deloitte UK in Alleged Data Breach",
-      url: "https://www.pcquest.com/security/cybersecurity-alert-ransomware-group-brain-cipher-claims-deloitte-uk-data-breach-10222333",
-      snippet: "Cybersecurity researchers investigate claims of a ransomware attack targeting Deloitte UK network, prompting reviews of cloud-edge firewalls."
+      "title": "OnePlus Turbo: Is this OnePlus' first true gaming phone?",
+      "url": "https://www.pcquest.com/smartphones/oneplus-turbo-is-this-oneplus-first-true-gaming-phone-10947059",
+      "snippet": "Leak reveals 9000mAh silicon-carbon battery, Snapdragon 8s Gen 4, 165Hz BOE OLED for gaming."
     }
   ],
-  fynd: [
+  "motorola": [
     {
-      title: "Fynd Unveils Innovative AI Fashion Solutions for Retailers in India",
-      url: "https://www.pcquest.com/news-launches/fynd-unveils-innovative-ai-fashion-solutions-for-retailers-in-india-10333444",
-      snippet: "Fynd showcases design intelligence platforms at retail tech conferences, enabling fashion brands to optimize inventory dynamically."
+      "title": "Motorola Signature long term review: Slim flagship that still holds up",
+      "url": "https://www.pcquest.com/reviews/motorola-signature-long-term-review-11833097",
+      "snippet": "3-month review: 7mm slim, 6.8-inch 165Hz LTPO, Snapdragon 8 Gen 5, 50W wireless, heating and camera quirks."
+    }
+  ],
+  "pcquest": [
+    {
+      "title": "Best smartphones of 2025: Is your phone on the premium list?",
+      "url": "https://www.pcquest.com/smartphones/best-smartphones-of-2025-is-your-phone-on-the-premium-list/",
+      "snippet": "Premium list including iPhone 17 with 120Hz LTPO OLED and larger battery for workplace and content creation."
+    }
+  ],
+  "gaming-infinix": [
+    {
+      "title": "Infinix GT 30 Pro gaming features deep dive",
+      "url": "https://www.pcquest.com/smartphones/infinix-gt-30-pro-what-makes-the-latest-infinix-phone-a-gaming-phone-9308720",
+      "snippet": "XBoost Gaming Engine and AI VC cooling for consistent peak performance during long sessions."
+    }
+  ],
+  "gaming-oneplus": [
+    {
+      "title": "OnePlus Turbo massive battery and 165Hz display for gaming",
+      "url": "https://www.pcquest.com/smartphones/oneplus-turbo-is-this-oneplus-first-true-gaming-phone-10947059",
+      "snippet": "9,000mAh battery with 100W charging and Fengchi gaming kernel positions Turbo vs ROG Phone 8."
+    }
+  ],
+  "gaminglaptops": [
+    {
+      "title": "5 Best Gaming Laptops Under Rs 60,000",
+      "url": "https://www.pcquest.com/computers-laptops/5-best-gaming-laptops-under-60000/",
+      "snippet": "Infinix GT Book, Lenovo LOQ, Acer ALG with RTX 3050, 144Hz panels for budget gaming."
     },
     {
-      title: "Retail Technology Trends Transforming the Indian Market",
-      url: "https://www.pcquest.com/it-services/retail-technology-trends-transforming-the-indian-market-10444555",
-      snippet: "An analysis of the Indian retail landscape, exploring how omni-channel platforms backed by Reliance Retail are modernizing supplier chains."
+      "title": "Best gaming laptop under 60000 in India",
+      "url": "https://www.pcquest.com/computers-laptops/best-gaming-laptop-under-60000-in-india-8948058",
+      "snippet": "GTBook punches above price with RTX 3050 and 16-inch WUXGA, Victus synonymous with value gaming."
     }
   ],
-  mercury: [
+  "gaming-ubisoft": [
     {
-      title: "Smart Access Control Systems Redefining Enterprise Security Infrastructure",
-      url: "https://www.pcquest.com/security/smart-access-control-systems-redefining-enterprise-security-infrastructure-10555666",
-      snippet: "Exploring open-architecture controllers and hardware integrations at the physical security edge to reduce latency and enhance safety."
+      "title": "Assassin's Creed Black Flag Resynced Gameplay Leaks - PS5 Pro Footage Surfaces",
+      "url": "https://www.pcquest.com/gaming/assassins-creed-black-flag-resynced-gameplay-leaks-ps5-pro-footage-surfaces/",
+      "snippet": "Resynced version releasing July 9 2026 for PS5, Xbox Series X/S, PC, 4-hour leak acknowledged."
     }
   ],
-  krisp: [
+  "gaming-industry": [
     {
-      title: "Voice AI Technologies Witnessing Massive Adoption in Indian BPOs",
-      url: "https://www.pcquest.com/it-services/voice-ai-technologies-witnessing-massive-adoption-in-indian-bpos-10666777",
-      snippet: "How contact centers are deploying real-time noise cancellation, speech optimization, and agent-assistance AI to boost CSAT scores."
+      "title": "Impact of cloud gaming on the Industry",
+      "url": "https://www.pcquest.com/gaming/impact-of-cloud-gaming-on-the-industry/",
+      "snippet": "Mobile gaming advancements, hyper-casual growth and cloud enabling rapid user base growth."
+    }
+  ],
+  "cybersecurity": [
+    {
+      "title": "Internal Audit and its Larger Role In Enhancing Cybersecurity",
+      "url": "https://www.pcquest.com/internal-audit-larger-role-enhancing-cybersecurity/",
+      "snippet": "Three lines of defence model, IIA report on internal audit as trusted cyber-adviser post WannaCry."
+    },
+    {
+      "title": "How AI Is Revolutionizing Cybersecurity (And Why You Should Care)",
+      "url": "https://www.pcquest.com/security-products/how-ai-is-revolutionizing-cybersecurity-7318445",
+      "snippet": "AI for real-time network traffic analysis, anomaly detection for zero-day, Darktrace ransomware case."
+    },
+    {
+      "title": "Beneath the Code: Where Real Cybersecurity Begins",
+      "url": "https://www.pcquest.com/security/beneath-the-code-where-real-cybersecurity-begins/",
+      "snippet": "Cybersecurity moves below surface - starts when power hits the board, hardware root of trust."
+    },
+    {
+      "title": "AI is rewriting cybersecurity but trust must lead the code",
+      "url": "https://www.pcquest.com/security/ai-is-rewriting-cybersecurity-but-trust-must-lead-the-code/",
+      "snippet": "AI in cybersecurity market $22.4B in 2023 to $60B in 2028, proactive threat ID and response."
+    },
+    {
+      "title": "Cybersecurity in the digital supply chain: A war without borders",
+      "url": "https://www.pcquest.com/security/cybersecurity-in-the-digital-supply-chain-a-war-without-borders/",
+      "snippet": "Convergence of AI, ML, data science and predictive analytics for supply chain security."
+    },
+    {
+      "title": "Cybersecurity Trends: Evolving Threats & Defense Strategies",
+      "url": "https://www.pcquest.com/security/cybersecurity-trends-evolving-threats-defense-strategies/",
+      "snippet": "IBM Watson for Cybersecurity AI-based threat intelligence and emerging defense strategies."
+    }
+  ],
+  "ai": [
+    {
+      "title": "How AI Is Revolutionizing Cybersecurity (And Why You Should Care)",
+      "url": "https://www.pcquest.com/security-products/how-ai-is-revolutionizing-cybersecurity-7318445",
+      "snippet": "AI for real-time network traffic analysis, anomaly detection for zero-day, Darktrace ransomware case."
+    },
+    {
+      "title": "AI - From Tools to Intelligent Partners",
+      "url": "https://www.pcquest.com/artificial-intelligence/ai-from-tools-to-intelligent-partners-8845657",
+      "snippet": "AI-powered wheelchairs, prosthetics, sign language translation turning assistive tools into partners."
+    },
+    {
+      "title": "How AI is reshaping enterprise hiring",
+      "url": "https://www.pcquest.com/artificial-intelligence/how-ai-is-reshaping-enterprise-hiring-9527763",
+      "snippet": "LLMs and agentic AI automating JD creation, multilingual sourcing, bias mitigation at Cohyre.ai."
+    },
+    {
+      "title": "What Samsung's Galaxy AI Isn't Telling You",
+      "url": "https://www.pcquest.com/artificial-intelligence/what-samsungs-galaxy-ai-isnt-telling-you-10947790",
+      "snippet": "Galaxy AI hybrid NPU + Gemini, 400M devices, Now Brief Energy Score, 2026 paywall for cloud features."
+    },
+    {
+      "title": "India's AI engines are powerful but the data roads are broken",
+      "url": "https://www.pcquest.com/artificial-intelligence/indias-ai-engines-are-powerful-but-the-data-roads-are-broken-12148222",
+      "snippet": "Confluent 2026 Report: 79% Indian IT leaders say weak real-time data infra slowing AI scale."
+    },
+    {
+      "title": "Building responsible and resilient AI ecosystems",
+      "url": "https://www.pcquest.com/artificial-intelligence/building-responsible-and-resilient-ai-ecosystems-9086977",
+      "snippet": "Prof Aindril De on data governance, legacy integration, human-AI synergy and bias audits."
+    },
+    {
+      "title": "What's Coming in 2025: The Future of AI and ML",
+      "url": "https://www.pcquest.com/artificial-intelligence/whats-coming-in-2025-the-future-of-ai-and-ml/",
+      "snippet": "AI integration of diverse data types, hyper-personalized healthcare and climate modeling future."
+    }
+  ],
+  "reviews": [
+    {
+      "title": "ASUS Vivobook 14 (X1407AA LY028WS) Review: A Copilot+ PC Built for Actual Work",
+      "url": "https://www.pcquest.com/reviews/asus-vivobook-14-x1407aa-ly028ws-review-11899379",
+      "snippet": "Copilot+ with Intel Core Ultra 5 325, 16GB DDR5, 10-hour battery, 60Hz limitation noted."
+    },
+    {
+      "title": "Motorola Signature long term review",
+      "url": "https://www.pcquest.com/reviews/motorola-signature-long-term-review-11833097",
+      "snippet": "Slim flagship 30,37,534 AnTuTu, UFS 4.X storage, 90W wired 50W wireless charging, 5200mAh battery."
+    },
+    {
+      "title": "Noise Master Buds 2 review clean sound with a few daily use quirks",
+      "url": "https://www.pcquest.com/reviews/noise-master-buds-2-review-clean-sound-with-a-few-daily-use-quirks-11785174",
+      "snippet": "Bose-tuned, LHDC 5.0, 51 dB ANC, 10mm drivers at Rs 8,999, fit and transparency need polish."
+    },
+    {
+      "title": "Philips 8100 Series 43-inch 4K LED Smart TV review: big features, budget price",
+      "url": "https://www.pcquest.com/reviews/philips-8100-series-43-inch-4k-led-smart-tv-review-10978141",
+      "snippet": "Dolby Vision Atmos Google TV at Rs 22,499, 30W speakers, ALLM for casual gaming."
+    },
+    {
+      "title": "Tempt Cameo Bluetooth Speaker Review: Style Meets Everyday Sound",
+      "url": "https://www.pcquest.com/reviews/reviews/tempt-cameo-bluetooth-speaker-review-style-meets-everyday-sound-10607671",
+      "snippet": "230g portable, Bluetooth 5.3 TWS, 3.5-4 hours at moderate volume for Rs 1,099."
+    },
+    {
+      "title": "QCY H3 Pro Review: Budget Price, Premium Punch",
+      "url": "https://www.pcquest.com/reviews/qcy-h3-pro-review-budget-price-premium-punch/",
+      "snippet": "LDAC support and ANC at budget price, comfortable for long use in 2025."
+    }
+  ],
+  "enterprise": [
+    {
+      "title": "How AI is reshaping enterprise hiring",
+      "url": "https://www.pcquest.com/artificial-intelligence/how-ai-is-reshaping-enterprise-hiring-9527763",
+      "snippet": "LLMs and agentic AI automating JD creation, multilingual sourcing, bias mitigation at Cohyre.ai."
+    }
+  ],
+  "samsung": [
+    {
+      "title": "What Samsung's Galaxy AI Isn't Telling You",
+      "url": "https://www.pcquest.com/artificial-intelligence/what-samsungs-galaxy-ai-isnt-telling-you-10947790",
+      "snippet": "Galaxy AI hybrid NPU + Gemini, 400M devices, Now Brief Energy Score, 2026 paywall for cloud features."
+    }
+  ],
+  "data": [
+    {
+      "title": "India's AI engines are powerful but the data roads are broken",
+      "url": "https://www.pcquest.com/artificial-intelligence/indias-ai-engines-are-powerful-but-the-data-roads-are-broken-12148222",
+      "snippet": "Confluent 2026 Report: 79% Indian IT leaders say weak real-time data infra slowing AI scale."
     }
   ]
 };
 
-export function getLocalArticlesForCompany(companyName: string): PCQuestArticle[] {
-  if (!companyName) return [];
-  const norm = companyName.toLowerCase();
+export function getLocalArticlesForCompany(company: string): PCQArticle[] {
+  if (!company) return [];
+  const clean = company.toLowerCase().replace(/[^a-z0-9]/g, "");
   
-  if (norm.includes("hp")) return pcquestArticlesDb.hp;
-  if (norm.includes("infosys")) return pcquestArticlesDb.infosys;
-  if (norm.includes("deloitte")) return pcquestArticlesDb.deloitte;
-  if (norm.includes("fynd")) return pcquestArticlesDb.fynd;
-  if (norm.includes("mercury")) return pcquestArticlesDb.mercury;
-  if (norm.includes("krisp")) return pcquestArticlesDb.krisp;
+  if (pcquestArticlesDb[clean]) {
+    return pcquestArticlesDb[clean];
+  }
+  
+  for (const [key, articles] of Object.entries(pcquestArticlesDb)) {
+    if (clean.includes(key) || key.includes(clean)) {
+      return articles;
+    }
+  }
   
   return [];
 }

@@ -1,8 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // dqindiaArticles.ts
-// Reference article database for DataQuest (dqindia.com).
-//
-// STATUS: OFFICIAL — populated from the official DQ document.
+// Official Reference article database for Dataquest (dqindia.com).
+// Populated directly from DQ (2).csv
 // ─────────────────────────────────────────────────────────────
 
 export interface DQArticle {
@@ -12,115 +11,379 @@ export interface DQArticle {
 }
 
 export const dqArticlesDb: Record<string, DQArticle[]> = {
-  // ── Enterprise IT / Cloud ──────────────────────────────────
-  infosys: [
+  "governmentofindia": [
     {
-      title: "Infosys Cobalt Accelerates Cloud Adoption for Indian Enterprises",
-      url: "https://www.dqindia.com/infosys-cobalt-cloud-adoption-india/",
-      snippet:
-        "Infosys Cobalt platform helps Indian enterprises migrate legacy workloads to multi-cloud environments, reducing infrastructure costs by up to 30%.",
+      "title": "Digital India at 11: Key Achievements, Challenges, and Future Priorities",
+      "url": "https://www.dqindia.com/government-policy/digital-india-11-years-achievements-challenges-road-ahead-12128556",
+      "snippet": "11-year review of Digital India covering UPI, BharatNet, DigiLocker and next phase AI and semiconductor push."
     },
     {
-      title: "Infosys AI-First Strategy: What It Means for the Indian IT Sector",
-      url: "https://www.dqindia.com/infosys-ai-first-strategy-india-it/",
-      snippet:
-        "Infosys CEO Salil Parekh outlines an AI-First Value Framework targeting $300B+ enterprise AI market; impact on Indian IT outsourcing and talent strategy.",
-    },
+      "title": "Cabinet approves Semicon 2.0 with Rs. 1.27 lakh crore push for India's chip design and manufacturing",
+      "url": "https://www.dqindia.com/semiconductors/cabinet-approves-semicon-20-government-delivers-on-commitment-for-long-term-policy-support-to-semiconductors-in-india-12166952",
+      "snippet": "Semicon 2.0 six-pillar strategy covering design, materials, fabs, ATMP, R&D and talent with Rs 1.27 lakh crore outlay."
+    }
   ],
-  wipro: [
+  "meity": [
     {
-      title: "Wipro's Enterprise AI Push: Targeting BFSI and Manufacturing Verticals",
-      url: "https://www.dqindia.com/wipro-enterprise-ai-bfsi-manufacturing/",
-      snippet:
-        "Wipro ai360 strategy focuses on AI integration for banking, financial services, and Indian manufacturing automation — covering 30,000 trained AI professionals.",
+      "title": "India approves 12 chip manufacturing projects with Rs 1.64 lakh crore investment pipeline",
+      "url": "https://www.dqindia.com/semiconductors/india-approves-12-chip-manufacturing-projects-with-rs-164-lakh-crore-investment-pipeline-12114989",
+      "snippet": "ISM approves 12 projects including fab and 9 packaging units with Rs 1.64 lakh crore pipeline."
     },
+    {
+      "title": "MEITY celebrates 5 years of Digital Bharat and Aatma Nirbhar Bharat",
+      "url": "https://www.dqindia.com/meity-celebrates-5-years-digital-bharat-aatma-nirbhar-bharat/",
+      "snippet": "MeitY 5-year celebration highlighting Aadhaar, UPI, DigiLocker, GeM and push for Made in India apps."
+    },
+    {
+      "title": "2.5 lakh gram panchayats to get full internet coverage under Bharat Net by 2018",
+      "url": "https://www.dqindia.com/2-5-lakh-gram-panchayats-to-get-full-internet-coverage-under-bharat-net-by-2018/",
+      "snippet": "Government announces BharatNet Phase 1 to connect 2.5 lakh gram panchayats via optical fibre for less-cash economy."
+    }
   ],
-  tcs: [
+  "indiasemiconductormission": [
     {
-      title: "TCS Bags ₹5,000 Crore Digital Transformation Contract from Indian PSU",
-      url: "https://www.dqindia.com/tcs-digital-transformation-psu-contract/",
-      snippet:
-        "TCS wins major government-backed PSU contract for digital transformation, covering cloud migration, ERP modernisation, and cybersecurity infrastructure.",
+      "title": "India approves 12 chip manufacturing projects with Rs 1.64 lakh crore investment pipeline",
+      "url": "https://www.dqindia.com/semiconductors/india-approves-12-chip-manufacturing-projects-with-rs-164-lakh-crore-investment-pipeline-12114989",
+      "snippet": "ISM approves 12 projects including fab and 9 packaging units with Rs 1.64 lakh crore pipeline."
     },
     {
-      title: "TCS Reports Q4 Revenue Growth; Guidance on AI Services Expansion",
-      url: "https://www.dqindia.com/tcs-q4-revenue-ai-services/",
-      snippet:
-        "TCS Q4 results highlight 4.5% YoY revenue growth with strong order book from BFSI and retail segments; new AI services unit announced for FY2026.",
-    },
+      "title": "SEMI forecasts record semiconductor equipment spending as India deepens chip ambitions",
+      "url": "https://www.dqindia.com/government-policy/ai-drives-record-global-semiconductor-equipment-spending-india-ism-2-0-12170968",
+      "snippet": "SEMI projects $165.9B equipment spend in 2026 as ISM 2.0 boosts India's equipment, materials and supply chain role."
+    }
   ],
-  // ── Semiconductor & Hardware ───────────────────────────────
-  intel: [
+  "alltimeit": [
     {
-      title: "Intel Bets on India's Semiconductor Ecosystem with Gaur Campus Expansion",
-      url: "https://www.dqindia.com/intel-india-semiconductor-gaur-campus/",
-      snippet:
-        "Intel expands its Bangalore design and engineering campus as part of India's semiconductor push, supporting the government's ₹76,000 crore chip incentive scheme.",
-    },
+      "title": "All Time IT to launch cloud services with HP",
+      "url": "https://www.dqindia.com/all-time-it-to-launch-cloud-services-with-hp/",
+      "snippet": "AllTimeIT launches EFFICLOUD pay-per-use cloud on HP CloudSystem Matrix for SMB and enterprise IaaS/PaaS/SaaS."
+    }
   ],
-  nvidia: [
+  "hp": [
     {
-      title: "NVIDIA's India Data Centre Push: AI Supercomputing for Indian Startups",
-      url: "https://www.dqindia.com/nvidia-india-data-centre-ai-supercomputing/",
-      snippet:
-        "NVIDIA announces partnerships with Indian cloud providers and government bodies to set up AI supercomputing clusters, targeting healthcare, agriculture, and smart city use cases.",
-    },
+      "title": "All Time IT to launch cloud services with HP",
+      "url": "https://www.dqindia.com/all-time-it-to-launch-cloud-services-with-hp/",
+      "snippet": "AllTimeIT launches EFFICLOUD pay-per-use cloud on HP CloudSystem Matrix for SMB and enterprise IaaS/PaaS/SaaS."
+    }
   ],
-  // ── Government & Policy ───────────────────────────────────
-  meity: [
+  "bfsi": [
     {
-      title: "MeitY's Digital India 2.0: Roadmap for AI, Cybersecurity, and Semiconductor Self-Reliance",
-      url: "https://www.dqindia.com/meity-digital-india-2-ai-semiconductor/",
-      snippet:
-        "Ministry of Electronics and IT releases the next phase of Digital India, with ₹1.25 lakh crore allocation for AI research, semiconductor manufacturing, and rural broadband connectivity.",
-    },
+      "title": "BFSI takes a digital leap",
+      "url": "https://www.dqindia.com/bfsi-takes-a-digital-leap/",
+      "snippet": "Analysis of BFSI IT spend, core banking refresh and shift to mobile and self-service digital banking."
+    }
   ],
-  // ── Data & AI ────────────────────────────────────────────
-  microsoft: [
+  "cognizant": [
     {
-      title: "Microsoft Azure AI Studio: Indian Enterprises Among Early Adopters",
-      url: "https://www.dqindia.com/microsoft-azure-ai-studio-india-adoption/",
-      snippet:
-        "Microsoft Azure AI Studio gains traction among Indian BFSI and retail enterprises for building custom LLM-based copilots, with Azure OpenAI deployments growing 180% YoY in India.",
-    },
-    {
-      title: "Microsoft India Partners with NASSCOM on AI Skilling for 100,000 Professionals",
-      url: "https://www.dqindia.com/microsoft-nasscom-ai-skilling-india/",
-      snippet:
-        "Microsoft and NASSCOM launch a joint AI skilling initiative targeting 100,000 Indian IT professionals in generative AI, prompt engineering, and AI governance.",
-    },
+      "title": "BFSI takes a digital leap",
+      "url": "https://www.dqindia.com/bfsi-takes-a-digital-leap/",
+      "snippet": "Analysis of BFSI IT spend, core banking refresh and shift to mobile and self-service digital banking."
+    }
   ],
-  google: [
+  "gartner": [
     {
-      title: "Google Cloud Expands India Region: New Delhi Data Centre Goes Live",
-      url: "https://www.dqindia.com/google-cloud-india-region-delhi-data-centre/",
-      snippet:
-        "Google Cloud launches its third India availability zone in the NCR region, reducing data residency latency for government and BFSI clients under RBI and SEBI data localisation norms.",
-    },
+      "title": "BFSI takes a digital leap",
+      "url": "https://www.dqindia.com/bfsi-takes-a-digital-leap/",
+      "snippet": "Analysis of BFSI IT spend, core banking refresh and shift to mobile and self-service digital banking."
+    }
   ],
-  deloitte: [
+  "wipro": [
     {
-      title: "Deloitte India Report: 78% of CXOs to Double AI Budgets in FY2026",
-      url: "https://www.dqindia.com/deloitte-india-cxo-ai-budget-fy2026/",
-      snippet:
-        "Deloitte India's annual CXO survey reveals that 78% of Indian enterprise leaders plan to increase AI investments significantly, with data governance and ROI measurement as top concerns.",
+      "title": "Wipro, ServiceNow Deepen Alliance to Drive Enterprise Adoption of Agentic AI",
+      "url": "https://www.dqindia.com/news/wipro-expands-servicenow-partnership-to-scale-agentic-ai-across-enterprise-functions-11885937",
+      "snippet": "Wipro integrates Wipro Intelligence with ServiceNow AI Platform to deploy agentic AI across IT, HR, procurement."
     },
+    {
+      "title": "Infosys, TCS, and Wipro Experience Decline in Attrition in Q1 FY24, Here's Why",
+      "url": "https://www.dqindia.com/infosys-tcs-and-wipro-experience-decline-in-attrition-in-q1-fy24-heres-why/",
+      "snippet": "Q1 FY24 analysis shows attrition down to 14-17% across top IT firms as hiring slows and utilization focus increases."
+    },
+    {
+      "title": "A Promising Quarter",
+      "url": "https://www.dqindia.com/a-promising-quarter/",
+      "snippet": "Oct-Dec 2004 quarter review of TCS 54% profit growth, Infosys 52%, Wipro 71% and outsourcing trends."
+    },
+    {
+      "title": "Wipro rolls out 90% variable pay for Q4 FY25, surpassing TCS and Infosys",
+      "url": "https://www.dqindia.com/news/wipro-rolls-out-90-variable-pay-for-q4-fy25-surpassing-tcs-and-infosys-9350240",
+      "snippet": "Wipro disburses 90% variable pay for Q4 FY25 vs Infosys 65% and TCS differentiated 20-100% linked to performance."
+    }
   ],
+  "servicenow": [
+    {
+      "title": "Wipro, ServiceNow Deepen Alliance to Drive Enterprise Adoption of Agentic AI",
+      "url": "https://www.dqindia.com/news/wipro-expands-servicenow-partnership-to-scale-agentic-ai-across-enterprise-functions-11885937",
+      "snippet": "Wipro integrates Wipro Intelligence with ServiceNow AI Platform to deploy agentic AI across IT, HR, procurement."
+    }
+  ],
+  "cloudera": [
+    {
+      "title": "Cloudera Launches Enterprise Data Cloud Platform",
+      "url": "https://www.dqindia.com/cloudera-launches-enterprise-data-cloud-platform/",
+      "snippet": "Cloudera launches CDP with Data Warehouse, ML and Data Hub services for hybrid cloud analytics governance."
+    }
+  ],
+  "micron": [
+    {
+      "title": "Micron celebrates opening of India's first semiconductor assembly and test facility",
+      "url": "https://www.dqindia.com/esdm/micron-celebrates-opening-of-indias-first-semiconductor-assembly-and-test-facility-11167495",
+      "snippet": "Micron opens Sanand ATMP facility with 500k sq ft cleanroom and $2.75B investment for AI-driven memory demand."
+    }
+  ],
+  "zoho": [
+    {
+      "title": "Why Enterprise AI won't be Plug-and-Play",
+      "url": "https://www.dqindia.com/interview/why-enterprise-ai-wont-be-plug-and-play-10063647",
+      "snippet": "Zoho AI Research Director explains why enterprise AI needs plumbing, data unification and privacy-first LLMs."
+    }
+  ],
+  "xebia": [
+    {
+      "title": "Xebia is driving enterprise-scale digital transformation: Varun Jain",
+      "url": "https://www.dqindia.com/interview/xebia-is-driving-enterprise-scale-digital-transformation-varun-jain-8827073",
+      "snippet": "Interview on Xebia's cloud-native and GenAI focus for BFSI with 30% scalability gains via cloud migration."
+    }
+  ],
+  "infosys": [
+    {
+      "title": "Infosys Partners with Google Cloud to Develop Data Native Intelligent Enterprise",
+      "url": "https://www.dqindia.com/infosys-partners-google-cloud-develop-data-native-intelligent-enterprise/",
+      "snippet": "Infosys and GCP launch Data Native Intelligent Enterprise and Digital Brain with AI-driven analytics workbench."
+    },
+    {
+      "title": "Infosys, TCS, and Wipro Experience Decline in Attrition in Q1 FY24, Here's Why",
+      "url": "https://www.dqindia.com/infosys-tcs-and-wipro-experience-decline-in-attrition-in-q1-fy24-heres-why/",
+      "snippet": "Q1 FY24 analysis shows attrition down to 14-17% across top IT firms as hiring slows and utilization focus increases."
+    },
+    {
+      "title": "A Promising Quarter",
+      "url": "https://www.dqindia.com/a-promising-quarter/",
+      "snippet": "Oct-Dec 2004 quarter review of TCS 54% profit growth, Infosys 52%, Wipro 71% and outsourcing trends."
+    },
+    {
+      "title": "Wipro rolls out 90% variable pay for Q4 FY25, surpassing TCS and Infosys",
+      "url": "https://www.dqindia.com/news/wipro-rolls-out-90-variable-pay-for-q4-fy25-surpassing-tcs-and-infosys-9350240",
+      "snippet": "Wipro disburses 90% variable pay for Q4 FY25 vs Infosys 65% and TCS differentiated 20-100% linked to performance."
+    },
+    {
+      "title": "Salil Parekh, Harish Mehta, Tejas Networks & NPCI win at the 30th Dataquest ICT Awards",
+      "url": "https://www.dqindia.com/salil-parekh-harish-mehta-tejas-networks-npci-win-at-the-30th-dataquest-ict-awards/",
+      "snippet": "DQ ICT Awards 30th edition coverage recognizing Infosys CEO, Tejas BharatNet role and NPCI Digital India contribution."
+    }
+  ],
+  "googlecloud": [
+    {
+      "title": "Infosys Partners with Google Cloud to Develop Data Native Intelligent Enterprise",
+      "url": "https://www.dqindia.com/infosys-partners-google-cloud-develop-data-native-intelligent-enterprise/",
+      "snippet": "Infosys and GCP launch Data Native Intelligent Enterprise and Digital Brain with AI-driven analytics workbench."
+    }
+  ],
+  "hpe": [
+    {
+      "title": "HPE accelerates AI innovation with enterprise-grade solution",
+      "url": "https://www.dqindia.com/hpe-accelerates-ai-innovation-enterprise-grade-solution/",
+      "snippet": "HPE launches ML Ops container solution to standardize ML lifecycle and accelerate AI deployment."
+    },
+    {
+      "title": "Hewlett Packard enterprise and Microsoft announce plans to deliver integrated hybrid IT infrastructure",
+      "url": "https://www.dqindia.com/hewlett-packard-enterprise-and-microsoft-announce-plans-to-deliver-integrated-hybrid-it-infrastructure/",
+      "snippet": "HPE and Azure partnership for hybrid cloud with Hyper-Converged 250 and Azure as preferred public cloud."
+    },
+    {
+      "title": "Hewlett Packard Enterprise expands Helion Cloud Portfolio",
+      "url": "https://www.dqindia.com/hewlett-packard-enterprise-expands-helion-cloud-portfolio/",
+      "snippet": "HPE Helion Cloud Suite and CloudSystem 10 for hybrid cloud management across traditional and cloud-native apps."
+    }
+  ],
+  "snowflake": [
+    {
+      "title": "Snowflake and Anthropic Push AI Agents Into Enterprise Workflows",
+      "url": "https://www.dqindia.com/data-and-ai/snowflake-anthropic-enterprise-ai-adoption-governed-ai-cortex-ai-11902200",
+      "snippet": "Claude models via Snowflake Cortex AI for governed enterprise AI agents in cybersecurity and finance."
+    }
+  ],
+  "anthropic": [
+    {
+      "title": "Snowflake and Anthropic Push AI Agents Into Enterprise Workflows",
+      "url": "https://www.dqindia.com/data-and-ai/snowflake-anthropic-enterprise-ai-adoption-governed-ai-cortex-ai-11902200",
+      "snippet": "Claude models via Snowflake Cortex AI for governed enterprise AI agents in cybersecurity and finance."
+    }
+  ],
+  "bharatnet": [
+    {
+      "title": "2.5 lakh gram panchayats to get full internet coverage under Bharat Net by 2018",
+      "url": "https://www.dqindia.com/2-5-lakh-gram-panchayats-to-get-full-internet-coverage-under-bharat-net-by-2018/",
+      "snippet": "Government announces BharatNet Phase 1 to connect 2.5 lakh gram panchayats via optical fibre for less-cash economy."
+    }
+  ],
+  "microsoft": [
+    {
+      "title": "Hewlett Packard enterprise and Microsoft announce plans to deliver integrated hybrid IT infrastructure",
+      "url": "https://www.dqindia.com/hewlett-packard-enterprise-and-microsoft-announce-plans-to-deliver-integrated-hybrid-it-infrastructure/",
+      "snippet": "HPE and Azure partnership for hybrid cloud with Hyper-Converged 250 and Azure as preferred public cloud."
+    }
+  ],
+  "semi": [
+    {
+      "title": "SEMI forecasts record semiconductor equipment spending as India deepens chip ambitions",
+      "url": "https://www.dqindia.com/government-policy/ai-drives-record-global-semiconductor-equipment-spending-india-ism-2-0-12170968",
+      "snippet": "SEMI projects $165.9B equipment spend in 2026 as ISM 2.0 boosts India's equipment, materials and supply chain role."
+    }
+  ],
+  "indiasemiconductorecosystem": [
+    {
+      "title": "India emerges as global hub for semiconductor design and R&D",
+      "url": "https://www.dqindia.com/esdm/india-emerges-as-global-hub-for-semiconductor-design-and-rd-11224456",
+      "snippet": "India hosts 7% of global semiconductor GCCs and 20% of chip design workforce with 24 DLI projects approved."
+    }
+  ],
+  "oracle": [
+    {
+      "title": "Oracle Swells its Enterprise Cloud Portfolio",
+      "url": "https://www.dqindia.com/oracle-swells-its-enterprise-cloud-portfolio/",
+      "snippet": "Oracle adds 24+ services including Database Cloud Exadata, Big Data Cloud and Integration Cloud to Oracle Cloud Platform."
+    }
+  ],
+  "tcs": [
+    {
+      "title": "Infosys, TCS, and Wipro Experience Decline in Attrition in Q1 FY24, Here's Why",
+      "url": "https://www.dqindia.com/infosys-tcs-and-wipro-experience-decline-in-attrition-in-q1-fy24-heres-why/",
+      "snippet": "Q1 FY24 analysis shows attrition down to 14-17% across top IT firms as hiring slows and utilization focus increases."
+    },
+    {
+      "title": "A Promising Quarter",
+      "url": "https://www.dqindia.com/a-promising-quarter/",
+      "snippet": "Oct-Dec 2004 quarter review of TCS 54% profit growth, Infosys 52%, Wipro 71% and outsourcing trends."
+    },
+    {
+      "title": "Wipro rolls out 90% variable pay for Q4 FY25, surpassing TCS and Infosys",
+      "url": "https://www.dqindia.com/news/wipro-rolls-out-90-variable-pay-for-q4-fy25-surpassing-tcs-and-infosys-9350240",
+      "snippet": "Wipro disburses 90% variable pay for Q4 FY25 vs Infosys 65% and TCS differentiated 20-100% linked to performance."
+    }
+  ],
+  "hcltech": [
+    {
+      "title": "Infosys, TCS, and Wipro Experience Decline in Attrition in Q1 FY24, Here's Why",
+      "url": "https://www.dqindia.com/infosys-tcs-and-wipro-experience-decline-in-attrition-in-q1-fy24-heres-why/",
+      "snippet": "Q1 FY24 analysis shows attrition down to 14-17% across top IT firms as hiring slows and utilization focus increases."
+    }
+  ],
+  "infor": [
+    {
+      "title": "Infor launches Industry-Specific AI agents and cloud migration offer",
+      "url": "https://www.dqindia.com/news/infor-launches-industry-specific-ai-agents-and-cloud-migration-offer-10572265",
+      "snippet": "Infor launches Industry AI Agents on Bedrock with Agentic Orchestrator and fixed-fee Infor Leap migration."
+    }
+  ],
+  "aws": [
+    {
+      "title": "Infor launches Industry-Specific AI agents and cloud migration offer",
+      "url": "https://www.dqindia.com/news/infor-launches-industry-specific-ai-agents-and-cloud-migration-offer-10572265",
+      "snippet": "Infor launches Industry AI Agents on Bedrock with Agentic Orchestrator and fixed-fee Infor Leap migration."
+    }
+  ],
+  "npci": [
+    {
+      "title": "NPCI pilots APBS and UPI tools to digitize the Microfinance Industry",
+      "url": "https://www.dqindia.com/npci-pilots-apbs-and-upi-tools-to-digitize-the-microfinance-industry/",
+      "snippet": "NPCI pilot digitizes MFI disbursal via APBS and repayment via UPI USSD for 80M annual transactions."
+    },
+    {
+      "title": "UPI's 52% Surge: What Fintechs Can Learn from India's Digital Payments Revolution",
+      "url": "https://www.dqindia.com/business-technologies/upis-52-surge-what-fintechs-can-learn-from-indias-digital-payments-revolution-8738763",
+      "snippet": "UPI 78.97B transactions in H1 2024 up 52% YoY analysis and lessons for fintech on scalability and inclusion."
+    },
+    {
+      "title": "Salil Parekh, Harish Mehta, Tejas Networks & NPCI win at the 30th Dataquest ICT Awards",
+      "url": "https://www.dqindia.com/salil-parekh-harish-mehta-tejas-networks-npci-win-at-the-30th-dataquest-ict-awards/",
+      "snippet": "DQ ICT Awards 30th edition coverage recognizing Infosys CEO, Tejas BharatNet role and NPCI Digital India contribution."
+    }
+  ],
+  "rbl": [
+    {
+      "title": "NPCI pilots APBS and UPI tools to digitize the Microfinance Industry",
+      "url": "https://www.dqindia.com/npci-pilots-apbs-and-upi-tools-to-digitize-the-microfinance-industry/",
+      "snippet": "NPCI pilot digitizes MFI disbursal via APBS and repayment via UPI USSD for 80M annual transactions."
+    }
+  ],
+  "hdfc": [
+    {
+      "title": "NPCI pilots APBS and UPI tools to digitize the Microfinance Industry",
+      "url": "https://www.dqindia.com/npci-pilots-apbs-and-upi-tools-to-digitize-the-microfinance-industry/",
+      "snippet": "NPCI pilot digitizes MFI disbursal via APBS and repayment via UPI USSD for 80M annual transactions."
+    }
+  ],
+  "tothenew": [
+    {
+      "title": "TO THE NEW drives digital transformation in the BFSI sector",
+      "url": "https://www.dqindia.com/new-drives-digital-transformation-bfsi-sector/",
+      "snippet": "TO THE NEW enables digital transformation for 20+ BFSI clients globally using analytics and marketing tech."
+    }
+  ],
+  "delltechnologies": [
+    {
+      "title": "DQ Top 20 Rank 13 - Dell Technologies India Empowering Innovation and Growth in India and Beyond",
+      "url": "https://www.dqindia.com/dq-top-20-rank-13-dell-technologies-india-empowering-innovation-and-growth-in-india-and-beyond/",
+      "snippet": "Dell DQ Top20 profile covering multi-cloud, Edge, 5G, AI/ML focus and $26.1B Q1 FY23 record revenue."
+    }
+  ],
+  "patni": [
+    {
+      "title": "A Promising Quarter",
+      "url": "https://www.dqindia.com/a-promising-quarter/",
+      "snippet": "Oct-Dec 2004 quarter review of TCS 54% profit growth, Infosys 52%, Wipro 71% and outsourcing trends."
+    }
+  ],
+  "ibm": [
+    {
+      "title": "IBM and SAP speed up cloud ERP migration with new hyperscaler option",
+      "url": "https://www.dqindia.com/news/ibm-and-sap-speed-up-cloud-erp-migration-with-new-hyperscaler-option-9455238",
+      "snippet": "IBM Power Virtual Server added as hyperscaler for SAP Cloud ERP Private enabling 90-day S/4HANA migrations."
+    }
+  ],
+  "sap": [
+    {
+      "title": "IBM and SAP speed up cloud ERP migration with new hyperscaler option",
+      "url": "https://www.dqindia.com/news/ibm-and-sap-speed-up-cloud-erp-migration-with-new-hyperscaler-option-9455238",
+      "snippet": "IBM Power Virtual Server added as hyperscaler for SAP Cloud ERP Private enabling 90-day S/4HANA migrations."
+    }
+  ],
+  "upi": [
+    {
+      "title": "UPI's 52% Surge: What Fintechs Can Learn from India's Digital Payments Revolution",
+      "url": "https://www.dqindia.com/business-technologies/upis-52-surge-what-fintechs-can-learn-from-indias-digital-payments-revolution-8738763",
+      "snippet": "UPI 78.97B transactions in H1 2024 up 52% YoY analysis and lessons for fintech on scalability and inclusion."
+    }
+  ],
+  "fintech": [
+    {
+      "title": "UPI's 52% Surge: What Fintechs Can Learn from India's Digital Payments Revolution",
+      "url": "https://www.dqindia.com/business-technologies/upis-52-surge-what-fintechs-can-learn-from-indias-digital-payments-revolution-8738763",
+      "snippet": "UPI 78.97B transactions in H1 2024 up 52% YoY analysis and lessons for fintech on scalability and inclusion."
+    }
+  ],
+  "tejasnetworks": [
+    {
+      "title": "Salil Parekh, Harish Mehta, Tejas Networks & NPCI win at the 30th Dataquest ICT Awards",
+      "url": "https://www.dqindia.com/salil-parekh-harish-mehta-tejas-networks-npci-win-at-the-30th-dataquest-ict-awards/",
+      "snippet": "DQ ICT Awards 30th edition coverage recognizing Infosys CEO, Tejas BharatNet role and NPCI Digital India contribution."
+    }
+  ]
 };
 
-export function getDQArticlesForCompany(companyName: string): DQArticle[] {
-  if (!companyName) return [];
-  const norm = companyName.toLowerCase();
-
-  if (norm.includes("infosys")) return dqArticlesDb.infosys ?? [];
-  if (norm.includes("wipro")) return dqArticlesDb.wipro ?? [];
-  if (norm.includes("tcs") || norm.includes("tata consultancy")) return dqArticlesDb.tcs ?? [];
-  if (norm.includes("intel")) return dqArticlesDb.intel ?? [];
-  if (norm.includes("nvidia")) return dqArticlesDb.nvidia ?? [];
-  if (norm.includes("meity") || norm.includes("ministry of electronics")) return dqArticlesDb.meity ?? [];
-  if (norm.includes("microsoft")) return dqArticlesDb.microsoft ?? [];
-  if (norm.includes("google")) return dqArticlesDb.google ?? [];
-  if (norm.includes("deloitte")) return dqArticlesDb.deloitte ?? [];
-
+export function getDQArticlesForCompany(company: string): DQArticle[] {
+  if (!company) return [];
+  const clean = company.toLowerCase().replace(/[^a-z0-9]/g, "");
+  
+  if (dqArticlesDb[clean]) {
+    return dqArticlesDb[clean];
+  }
+  
+  for (const [key, articles] of Object.entries(dqArticlesDb)) {
+    if (clean.includes(key) || key.includes(clean)) {
+      return articles;
+    }
+  }
+  
   return [];
 }

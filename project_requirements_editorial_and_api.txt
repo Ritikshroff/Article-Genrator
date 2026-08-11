@@ -1,0 +1,97 @@
+================================================================================
+PROJECT REQUIREMENT STATEMENT
+(Server Deployment & Environment Specifications)
+Project: CMS Article AI Editorial Copilot
+Date: August 05, 2026
+Domains: editorial.cybermedia.co.in & api.cybermedia.co.in
+================================================================================
+
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+The CMS Article AI Editorial Copilot is a two-tier application designed to run 
+alongside existing server services (similar to realquiz.net) using domain-wise 
+separation:
+
+1. Frontend Application (Editorial UI)
+   - Domain: editorial.cybermedia.co.in
+   - Runtime: Node.js (Next.js Application)
+   - Internal Service Port: 127.0.0.1:3000
+
+2. Backend API Service
+   - Domain: api.cybermedia.co.in
+   - Runtime: Python 3.11 (FastAPI + Uvicorn)
+   - Internal Service Port: 127.0.0.1:8000
+
+
+2. DOMAIN 1: editorial.cybermedia.co.in (FRONTEND)
+--------------------------------------------------------------------------------
+- Domain Name: editorial.cybermedia.co.in
+- Tech Stack: Node.js (v20.x LTS or higher) / Next.js 16
+- Project Folder Path (Preferred): /var/www/editorial.cybermedia.co.in
+- Internal Service Port: 127.0.0.1:3000
+- Preferred Process Manager: PM2
+- Process Name: editorial-frontend
+- Startup Command: `pm2 start npm --name "editorial-frontend" -- start`
+
+Project Directory Structure:
+/var/www/editorial.cybermedia.co.in
+    ├── .next/
+    ├── public/
+    ├── src/
+    ├── package.json
+    └── .env.local
+
+
+3. DOMAIN 2: api.cybermedia.co.in (BACKEND API)
+--------------------------------------------------------------------------------
+- Domain Name: api.cybermedia.co.in
+- Tech Stack: Python 3.11+ (FastAPI + Uvicorn Async Server)
+- Project Folder Path (Preferred): /var/www/api.cybermedia.co.in
+- Environment: Python Virtual Environment (`venv`)
+- Virtual Environment Path: /var/www/api.cybermedia.co.in/venv
+- Internal Service Port: 127.0.0.1:8000
+- Preferred Process Manager: Systemd (PM2 acceptable if preferred)
+- Process Name: editorial-backend-api
+- Startup Command: `/var/www/api.cybermedia.co.in/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 4`
+
+Project Directory Structure:
+/var/www/api.cybermedia.co.in
+    ├── app/
+    ├── main.py
+    ├── requirements.txt
+    ├── venv/
+    └── .env
+
+Python Dependencies
+(requirements.txt will be available in the backend project root.)
+-----------------------------------------------------------------------
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+beanie==1.29.0
+motor==3.7.0
+python-jose[cryptography]==3.4.0
+bcrypt==4.2.1
+python-multipart==0.0.20
+pydantic[email]==2.11.4
+
+
+4. REVERSE PROXY MAPPING (NGINX)
+--------------------------------------------------------------------------------
+Domain                     | Target Reverse Proxy Destination
+---------------------------|----------------------------------
+editorial.cybermedia.co.in | http://127.0.0.1:3000
+api.cybermedia.co.in       | http://127.0.0.1:8000
+
+
+5. DEPLOYMENT & ENVIRONMENT REQUIREMENTS
+--------------------------------------------------------------------------------
+Environment Configuration Files:
+- Frontend (`editorial.cybermedia.co.in`): Uses `.env.local` placed in the project root.
+- Backend (`api.cybermedia.co.in`): Uses `.env` placed in the project root.
+- All environment configuration files will be placed in their respective project roots prior to application startup.
+
+Network & Access Requirements:
+- Outbound Traffic: Outbound HTTPS (443) access to external APIs required by the application (including Google AI APIs).
+- Inbound Ports: Standard HTTP (80) and HTTPS (443) external ports. Internal ports 3000 and 8000 are bound strictly to localhost (127.0.0.1).
+
+================================================================================

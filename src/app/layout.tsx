@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Providers from "./providers";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -8,8 +9,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dataquest AI Editorial Copilot",
-  description: "Transform press releases into Dataquest-quality editorial content — powered by Google Gemini.",
+  title: "CyberMedia AI Editorial Copilot",
+  description: "Transform press releases into publication-quality editorial content — powered by Google Gemini.",
   icons: {
     icon: "/feviconicon.webp",
     shortcut: "/feviconicon.webp",
@@ -29,7 +30,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
