@@ -3,7 +3,12 @@
 // Fetch wrapper for FastAPI backend with JWT auth
 // ─────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  (typeof window !== "undefined" && window.location.hostname.includes("cybermedia")
+    ? "https://api.cybermedia.in"
+    : "http://localhost:8000");
 
 export class AuthError extends Error {
   constructor() {
