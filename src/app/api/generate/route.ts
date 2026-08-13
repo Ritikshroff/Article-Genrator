@@ -204,7 +204,22 @@ const socialSchema: Schema = {
 
 export async function POST(req: NextRequest) {
   try {
-    const reqBody = await req.json();
+    let reqBody: any;
+    try {
+      reqBody = await req.json();
+    } catch (parseErr: any) {
+      try {
+        const rawText = await req.text();
+        const cleanedText = escapeRawNewlinesInJSON(rawText);
+        reqBody = JSON.parse(cleanedText);
+      } catch (fallbackErr: any) {
+        return NextResponse.json(
+          { error: `Invalid JSON payload: ${parseErr?.message || fallbackErr?.message}` },
+          { status: 400 }
+        );
+      }
+    }
+
     const {
       pressRelease,
       customApiKey,
