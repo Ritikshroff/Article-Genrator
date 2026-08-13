@@ -247,7 +247,7 @@ export async function POST(req: NextRequest) {
     const apiKey = customApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.trim() === "") {
       return NextResponse.json(
-        { error: "Gemini API Key is missing. Please configure GEMINI_API_KEY or enter it in settings." },
+        { error: "Gemini API Key is missing. Please configure GEMINI_API_KEY in .env.local or enter it in Advanced Settings." },
         { status: 400 }
       );
     }
