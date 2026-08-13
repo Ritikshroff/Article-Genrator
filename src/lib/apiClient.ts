@@ -3,12 +3,12 @@
 // Fetch wrapper for FastAPI backend with JWT auth
 // ─────────────────────────────────────────────────────────────
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  (typeof window !== "undefined" && window.location.hostname.includes("cybermedia")
-    ? "https://api.cybermedia.in"
-    : "http://localhost:8000");
+export function getApiBaseUrl(): string {
+  if (typeof window !== "undefined" && window.location.hostname.includes("cybermedia")) {
+    return "https://api.cybermedia.in";
+  }
+  return process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+}
 
 export class AuthError extends Error {
   constructor() {
@@ -33,7 +33,8 @@ export async function apiFetch<T = any>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers,
   });
