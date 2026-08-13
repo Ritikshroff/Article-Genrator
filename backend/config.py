@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 # MongoDB
-MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI: str = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or os.getenv("MONGODB_URL") or "mongodb://localhost:27017"
 DB_NAME: str = os.getenv("DB_NAME", "cybermedia_copilot")
 
 # JWT Authentication
@@ -19,6 +19,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("TOKEN_EXPIRE_MINUTES", "480"))
 ALLOWED_ORIGINS: list[str] = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "https://editorial.cybermedia.in",
+    "http://editorial.cybermedia.in",
+    "https://editorial.cybermedia.co.in",
+    "http://editorial.cybermedia.co.in",
+    "*",
 ]
 
 # Gemini API Key (shared with frontend)

@@ -22,10 +22,14 @@ from routers.users_router import router as users_router
 async def lifespan(app: FastAPI):
     """Startup: init DB + seed users. Shutdown: cleanup."""
     print("🚀 Starting CyberMedia AI Copilot Backend...")
-    await init_db()
-    print("✓ MongoDB connected & Beanie initialised")
-    await seed_users()
-    print("✓ Default users seeded")
+    try:
+        await init_db()
+        print("✓ MongoDB connected & Beanie initialised")
+        await seed_users()
+        print("✓ Default users seeded")
+    except Exception as e:
+        print(f"⚠️ Database connection warning during startup: {e}")
+        print("Backend service starting in standalone mode...")
     print("─" * 50)
     yield
     print("👋 Shutting down backend...")
@@ -53,7 +57,12 @@ app.include_router(articles_router)
 app.include_router(users_router)
 
 
-# ── Health check ──────────────────────────────────────────────
+# ── Root & Health check ───────────────────────────────────────
+@app.get("/", tags=["System"])
+async def root():
+    return {"message": "CyberMedia AI Copilot Backend API is running", "status": "healthy"}
+
+
 @app.get("/health", tags=["System"])
 async def health_check():
     return {"status": "healthy", "service": "CyberMedia AI Copilot Backend"}
