@@ -26,10 +26,10 @@ async def lifespan(app: FastAPI):
         await init_db()
         print("✓ MongoDB connected & Beanie initialised")
         await seed_users()
-        print("✓ Default users seeded")
+        print("✓ Default users seeded in MongoDB")
     except Exception as e:
-        print(f"⚠️ Database connection warning during startup: {e}")
-        print("Backend service starting in standalone mode...")
+        print(f"❌ MongoDB connection error on startup: {e}")
+        raise e
     print("─" * 50)
     yield
     print("👋 Shutting down backend...")

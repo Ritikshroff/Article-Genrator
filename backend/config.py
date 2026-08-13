@@ -6,9 +6,9 @@
 import os
 from pathlib import Path
 
-# MongoDB
-MONGO_URI: str = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or os.getenv("MONGODB_URL") or "mongodb://localhost:27017"
-DB_NAME: str = os.getenv("DB_NAME", "cybermedia_copilot")
+DEFAULT_MONGO = "mongodb://cmrslpx1b:l%40HdEvS%23)TR%267dC@api.srvr2px.cyberads.io:27017/?authSource=admin&readPreference=primary&ssl=false"
+MONGO_URI: str = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or os.getenv("MONGODB_URL") or DEFAULT_MONGO
+DB_NAME: str = os.getenv("DB_NAME", "cybermedia_editorial")
 
 # JWT Authentication
 SECRET_KEY: str = os.getenv("SECRET_KEY", "cybermedia-ai-copilot-secret-key-2026-very-secure")

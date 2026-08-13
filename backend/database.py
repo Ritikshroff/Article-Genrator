@@ -14,7 +14,7 @@ async def init_db() -> None:
     # Lazy import to avoid circular imports
     from models import User, Article
 
-    client = AsyncIOMotorClient(MONGO_URI)
+    client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=2000)
     db = client[DB_NAME]
 
     await init_beanie(
