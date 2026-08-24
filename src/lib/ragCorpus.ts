@@ -85,11 +85,11 @@ export function getRAGChunks(
   const fullTextLower = `${compLower} ${topicLower} ${pressReleaseText}`.toLowerCase();
 
   // 1. Search publication archives for matching articles
-  const targetDb = publicationKey === "DataQuest" ? dqArticlesDb
-    : publicationKey === "VoiceData" ? vndArticlesDb
+  const targetDb = publicationKey === "Dataquest" ? dqArticlesDb
+    : publicationKey === "Voice&Data" ? vndArticlesDb
     : pcquestArticlesDb;
 
-  const pubCode = publicationKey === "DataQuest" ? "dq" : publicationKey === "VoiceData" ? "vd" : "pcq";
+  const pubCode = publicationKey === "Dataquest" ? "dq" : publicationKey === "Voice&Data" ? "vd" : "pcq";
 
   Object.entries(targetDb).forEach(([key, articles]) => {
     articles.forEach((art, idx) => {

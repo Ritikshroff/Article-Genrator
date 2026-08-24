@@ -381,7 +381,7 @@ PCQUEST EXPERIENCE GATE:
 ${isFirstLook ? `CRITICAL PCQUEST RULE: hands_on_data is false! You MUST set content_type to "first_look". Title MUST start with "First Look: ". You MUST include mandatory disclaimer at top of body_html: "<p><em>Note: This first impression is based on official press release and specs. Hands-on review from PCQuest Labs is awaited.</em></p>". DO NOT invent battery life, thermals, or benchmark scores.` : ""}
 
 HEADER IMAGE PROMPT RULES:
-${magazineKey === "DataQuest" ? `DQ: Enterprise tech illustration, [AI workflow / semiconductor fab / BharatNet map], corporate blue-white, minimal, photorealistic, 8k --no text --no logos` : magazineKey === "VoiceData" ? `V&D: Telecom infrastructure photorealistic, [5G BTS tower / satellite constellation], dusk, realistic --no people --no text` : `PCQ: Official press render of [product name], clean white background, studio lighting, accurate design, no hands --no text`}
+${magazineKey === "Dataquest" ? `DQ: Enterprise tech illustration, [AI workflow / semiconductor fab / BharatNet map], corporate blue-white, minimal, photorealistic, 8k --no text --no logos` : magazineKey === "Voice&Data" ? `V&D: Telecom infrastructure photorealistic, [5G BTS tower / satellite constellation], dusk, realistic --no people --no text` : `PCQ: Official press render of [product name], clean white background, studio lighting, accurate design, no hands --no text`}
 
 ${customPrompt ? `CUSTOM EDITORIAL INSTRUCTIONS:\n${customPrompt}\n` : ""}
 
