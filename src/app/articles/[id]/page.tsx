@@ -152,9 +152,13 @@ export default function ArticleDetailPage() {
       <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+            <Link
+              href="/articles"
+              className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors rounded-xs cursor-pointer flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              title="Back to Articles Dashboard"
+            >
               <ArrowLeft className="w-5 h-5" />
-            </button>
+            </Link>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${article.publication === "Voice&Data" || article.publication === "VoiceData" ? "bg-[#00839b]" : "bg-[#e30613]"}`}>
