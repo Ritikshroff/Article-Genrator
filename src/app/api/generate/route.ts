@@ -149,13 +149,27 @@ const seoSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     seo_title: { type: SchemaType.STRING },
+    english_title: { type: SchemaType.STRING },
+    permalink: { type: SchemaType.STRING },
+    summary: { type: SchemaType.STRING },
+    meta_title: { type: SchemaType.STRING },
     meta_description: { type: SchemaType.STRING },
-    slug: { type: SchemaType.STRING },
+    og_title: { type: SchemaType.STRING },
+    og_description: { type: SchemaType.STRING },
+    twitter_title: { type: SchemaType.STRING },
+    twitter_description: { type: SchemaType.STRING },
+    meta_keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    meta_news_keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     primary_keyword: { type: SchemaType.STRING },
     keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     semantic_keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
   },
-  required: ["seo_title", "meta_description", "slug", "primary_keyword", "keywords", "semantic_keywords"],
+  required: [
+    "seo_title", "english_title", "permalink", "summary", "meta_title",
+    "meta_description", "og_title", "og_description", "twitter_title",
+    "twitter_description", "meta_keywords", "meta_news_keywords",
+    "primary_keyword", "keywords", "semantic_keywords"
+  ],
 };
 
 const impactSchema: Schema = {
@@ -234,7 +248,7 @@ export async function POST(req: NextRequest) {
       magazine: rawMagazine,
     } = reqBody;
 
-    const magazineKey: MagazineKey = (rawMagazine as MagazineKey) || "DataQuest";
+    const magazineKey: MagazineKey = (rawMagazine as MagazineKey) || "Dataquest";
     const mag = magazines[magazineKey];
 
     if (!pressRelease || pressRelease.trim() === "") {
@@ -310,7 +324,7 @@ export async function POST(req: NextRequest) {
             : "news";
 
           let isFirstLook = false;
-          if (magazineKey === "PCQuest" && contentType === "review" && !hands_on_data) {
+          if (magazineKey === "PCquest" && contentType === "review" && !hands_on_data) {
             contentType = "first_look";
             isFirstLook = true;
           }

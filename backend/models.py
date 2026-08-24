@@ -28,7 +28,7 @@ class Article(Document):
     """Saved editorial article with all generated sections."""
 
     title: str
-    publication: Literal["DataQuest", "VoiceData", "PCQuest"]
+    publication: str
     status: Literal[
         "draft",
         "submitted",

@@ -24,7 +24,17 @@ interface NewsData {
 
 interface SeoData {
   seo_title: string;
+  english_title?: string;
+  permalink?: string;
+  summary?: string;
+  meta_title?: string;
   meta_description: string;
+  og_title?: string;
+  og_description?: string;
+  twitter_title?: string;
+  twitter_description?: string;
+  meta_keywords?: string[];
+  meta_news_keywords?: string[];
   slug: string;
   primary_keyword?: string;
   keywords: string[];
@@ -146,11 +156,11 @@ const formatHtmlForPreview = (html: string) => {
 };
 
 const MAGAZINE_PHRASES: Record<string, { title: string; details: string[] }> = {
-  DataQuest: {
-    title: "Synthesizing DataQuest Enterprise Package...",
+  Dataquest: {
+    title: "Synthesizing Dataquest Enterprise Package...",
     details: [
       "Analyzing press release facts & executive announcements...",
-      "Searching CyberMedia DataQuest archives & B2B RAG corpus...",
+      "Searching CyberMedia Dataquest archives & B2B RAG corpus...",
       "Structuring inverted pyramid story for IT decision makers...",
       "Formulating enterprise impact, CIO takeaways & market context...",
       "Generating SEO metadata, primary keywords & LSI tags...",
@@ -159,8 +169,8 @@ const MAGAZINE_PHRASES: Record<string, { title: string; details: string[] }> = {
       "Rendering custom AI enterprise cover visual..."
     ]
   },
-  VoiceData: {
-    title: "Synthesizing VoiceData Telecom Package...",
+  "Voice&Data": {
+    title: "Synthesizing Voice&Data Telecom Package...",
     details: [
       "Parsing telecom announcement & spectrum details...",
       "Retrieving TRAI & DoT regulatory context from archives...",
@@ -172,8 +182,8 @@ const MAGAZINE_PHRASES: Record<string, { title: string; details: string[] }> = {
       "Rendering custom AI telecom infrastructure visual..."
     ]
   },
-  PCQuest: {
-    title: "Synthesizing PCQuest Tech Package...",
+  PCquest: {
+    title: "Synthesizing PCquest Tech Package...",
     details: [
       "Analyzing hardware specs & technology announcement...",
       "Cross-referencing PCQuest Labs testing benchmark data...",
@@ -199,8 +209,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
   const [viewMode, setViewMode] = useState<"preview" | "code">("preview");
   const [phraseIndex, setPhraseIndex] = useState(0);
 
-  const currentMagKey = (magazine && MAGAZINE_PHRASES[magazine]) ? magazine : "DataQuest";
-  const currentPhrases = MAGAZINE_PHRASES[currentMagKey];
+  const normalizedMagKey =
+    (magazine === "VoiceData" || magazine === "Voice&Data") ? "Voice&Data"
+    : (magazine === "PCQuest" || magazine === "PCquest") ? "PCquest"
+    : "Dataquest";
+
+  const currentPhrases = MAGAZINE_PHRASES[normalizedMagKey] || MAGAZINE_PHRASES["Dataquest"];
 
   useEffect(() => {
     if (status !== "generating") {
@@ -230,20 +244,49 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
     }
   }, [packageData]);
 
-  const triggerCopy = async (text: string, identifier: string) => {
+  const getActiveTabHTML = (): string => {
+    if (activeTab === "news" && packageData.news) {
+      const h1 = `<h1>${packageData.news.headline}</h1>`;
+      const h2 = packageData.news.subheadline ? `<h2>${packageData.news.subheadline}</h2>` : "";
+      const body = packageData.news.article || "";
+      return `<div>${h1}${h2}${body}</div>`;
+    }
+    return getActiveTabContentString();
+  };
+
+  const triggerCopy = async (text: string, identifier: string, htmlContent?: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      const htmlToCopy = htmlContent || (activeTab === "news" ? getActiveTabHTML() : null);
+
+      if (htmlToCopy && typeof ClipboardItem !== "undefined") {
+        const blobText = new Blob([text], { type: "text/plain" });
+        const blobHtml = new Blob([htmlToCopy], { type: "text/html" });
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/plain": blobText,
+            "text/html": blobHtml,
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
       setCopiedSection(identifier);
       setTimeout(() => setCopiedSection(null), 2000);
     } catch (err) {
-      console.error("Failed to copy text:", err);
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedSection(identifier);
+        setTimeout(() => setCopiedSection(null), 2000);
+      } catch (fallbackErr) {
+        console.error("Failed to copy text:", fallbackErr);
+      }
     }
   };
 
   const getTabLabel = (key: string) => {
     switch (key) {
       case "news": return "Article Text";
-      case "seo": return "SEO Metadata";
+      case "seo": return "PubLive Metadata (11 Fields)";
       case "social": return "Social Media";
       case "impact": return "Industry Impact";
       case "interview": return "Story Leads";
@@ -369,38 +412,41 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 gap-3 bg-zinc-50 dark:bg-[#1a1a1a]">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#e30613]" />
+          <Sparkles className={`w-3.5 h-3.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "text-[#e59e19]" : "text-[#e30613]"}`} />
           <span className="text-[11px] font-bold tracking-[0.14em] uppercase text-zinc-500 dark:text-zinc-400">
             Generated Package
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => triggerCopy(getActiveTabContentString(), "active-tab")}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors uppercase tracking-wide"
-          >
-            {copiedSection === "active-tab" ? (
-              <><Check className="w-3 h-3 text-emerald-500" />Copied</>
-            ) : (
-              <><Copy className="w-3 h-3" />Copy</>
-            )}
-          </button>
+        {!!(packageData?.news || packageData?.seo || packageData?.social) && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => triggerCopy(getActiveTabContentString(), "active-tab", getActiveTabHTML())}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-wide cursor-pointer bg-white dark:bg-zinc-800 rounded-xs shadow-2xs"
+              title="Copy formatted article text (HTML + Plain text)"
+            >
+              {copiedSection === "active-tab" ? (
+                <><Check className="w-3 h-3 text-emerald-500" />Copied</>
+              ) : (
+                <><Copy className="w-3 h-3" />Copy</>
+              )}
+            </button>
 
-          <button
-            onClick={handleExportMarkdown}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors uppercase tracking-wide"
-          >
-            <FileDown className="w-3 h-3" />Markdown
-          </button>
+            <button
+              onClick={handleExportMarkdown}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-wide cursor-pointer bg-white dark:bg-zinc-800 rounded-xs shadow-2xs"
+            >
+              <FileDown className="w-3 h-3" />Markdown
+            </button>
 
-          <button
-            onClick={handleExportJSON}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors uppercase tracking-wide"
-          >
-            <FileDown className="w-3 h-3" />JSON
-          </button>
-        </div>
+            <button
+              onClick={handleExportJSON}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-wide cursor-pointer bg-white dark:bg-zinc-800 rounded-xs shadow-2xs"
+            >
+              <FileDown className="w-3 h-3" />JSON
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tabs list */}
@@ -429,8 +475,8 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         {/* Empty State / Generator Progress State */}
         {!packageData?.news && !packageData?.seo && !packageData?.social && (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-5 my-auto">
-            <div className="w-16 h-16 bg-[#e30613]/10 border border-[#e30613]/20 text-[#e30613] font-black text-xl flex items-center justify-center shadow-inner rounded-xs">
-              {magazine === "VoiceData" ? "V&D" : magazine === "PCQuest" ? "PCQ" : "DQ"}
+            <div className={`w-16 h-16 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b]/10 border-[#00839b]/20 text-[#00839b]" : "bg-[#e30613]/10 border-[#e30613]/20 text-[#e30613]"} border font-black text-xl flex items-center justify-center shadow-inner rounded-xs`}>
+              {magazine === "Voice&Data" ? "V&D" : magazine === "PCquest" ? "PCQ" : "DQ"}
             </div>
             
             <div className="max-w-sm space-y-1.5">
@@ -446,15 +492,15 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
               <div className="w-full space-y-6 text-left animate-fadeIn">
                 {/* Generation Progress Bar */}
                 <div className="p-4 bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 space-y-2.5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-[#e30613]">
+                  <div className={`flex items-center justify-between text-xs font-bold ${magazine === "Voice&Data" || magazine === "VoiceData" ? "text-[#00839b]" : "text-[#e30613]"}`}>
                     <span className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 animate-spin text-[#e30613]" /> {currentPhrases.title}
+                      <Sparkles className={`w-4 h-4 animate-spin ${magazine === "Voice&Data" || magazine === "VoiceData" ? "text-[#00839b]" : "text-[#e30613]"}`} /> {currentPhrases.title}
                     </span>
                     <span className="text-zinc-500 font-mono text-[11px]">Step {currentStep || 1} of {steps?.length || 4}</span>
                   </div>
                   <div className="h-2 bg-zinc-100 dark:bg-zinc-800 overflow-hidden rounded-full">
                     <div
-                      className="h-full bg-[#e30613] transition-all duration-300 shimmer"
+                      className={`h-full ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b]" : "bg-[#e30613]"} transition-all duration-300 shimmer`}
                       style={{ width: `${Math.max(15, ((currentStep || 1) / (steps?.length || 4)) * 100)}%` }}
                     />
                   </div>
@@ -489,23 +535,23 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <p className="font-bold text-zinc-400 uppercase tracking-wider text-[10px]">What You'll Receive:</p>
                 <ul className="space-y-1.5 text-zinc-600 dark:text-zinc-400">
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-[#e30613] rounded-full" />
+                    <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
                     <span>Full article text — ready to publish</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-[#e30613] rounded-full" />
+                    <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
                     <span>SEO title, meta description & keywords</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-[#e30613] rounded-full" />
+                    <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
                     <span>LinkedIn & Twitter posts</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-[#e30613] rounded-full" />
+                    <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
                     <span>Editorial review checklist</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-[#e30613] rounded-full" />
+                    <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
                     <span>AI-generated cover image</span>
                   </li>
                 </ul>
@@ -619,7 +665,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                   onClick={() => setViewMode("preview")}
                   className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${
                     viewMode === "preview"
-                      ? "bg-[#e30613] text-white shadow-xs"
+                      ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
                       : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                   }`}
                 >
@@ -630,7 +676,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                   onClick={() => setViewMode("code")}
                   className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${
                     viewMode === "code"
-                      ? "bg-[#e30613] text-white shadow-xs"
+                      ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
                       : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                   }`}
                 >
@@ -729,21 +775,43 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
           </div>
         )}
 
-        {/* TAB 2: SEO Metadata */}
+        {/* TAB 2: PubLive CMS & SEO Metadata (11 Fields) */}
         {activeTab === "seo" && packageData.seo && (
           <div className="space-y-5 animate-fadeIn">
+            {/* Header Notification & PubLive Sync Status */}
+            <div className="p-4 border border-[#e30613]/30 bg-[#e30613]/5 flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
+                    PubLive CMS 11-Field Metadata Package
+                  </span>
+                </div>
+                <p className="text-[12px] text-zinc-600 dark:text-zinc-400">
+                  All 11 metadata fields are populated and ready. Review or edit values below before pushing as a Draft to PubLive CMS.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => alert("🚀 PubLive CMS Draft Integration Staged!\n\nAll 11 metadata fields and full HTML body are ready. Once Prateek shares the PubLive API endpoint URL & Key, clicking this button will instantly create Draft #ID inside PubLive CMS.")}
+                className="px-4 py-2 text-xs font-bold bg-[#e30613] text-white hover:bg-[#b8040f] shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <ArrowRight className="w-4 h-4" /> Push Draft to PubLive CMS
+              </button>
+            </div>
+
             {/* Google snippet preview */}
             <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#1a1a1a] space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">Google Search Preview</span>
+                <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">Google & SERP Live Preview</span>
                 <Eye className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600" />
               </div>
               <div className="space-y-0.5 font-sans">
                 <div className="text-[#1a0dab] dark:text-[#8ab4f8] text-[15px] font-medium hover:underline cursor-pointer leading-tight">
-                  {packageData.seo.seo_title}
+                  {packageData.seo.meta_title || packageData.seo.seo_title}
                 </div>
                 <div className="text-[#006621] dark:text-[#34a853] text-[12px]">
-                  https://www.dataquest.co.in/news/{packageData.seo.slug}
+                  https://www.cybermedia.co.in/news/{packageData.seo.permalink || packageData.seo.slug}
                 </div>
                 <div className="text-zinc-600 dark:text-zinc-400 text-[13px] leading-normal line-clamp-2 mt-0.5">
                   {packageData.seo.meta_description}
@@ -751,56 +819,118 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {packageData.seo.primary_keyword && (
-                <div className="p-4 border border-[#e30613]/20 bg-[#e30613]/5 md:col-span-2 space-y-2">
-                  <div className="text-[10px] font-bold text-[#e30613] uppercase tracking-widest flex items-center gap-1.5">
-                    <Award className="w-3 h-3" /> Primary Keyword
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#e30613] text-white text-[13px] font-bold">
-                    <Target className="w-3.5 h-3.5" /> {packageData.seo.primary_keyword}
-                  </span>
-                </div>
-              )}
-
-              <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">SEO Title</div>
-                <p className="text-[13px] text-zinc-800 dark:text-zinc-200 font-medium leading-snug">{packageData.seo.seo_title}</p>
+            {/* 11 METADATA FIELDS EDITABLE GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Field 1: Title */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">1. Article Title (Headline)</label>
+                <input
+                  type="text"
+                  defaultValue={packageData.seo.seo_title || packageData.news?.headline}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
               </div>
 
-              <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">URL Slug</div>
-                <code className="text-[11px] bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-zinc-700 dark:text-zinc-300 font-mono block truncate">
-                  {packageData.seo.slug}
-                </code>
+              {/* Field 2: English Title */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">2. English Title</label>
+                <input
+                  type="text"
+                  defaultValue={packageData.seo.english_title || packageData.news?.headline}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
               </div>
 
-              <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] md:col-span-2 space-y-2.5">
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Focus Keywords</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {packageData.seo.keywords.map((kw, i) => (
-                    <span key={i} className="px-2.5 py-1 text-[11px] bg-[#e30613]/8 text-[#e30613] font-semibold border border-[#e30613]/20">
-                      {kw}
-                    </span>
-                  ))}
-                </div>
+              {/* Field 3: Permalink / Slug */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">3. Permalink (URL Slug)</label>
+                <input
+                  type="text"
+                  defaultValue={packageData.seo.permalink || packageData.seo.slug}
+                  className="w-full text-xs font-mono p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
               </div>
 
-              {packageData.seo.semantic_keywords && packageData.seo.semantic_keywords.length > 0 && (
-                <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] md:col-span-2 space-y-2.5">
-                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Cpu className="w-3 h-3" /> Semantic / LSI Keywords
-                    <span className="ml-1 text-[9px] font-normal normal-case">(Topical Authority)</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {packageData.seo.semantic_keywords.map((kw, i) => (
-                      <span key={i} className="px-2.5 py-1 text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                        {kw}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Field 4: Summary */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">4. Article Summary / Excerpt</label>
+                <textarea
+                  rows={2}
+                  defaultValue={packageData.seo.summary || packageData.news?.subheadline}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+
+              {/* Field 5: Meta Title */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">5. Meta Title (SEO Title)</label>
+                <input
+                  type="text"
+                  defaultValue={packageData.seo.meta_title || packageData.seo.seo_title}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+
+              {/* Field 6: Meta Description */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">6. Meta Description</label>
+                <textarea
+                  rows={2}
+                  defaultValue={packageData.seo.meta_description}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+
+              {/* Field 7: OG Title */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">7. OG Title (Social Graph)</label>
+                <input
+                  type="text"
+                  defaultValue={packageData.seo.og_title || packageData.seo.seo_title}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+
+              {/* Field 8: OG Description */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">8. OG Description (Social Graph)</label>
+                <textarea
+                  rows={2}
+                  defaultValue={packageData.seo.og_description || packageData.seo.meta_description}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+
+              {/* Field 9: Twitter Title */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-sky-500 uppercase tracking-wider block">9. Twitter Title (X Card)</label>
+                <input
+                  type="text"
+                  defaultValue={packageData.seo.twitter_title || packageData.seo.seo_title}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+
+              {/* Field 10: Twitter Description */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-1.5">
+                <label className="text-[10px] font-bold text-sky-500 uppercase tracking-wider block">10. Twitter Description (X Card)</label>
+                <textarea
+                  rows={2}
+                  defaultValue={packageData.seo.twitter_description || packageData.seo.meta_description}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+
+              {/* Field 11: Meta Keywords */}
+              <div className="p-3.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] md:col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">11. Meta Keywords & Meta News Keywords</label>
+                <input
+                  type="text"
+                  defaultValue={(packageData.seo.meta_keywords || packageData.seo.keywords || []).join(", ")}
+                  className="w-full text-xs font-medium p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                />
+              </div>
+            </div>
 
               {packageData.news?.header_image_prompt && (
                 <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] md:col-span-2 space-y-2">
@@ -825,7 +955,6 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                   )}
                 </div>
               )}
-            </div>
           </div>
         )}
 

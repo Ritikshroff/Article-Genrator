@@ -15,7 +15,7 @@ export const samplePRs: SamplePR[] = [
     id: "deloitte-quantum",
     title: "Deloitte Quantum Centre (QCoDE) at IIT Bombay",
     company: "Deloitte India",
-    magazine: "PCQuest",
+    magazine: "PCquest",
     content: `DELOITTE INDIA LAUNCHES QUANTUM CENTRE OF DISRUPTION FOR ENTERPRISES (QCoDE) AT IIT BOMBAY CAMPUS
 
 MUMBAI, India – April 8, 2026 – Deloitte India today officially announced the commercial launch of its Quantum Centre of Disruption for Enterprises (QCoDE), a state-of-the-art facility located at the ASPIRE IIT-B Research Park Foundation on the campus of the Indian Institute of Technology (IIT) Bombay.
@@ -37,7 +37,7 @@ The center begins operations immediately with initial proof-of-concept projects 
     id: "infosys-ai-services",
     title: "Infosys AI Services & Investor Day Highlights",
     company: "Infosys Limited",
-    magazine: "PCQuest",
+    magazine: "PCquest",
     content: `INFOSYS OUTLINES AI-FIRST VALUE FRAMEWORK AND SCALES AI ADOPTION ACROSS 90% OF TOP CLIENTS
 
 BENGALURU, India – February 18, 2026 – At its annual Investor AI Day, Infosys (NSE, BSE, NYSE: INFY), a global leader in next-generation digital services and consulting, today detailed its scaled AI capabilities and introduced its new "AI-First Value Framework" to capture a projected $300 billion to $400 billion market opportunity for enterprise AI services by 2030.
@@ -62,7 +62,7 @@ Infosys Topaz, the company's AI-first suite, will continue to serve as the techn
     id: "fynd-create",
     title: "Fynd Launches AI Fashion Platform 'Fynd Create'",
     company: "Fynd",
-    magazine: "PCQuest",
+    magazine: "PCquest",
     content: `FYND LAUNCHES 'FYND CREATE' TO REVOLUTIONIZE THE FASHION LIFECYCLE WITH UNIFIED DESIGN INTELLIGENCE
 
 MUMBAI, India – June 9, 2026 – Fynd, the AI-native retail technology leader backed by Reliance Retail Ventures Limited, today announced the launch of Fynd Create, a unified, AI-powered platform designed to streamline the fashion product lifecycle. By integrating design intelligence, supplier sourcing, and manufacturing into a single digital ecosystem, the platform enables fashion brands to shift from slow seasonal planning to a real-time, demand-driven model.
@@ -82,7 +82,7 @@ The platform is commercially available starting today for fashion brands, retail
     id: "mercury-security",
     title: "Mercury Security MP Intelligent Controllers Launch",
     company: "Mercury Security",
-    magazine: "PCQuest",
+    magazine: "PCquest",
     content: `MERCURY SECURITY ANNOUNCES COMMERCIAL LAUNCH OF EMBEDDED APPLICATION ENVIRONMENT ON MP CONTROLLERS
 
 AUSTIN, Texas – June 3, 2026 – Mercury Security, an HID Global brand and the global leader in open-architecture access control hardware, today announced the commercial launch of its embedded application environment. This platform allows technology partners and Original Equipment Manufacturers (OEMs) to build and execute custom applications directly on Mercury MP Series Intelligent Controllers.
@@ -102,7 +102,7 @@ The developer SDK and environment are now available to all certified Mercury par
     id: "krisp-appointment",
     title: "Krisp Appoints Graham Brown as Chief Growth Officer",
     company: "Krisp",
-    magazine: "PCQuest",
+    magazine: "PCquest",
     content: `KRISP APPOINTS CONTACT CENTER VETERAN GRAHAM BROWN AS CHIEF GROWTH OFFICER FOR EUROPE AND AFRICA
 
 SAN FRANCISCO, CA – June 1, 2026 – Krisp, the pioneer and leader in real-time Voice AI technology, today announced the appointment of Graham Brown as Chief Growth Officer (CGO) for Europe and Africa. Brown will lead the commercial expansion of Krisp's AI solutions in key international contact center hubs and Business Process Outsourcing (BPO) agencies.
@@ -121,7 +121,7 @@ The appointment is effective immediately, with Brown operating from Krisp's Euro
     id: "dq-meity-digital-india",
     title: "MeitY Launches Digital India 2.0 — AI & Semiconductor Focus",
     company: "MeitY",
-    magazine: "DataQuest",
+    magazine: "Dataquest",
     content: `MEITY ANNOUNCES DIGITAL INDIA 2.0 WITH ₹1.25 LAKH CRORE INVESTMENT IN AI, SEMICONDUCTORS, AND RURAL BROADBAND
 
 NEW DELHI, India – March 15, 2026 – The Ministry of Electronics and Information Technology (MeitY) today unveiled the Digital India 2.0 framework, a comprehensive national technology blueprint backed by a ₹1.25 lakh crore investment over five years. The initiative builds on the foundational achievements of Digital India Phase 1, shifting focus toward artificial intelligence infrastructure, semiconductor self-reliance, and last-mile digital connectivity.
@@ -144,7 +144,7 @@ Implementation monitoring will be tracked through a new MeitY Digital Dashboard 
     id: "dq-tcs-ai-contract",
     title: "TCS Bags ₹8,000 Crore AI Modernisation Contract from Indian Bank",
     company: "TCS",
-    magazine: "DataQuest",
+    magazine: "Dataquest",
     content: `TCS WINS ₹8,000 CRORE, 7-YEAR AI-POWERED CORE BANKING MODERNISATION CONTRACT FROM LEADING PUBLIC SECTOR BANK
 
 MUMBAI, India – April 22, 2026 – Tata Consultancy Services (TCS) (NSE: TCS) today announced the signing of a multi-year contract valued at approximately ₹8,000 crore with a leading Indian public sector bank for a comprehensive AI-powered core banking modernisation programme. This represents one of the largest IT services contracts awarded by the Indian BFSI sector in FY2026.
@@ -167,7 +167,7 @@ The programme is expected to create approximately 3,500 TCS jobs, primarily in P
     id: "vnd-jio-5g-sa",
     title: "Jio Completes 5G Standalone Rollout Across 700 Indian Cities",
     company: "Reliance Jio",
-    magazine: "VoiceData",
+    magazine: "Voice&Data",
     content: `RELIANCE JIO COMPLETES 5G STANDALONE NETWORK DEPLOYMENT ACROSS 700 CITIES; ACTIVATES NETWORK SLICING FOR ENTERPRISE CUSTOMERS
 
 MUMBAI, India – May 5, 2026 – Reliance Jio Infocomm Limited today announced the completion of its 5G Standalone (SA) network rollout across 700 Indian cities, making it the first Indian operator to deploy a full SA core nationwide at this scale. The milestone marks the transition from Non-Standalone (NSA) 5G infrastructure to a purpose-built 5G Standalone architecture capable of supporting network slicing, ultra-low latency applications, and massive IoT deployments.
@@ -190,7 +190,7 @@ Jio's 5G network currently serves over 150 million active 5G users, with enterpr
     id: "vnd-airtel-starlink-partnership",
     title: "Airtel and Starlink Sign India Distribution Partnership for Rural Broadband",
     company: "Bharti Airtel",
-    magazine: "VoiceData",
+    magazine: "Voice&Data",
     content: `BHARTI AIRTEL AND SPACEX STARLINK ANNOUNCE INDIA DISTRIBUTION PARTNERSHIP TO ACCELERATE RURAL BROADBAND CONNECTIVITY
 
 NEW DELHI, India – June 10, 2026 – Bharti Airtel Limited (NSE: BHARTIARTL) and SpaceX today announced a strategic distribution partnership under which Airtel will serve as the exclusive retail distribution partner for Starlink satellite broadband services across India. The partnership positions Airtel's extensive retail footprint of 1.5 million outlets and 3,50,000 Airtel banking points as the primary last-mile delivery network for Starlink hardware kits and subscription services.

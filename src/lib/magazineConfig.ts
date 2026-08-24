@@ -4,7 +4,7 @@
 // v1.1 Specification Compliant (Dataquest, Voice&Data, PCQuest)
 // ─────────────────────────────────────────────────────────────
 
-export type MagazineKey = "PCQuest" | "DataQuest" | "VoiceData";
+export type MagazineKey = "PCquest" | "Dataquest" | "Voice&Data";
 
 export interface AuthorEntity {
   byline: string;
@@ -32,8 +32,8 @@ export interface MagazineConfig {
 }
 
 export const magazines: Record<MagazineKey, MagazineConfig> = {
-  DataQuest: {
-    key: "DataQuest",
+  Dataquest: {
+    key: "Dataquest",
     name: "DATAQUEST",
     shortName: "DQ",
     domain: "dqindia.com",
@@ -84,17 +84,17 @@ OUTPUT: Must be valid JSON per schema v1.1.`,
     sitemapUrl: "https://www.dqindia.com/sitemap.xml",
   },
 
-  VoiceData: {
-    key: "VoiceData",
+  "Voice&Data": {
+    key: "Voice&Data",
     name: "VOICE&DATA",
     shortName: "V&D",
     domain: "voicendata.com",
     tagline: "India's Premier Telecom & ICT Publication",
-    accentBg: "bg-red-600",
-    accentText: "text-red-600",
-    accentBorder: "border-red-600",
-    accentRing: "focus:ring-red-500",
-    accentHex: "#e30613",
+    accentBg: "bg-[#00839b]",
+    accentText: "text-[#00839b]",
+    accentBorder: "border-[#00839b]",
+    accentRing: "focus:ring-[#00839b]",
+    accentHex: "#00839b",
     authorEntity: {
       byline: "Voice&Data Bureau",
       bioShort: "Voice&Data Telecom Desk — Tracking 5G, Spectrum, Satcom, Enterprise Networking, and TRAI Rulings since 1995.",
@@ -138,8 +138,8 @@ OUTPUT: Must be valid JSON per schema v1.1.`,
     sitemapUrl: "https://www.voicendata.com/sitemap.xml",
   },
 
-  PCQuest: {
-    key: "PCQuest",
+  PCquest: {
+    key: "PCquest",
     name: "PCQUEST",
     shortName: "PCQ",
     domain: "pcquest.com",

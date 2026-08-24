@@ -157,8 +157,8 @@ export default function ArticleDetailPage() {
             </button>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="px-1.5 py-0.5 text-[10px] font-black text-white bg-[#e30613]">
-                  {article.publication === "DataQuest" ? "DQ" : article.publication === "VoiceData" ? "V&D" : "PCQ"}
+                <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${article.publication === "Voice&Data" || article.publication === "VoiceData" ? "bg-[#00839b]" : "bg-[#e30613]"}`}>
+                  {article.publication === "Dataquest" || article.publication === "DataQuest" ? "DQ" : article.publication === "Voice&Data" || article.publication === "VoiceData" ? "V&D" : "PCQ"}
                 </span>
                 <span className={`px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
                   {st.label}

@@ -76,7 +76,7 @@ export const regulatoryCorpus: RAGChunk[] = [
 export function getRAGChunks(
   company: string,
   topic: string,
-  publicationKey: "DataQuest" | "VoiceData" | "PCQuest",
+  publicationKey: "Dataquest" | "Voice&Data" | "PCquest",
   pressReleaseText: string = ""
 ): RAGChunk[] {
   const results: RAGChunk[] = [];

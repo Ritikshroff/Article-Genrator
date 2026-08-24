@@ -212,9 +212,9 @@ function EditorDashboardView() {
           <CustomSelect
             options={[
               { value: "", label: "All Publications" },
-              { value: "DataQuest", label: "DATAQUEST" },
-              { value: "VoiceData", label: "VOICE&DATA" },
-              { value: "PCQuest", label: "PCQUEST" },
+              { value: "Dataquest", label: "DATAQUEST" },
+              { value: "Voice&Data", label: "VOICE&DATA" },
+              { value: "PCquest", label: "PCQUEST" },
             ]}
             value={pubFilter}
             onChange={(val) => setPubFilter(val)}
@@ -312,7 +312,7 @@ export default function Dashboard() {
   const { user, isEditor, logout, isLoading: authLoading } = useAuth();
 
   // ── Magazine segment state ───────────────────────────────────────
-  const [magazine, setMagazine] = useState<MagazineKey>("DataQuest");
+  const [magazine, setMagazine] = useState<MagazineKey>("Dataquest");
   const mag = magazineList.find((m) => m.key === magazine)!;
 
   // Save article state
@@ -482,9 +482,9 @@ export default function Dashboard() {
   };
 
   const labelCls = "block text-[13px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1.5";
-  const inputCls = "w-full text-[14px] px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#e30613] transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-600";
+  const inputCls = `w-full text-[14px] px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 focus:outline-none ${magazine === "Voice&Data" ? "focus:border-[#00839b]" : "focus:border-[#e30613]"} transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-600`;
   const selectCls = `${inputCls} cursor-pointer appearance-none pr-9`;
-  const stepBadge = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#e30613] text-white text-[11px] font-black flex-shrink-0 mr-2";
+  const stepBadge = `inline-flex items-center justify-center w-6 h-6 rounded-full ${magazine === "Voice&Data" ? "bg-[#00839b]" : "bg-[#e30613]"} text-white text-[11px] font-black flex-shrink-0 mr-2`;
 
   return (
     <div className="min-h-screen lg:h-screen lg:max-h-screen bg-[#f5f5f5] dark:bg-[#0d0d0d] text-zinc-900 dark:text-zinc-100 flex flex-col lg:overflow-hidden">
@@ -494,7 +494,7 @@ export default function Dashboard() {
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-1 h-8 bg-[#e30613] flex-shrink-0" />
+            <div className={`w-1 h-8 flex-shrink-0 transition-colors ${magazine === "Voice&Data" ? "bg-[#00839b]" : "bg-[#e30613]"}`} />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-serif text-[17px] font-black text-zinc-900 dark:text-zinc-50 leading-none">
@@ -526,7 +526,7 @@ export default function Dashboard() {
                     }}
                     className={`h-7 px-3 text-[11px] font-bold transition-all flex items-center justify-center rounded-xs ${
                       isActive
-                        ? "bg-[#e30613] text-white shadow-xs"
+                        ? m.key === "Voice&Data" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
                         : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                     }`}
                   >
@@ -602,9 +602,9 @@ export default function Dashboard() {
         /* AUTHOR WORKSPACE VIEW (Article Generator) */
         <>
           {/* Publication Bar */}
-          <div key={mag.key} className="bg-[#e30613]/10 border-b border-[#e30613]/20 px-5 py-1.5 flex items-center justify-between text-[11px] text-[#e30613] font-semibold animate-fadeIn flex-shrink-0">
+          <div key={mag.key} className={`${magazine === "Voice&Data" ? "bg-[#00839b]/10 border-[#00839b]/20 text-[#00839b]" : "bg-[#e30613]/10 border-[#e30613]/20 text-[#e30613]"} border-b px-5 py-1.5 flex items-center justify-between text-[11px] font-semibold animate-fadeIn flex-shrink-0`}>
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#e30613] animate-pulse" />
+              <span className={`w-2 h-2 rounded-full ${magazine === "Voice&Data" ? "bg-[#00839b]" : "bg-[#e30613]"} animate-pulse`} />
               Active Publication: <strong>{mag.name}</strong> (
               <a
                 href={`https://www.${mag.domain}`}
@@ -629,7 +629,7 @@ export default function Dashboard() {
                   <h2 className="text-[14px] font-bold text-zinc-800 dark:text-zinc-200">Create Article</h2>
                   <p className="text-[11px] text-zinc-400 mt-0.5">Follow the 3 steps below to generate a ready-to-publish article.</p>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-extrabold bg-[#e30613] text-white tracking-wider uppercase">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-extrabold ${magazine === "Voice&Data" ? "bg-[#e59e19] text-zinc-950 font-black" : "bg-[#e30613] text-white"} tracking-wider uppercase`}>
                   {mag.shortName} Engine
                 </span>
               </div>
@@ -682,12 +682,12 @@ export default function Dashboard() {
                           onClick={() => setTopicType(type.id as any)}
                           className={`p-3 border text-left transition-all ${
                             isSelected
-                              ? "border-[#e30613] bg-[#e30613]/5 dark:bg-[#e30613]/10"
+                              ? magazine === "Voice&Data" ? "border-[#00839b] bg-[#00839b]/5 dark:bg-[#00839b]/10" : "border-[#e30613] bg-[#e30613]/5 dark:bg-[#e30613]/10"
                               : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <Icon className={`w-4 h-4 ${isSelected ? "text-[#e30613]" : "text-zinc-400"}`} />
+                            <Icon className={`w-4 h-4 ${isSelected ? magazine === "Voice&Data" ? "text-[#00839b]" : "text-[#e30613]" : "text-zinc-400"}`} />
                             <span className="text-[13px] font-bold">{type.label}</span>
                           </div>
                           <p className="text-[11px] text-zinc-400 mt-1">{type.desc}</p>
@@ -720,15 +720,15 @@ export default function Dashboard() {
 
                     <div className="space-y-2">
                       <label className="flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
-                        <input type="checkbox" checked={humanize} onChange={(e) => setHumanize(e.target.checked)} className="checkbox-editorial" />
+                        <input type="checkbox" checked={humanize} onChange={(e) => setHumanize(e.target.checked)} className="checkbox-editorial" style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }} />
                         Natural Human Journalist Tone
                       </label>
                       <label className="flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
-                        <input type="checkbox" checked={generateImage} onChange={(e) => setGenerateImage(e.target.checked)} className="checkbox-editorial" />
+                        <input type="checkbox" checked={generateImage} onChange={(e) => setGenerateImage(e.target.checked)} className="checkbox-editorial" style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }} />
                         Generate Cover Banner Image
                       </label>
                       <label className="flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
-                        <input type="checkbox" checked={referencePCQuest} onChange={(e) => setReferencePCQuest(e.target.checked)} className="checkbox-editorial" />
+                        <input type="checkbox" checked={referencePCQuest} onChange={(e) => setReferencePCQuest(e.target.checked)} className="checkbox-editorial" style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }} />
                         Link to related {mag.name} articles
                       </label>
                     </div>
@@ -803,6 +803,7 @@ export default function Dashboard() {
                                 checked={handsOnData}
                                 onChange={(e) => setHandsOnData(e.target.checked)}
                                 className="checkbox-editorial"
+                                style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }}
                               />
                               Include CyberMedia Labs Hands-on Testing Benchmark Data
                             </label>

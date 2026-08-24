@@ -35,7 +35,7 @@ class UserResponse(BaseModel):
 
 class ArticleCreate(BaseModel):
     title: str
-    publication: Literal["DataQuest", "VoiceData", "PCQuest"]
+    publication: str
     press_release: str
     news_data: Optional[dict] = None
     seo_data: Optional[dict] = None

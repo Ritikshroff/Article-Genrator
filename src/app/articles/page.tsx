@@ -49,9 +49,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 const PUB_BADGE: Record<string, string> = {
-  DataQuest: "bg-red-600",
-  VoiceData: "bg-red-600",
-  PCQuest: "bg-red-600",
+  Dataquest: "bg-[#e30613]",
+  "Voice&Data": "bg-[#00839b]",
+  PCquest: "bg-[#e30613]",
 };
 
 export default function ArticlesPage() {
@@ -262,9 +262,9 @@ export default function ArticlesPage() {
             <CustomSelect
               options={[
                 { value: "", label: "All Publications" },
-                { value: "DataQuest", label: "DATAQUEST" },
-                { value: "VoiceData", label: "VOICE&DATA" },
-                { value: "PCQuest", label: "PCQUEST" },
+                { value: "Dataquest", label: "DATAQUEST" },
+                { value: "Voice&Data", label: "VOICE&DATA" },
+                { value: "PCquest", label: "PCQUEST" },
               ]}
               value={pubFilter}
               onChange={(val) => setPubFilter(val)}
