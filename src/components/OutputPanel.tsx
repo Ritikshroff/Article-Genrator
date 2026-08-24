@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Copy, Check, FileDown, Briefcase, Cpu, Award, Users, 
+import {
+  Copy, Check, FileDown, Briefcase, Cpu, Award, Users,
   HelpCircle, Eye, ShieldAlert, Sparkles, Clipboard, ArrowRight,
-  ExternalLink, Target, Code
+  ExternalLink, Target, Code, Save
 } from "lucide-react";
+import { magazines, MagazineKey } from "../lib/magazineConfig";
+import { apiFetch } from "../lib/apiClient";
 
 interface NewsData {
   headline: string;
@@ -95,6 +97,9 @@ interface OutputPanelProps {
   currentStep?: number;
   stepMessage?: string;
   steps?: { id: number; name: string }[];
+  articleId?: string;
+  readOnly?: boolean;
+  onSaveBackend?: (updatedPackage: EditorialPackage) => Promise<void>;
 }
 
 const renderParagraphWithLinks = (text: string) => {
@@ -202,7 +207,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
   status = "idle",
   currentStep = 0,
   stepMessage = "",
-  steps = []
+  steps = [],
+  articleId,
+  readOnly = false,
+  onSaveBackend
 }) => {
   const [activeTab, setActiveTab] = useState<"news" | "seo" | "social" | "impact" | "interview" | "review">("news");
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
@@ -211,8 +219,8 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
 
   const normalizedMagKey =
     (magazine === "VoiceData" || magazine === "Voice&Data") ? "Voice&Data"
-    : (magazine === "PCQuest" || magazine === "PCquest") ? "PCquest"
-    : "Dataquest";
+      : (magazine === "PCQuest" || magazine === "PCquest") ? "PCquest"
+        : "Dataquest";
 
   const currentPhrases = MAGAZINE_PHRASES[normalizedMagKey] || MAGAZINE_PHRASES["Dataquest"];
 
@@ -244,12 +252,178 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
     }
   }, [packageData]);
 
+  const [socialFields, setSocialFields] = useState({
+    linkedin: "",
+    twitter: "",
+  });
+  const [initialSocialFields, setInitialSocialFields] = useState({
+    linkedin: "",
+    twitter: "",
+  });
+
+  const [metaFields, setMetaFields] = useState({
+    title: "", englishTitle: "", permalink: "", summary: "",
+    metaTitle: "", metaDescription: "", ogTitle: "", ogDescription: "",
+    twitterTitle: "", twitterDescription: "", keywords: ""
+  });
+  const [initialMetaFields, setInitialMetaFields] = useState({
+    title: "", englishTitle: "", permalink: "", summary: "",
+    metaTitle: "", metaDescription: "", ogTitle: "", ogDescription: "",
+    twitterTitle: "", twitterDescription: "", keywords: ""
+  });
+
+  // Toast Notifications State
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "info" | "warning" }[]>([]);
+
+  const showToast = (message: string, type: "success" | "info" | "warning" = "success") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev.slice(-3), { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3200);
+  };
+
+  useEffect(() => {
+    if (packageData.social) {
+      const init = {
+        linkedin: packageData.social.linkedin_post || "",
+        twitter: packageData.social.twitter_post || "",
+      };
+      setSocialFields(init);
+      setInitialSocialFields(init);
+    }
+  }, [packageData.social]);
+
+  const extractKeywords = (seo: any): string => {
+    if (!seo) return "";
+    const kw = seo.meta_keywords ?? seo.keywords ?? seo.meta_news_keywords;
+    if (!kw) return "";
+    if (Array.isArray(kw)) return kw.join(", ");
+    if (typeof kw === "string") return kw;
+    return String(kw);
+  };
+
+  useEffect(() => {
+    if (packageData.seo) {
+      const init = {
+        title: packageData.seo.seo_title || packageData.news?.headline || "",
+        englishTitle: packageData.seo.english_title || packageData.news?.headline || "",
+        permalink: packageData.seo.permalink || packageData.seo.slug || "",
+        summary: packageData.seo.summary || packageData.news?.subheadline || "",
+        metaTitle: packageData.seo.meta_title || packageData.seo.seo_title || "",
+        metaDescription: packageData.seo.meta_description || "",
+        ogTitle: packageData.seo.og_title || packageData.seo.seo_title || "",
+        ogDescription: packageData.seo.og_description || packageData.seo.meta_description || "",
+        twitterTitle: packageData.seo.twitter_title || packageData.seo.seo_title || "",
+        twitterDescription: packageData.seo.twitter_description || packageData.seo.meta_description || "",
+        keywords: extractKeywords(packageData.seo),
+      };
+      setMetaFields(init);
+      setInitialMetaFields(init);
+    }
+  }, [packageData.seo, packageData.news]);
+
+  const isLinkedInDirty = socialFields.linkedin !== initialSocialFields.linkedin;
+  const isTwitterDirty = socialFields.twitter !== initialSocialFields.twitter;
+  const isMetaDirty = JSON.stringify(metaFields) !== JSON.stringify(initialMetaFields);
+
+  const syncToBackendDB = async (updatedPackage: EditorialPackage) => {
+    if (articleId) {
+      try {
+        await apiFetch(`/articles/${articleId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            title: updatedPackage.news?.headline || updatedPackage.seo?.seo_title || "Untitled",
+            publication: magazine,
+            news_data: updatedPackage.news,
+            seo_data: updatedPackage.seo,
+            social_data: updatedPackage.social,
+            impact_data: updatedPackage.impact,
+            interview_data: updatedPackage.interview,
+            review_data: updatedPackage.review,
+          }),
+        });
+        showToast("☁️ Saved & Synced to MongoDB Database!", "success");
+      } catch (err: any) {
+        console.error("Backend DB sync error:", err);
+        showToast(`⚠️ Saved locally, but DB sync error: ${err.message || "Network error"}`, "warning");
+      }
+    } else if (onSaveBackend) {
+      await onSaveBackend(updatedPackage);
+    }
+  };
+
+  const handleSaveLinkedIn = async () => {
+    if (!isLinkedInDirty) return;
+    if (packageData.social) {
+      packageData.social.linkedin_post = socialFields.linkedin;
+    }
+    setInitialSocialFields((prev) => ({ ...prev, linkedin: socialFields.linkedin }));
+    showToast("💾 LinkedIn post saved!", "success");
+    await syncToBackendDB(packageData);
+  };
+
+  const handleSaveTwitter = async () => {
+    if (!isTwitterDirty) return;
+    if (packageData.social) {
+      packageData.social.twitter_post = socialFields.twitter;
+    }
+    setInitialSocialFields((prev) => ({ ...prev, twitter: socialFields.twitter }));
+    showToast("💾 X / Twitter post saved!", "success");
+    await syncToBackendDB(packageData);
+  };
+
+  const handleSaveMetadata = async () => {
+    if (!isMetaDirty) return;
+    if (packageData.seo) {
+      packageData.seo.seo_title = metaFields.title;
+      packageData.seo.english_title = metaFields.englishTitle;
+      packageData.seo.permalink = metaFields.permalink;
+      packageData.seo.summary = metaFields.summary;
+      packageData.seo.meta_title = metaFields.metaTitle;
+      packageData.seo.meta_description = metaFields.metaDescription;
+      packageData.seo.og_title = metaFields.ogTitle;
+      packageData.seo.og_description = metaFields.ogDescription;
+      packageData.seo.twitter_title = metaFields.twitterTitle;
+      packageData.seo.twitter_description = metaFields.twitterDescription;
+      const kwArray = metaFields.keywords.split(",").map(s => s.trim()).filter(Boolean);
+      packageData.seo.meta_keywords = kwArray;
+      packageData.seo.keywords = kwArray;
+      (packageData.seo as any).meta_news_keywords = kwArray;
+    }
+    setInitialMetaFields({ ...metaFields });
+    showToast("💾 All 11 Metadata fields saved!", "success");
+    await syncToBackendDB(packageData);
+  };
+
   const getActiveTabHTML = (): string => {
     if (activeTab === "news" && packageData.news) {
       const h1 = `<h1>${packageData.news.headline}</h1>`;
       const h2 = packageData.news.subheadline ? `<h2>${packageData.news.subheadline}</h2>` : "";
       const body = packageData.news.article || "";
-      return `<div>${h1}${h2}${body}</div>`;
+      let faqHtml = "";
+      if (packageData.news.faq && packageData.news.faq.length > 0) {
+        faqHtml = `<h2>Frequently Asked Questions</h2>` + packageData.news.faq.map((f, i) => `<h3>${i + 1}. ${f.question}</h3><p>${f.answer}</p>`).join("");
+      }
+      return `<div>${h1}${h2}${body}${faqHtml}</div>`;
+    }
+    if (activeTab === "seo") {
+      return `<div style="font-family: sans-serif; line-height: 1.6;">
+        <h2 style="color: #e30613; margin-bottom: 16px;">PubLive CMS 11-Field Metadata Package</h2>
+        <ol style="padding-left: 20px;">
+          <li style="margin-bottom: 12px;"><strong>Article Title (Headline):</strong> <p>${metaFields.title}</p></li>
+          <li style="margin-bottom: 12px;"><strong>English Title:</strong> <p>${metaFields.englishTitle}</p></li>
+          <li style="margin-bottom: 12px;"><strong>Permalink (URL Slug):</strong> <p>${metaFields.permalink}</p></li>
+          <li style="margin-bottom: 12px;"><strong>Article Summary / Excerpt:</strong> <p>${metaFields.summary}</p></li>
+          <li style="margin-bottom: 12px;"><strong>Meta Title (SEO Title):</strong> <p>${metaFields.metaTitle}</p></li>
+          <li style="margin-bottom: 12px;"><strong>Meta Description:</strong> <p>${metaFields.metaDescription}</p></li>
+          <li style="margin-bottom: 12px;"><strong>OG Title (Social Graph):</strong> <p>${metaFields.ogTitle}</p></li>
+          <li style="margin-bottom: 12px;"><strong>OG Description (Social Graph):</strong> <p>${metaFields.ogDescription}</p></li>
+          <li style="margin-bottom: 12px;"><strong>Twitter Title (X Card):</strong> <p>${metaFields.twitterTitle}</p></li>
+          <li style="margin-bottom: 12px;"><strong>Twitter Description (X Card):</strong> <p>${metaFields.twitterDescription}</p></li>
+          <li style="margin-bottom: 12px;"><strong>Meta Keywords & News Keywords:</strong> <p>${metaFields.keywords}</p></li>
+        </ol>
+      </div>`;
     }
     return getActiveTabContentString();
   };
@@ -271,14 +445,23 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         await navigator.clipboard.writeText(text);
       }
       setCopiedSection(identifier);
+      const label = identifier === "active-tab" ? "Formatted Article & Package"
+        : identifier === "linkedin" ? "LinkedIn Post"
+        : identifier === "twitter" ? "X / Twitter Post"
+        : identifier === "img-prompt" ? "Header Image Prompt"
+        : identifier === "raw-html" ? "Raw HTML Code"
+        : "Content";
+      showToast(`📋 Copied ${label} to clipboard!`, "success");
       setTimeout(() => setCopiedSection(null), 2000);
     } catch (err) {
       try {
         await navigator.clipboard.writeText(text);
         setCopiedSection(identifier);
+        showToast(`📋 Copied content to clipboard!`, "success");
         setTimeout(() => setCopiedSection(null), 2000);
       } catch (fallbackErr) {
         console.error("Failed to copy text:", fallbackErr);
+        showToast("⚠️ Could not copy text to clipboard", "warning");
       }
     }
   };
@@ -286,7 +469,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
   const getTabLabel = (key: string) => {
     switch (key) {
       case "news": return "Article Text";
-      case "seo": return "PubLive Metadata (11 Fields)";
+      case "seo": return " Metadata ";
       case "social": return "Social Media";
       case "impact": return "Industry Impact";
       case "interview": return "Story Leads";
@@ -373,6 +556,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showToast("📥 Exported Editorial Package as Markdown (.md)", "info");
   };
 
   const handleExportJSON = () => {
@@ -385,17 +569,37 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showToast("📥 Exported Editorial Package as JSON (.json)", "info");
   };
 
-  // Get current active section content string for simple copy
+  // Get current active section content string for simple copy (includes FAQs & Formatted Metadata)
   const getActiveTabContentString = (): string => {
     switch (activeTab) {
-      case "news":
-        return packageData.news ? `# ${packageData.news.headline}\n## ${packageData.news.subheadline}\n\n${packageData.news.article}` : "";
-      case "seo":
-        return packageData.seo ? JSON.stringify(packageData.seo, null, 2) : "";
+      case "news": {
+        if (!packageData.news) return "";
+        let text = `# ${packageData.news.headline}\n## ${packageData.news.subheadline}\n\n${packageData.news.article}`;
+        if (packageData.news.faq && packageData.news.faq.length > 0) {
+          text += `\n\n## Frequently Asked Questions\n\n` + packageData.news.faq.map((f, i) => `### ${i + 1}. ${f.question}\n${f.answer}`).join("\n\n");
+        }
+        return text;
+      }
+      case "seo": {
+        return `PUBLIVE CMS 11-FIELD METADATA PACKAGE
+-----------------------------------------
+1. Article Title (Headline): ${metaFields.title}
+2. English Title: ${metaFields.englishTitle}
+3. Permalink (URL Slug): ${metaFields.permalink}
+4. Article Summary / Excerpt: ${metaFields.summary}
+5. Meta Title (SEO Title): ${metaFields.metaTitle}
+6. Meta Description: ${metaFields.metaDescription}
+7. OG Title (Social Graph): ${metaFields.ogTitle}
+8. OG Description (Social Graph): ${metaFields.ogDescription}
+9. Twitter Title (X Card): ${metaFields.twitterTitle}
+10. Twitter Description (X Card): ${metaFields.twitterDescription}
+11. Meta Keywords & News Keywords: ${metaFields.keywords}`;
+      }
       case "social":
-        return packageData.social ? `LinkedIn Post:\n${packageData.social.linkedin_post}\n\nTwitter/X Post:\n${packageData.social.twitter_post}` : "";
+        return `LinkedIn Post:\n${socialFields.linkedin}\n\nTwitter/X Post:\n${socialFields.twitter}`;
       case "impact":
         return packageData.impact ? JSON.stringify(packageData.impact, null, 2) : "";
       case "interview":
@@ -457,11 +661,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-shrink-0 px-4 py-3 text-[12px] sm:text-[13px] font-semibold border-b-2 transition-all whitespace-nowrap ${
-                isSelected
-                  ? "border-[#e30613] text-[#e30613]"
-                  : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex-shrink-0 px-4 py-3 text-[12px] sm:text-[13px] font-semibold border-b-2 transition-all whitespace-nowrap ${isSelected
+                ? "border-[#e30613] text-[#e30613]"
+                : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
             >
               {getTabLabel(tab)}
             </button>
@@ -471,14 +674,14 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
 
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-5 sm:p-6 scroller">
-        
+
         {/* Empty State / Generator Progress State */}
         {!packageData?.news && !packageData?.seo && !packageData?.social && (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-5 my-auto">
             <div className={`w-16 h-16 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b]/10 border-[#00839b]/20 text-[#00839b]" : "bg-[#e30613]/10 border-[#e30613]/20 text-[#e30613]"} border font-black text-xl flex items-center justify-center shadow-inner rounded-xs`}>
               {magazine === "Voice&Data" ? "V&D" : magazine === "PCquest" ? "PCQ" : "DQ"}
             </div>
-            
+
             <div className="max-w-sm space-y-1.5">
               <h3 className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-50">
                 Ready for {magazine || "CYBERMEDIA"}
@@ -663,22 +866,20 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode("preview")}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${
-                    viewMode === "preview"
-                      ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
-                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${viewMode === "preview"
+                    ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
                 >
                   <Eye className="w-3.5 h-3.5" /> Article Preview
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode("code")}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${
-                    viewMode === "code"
-                      ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
-                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${viewMode === "code"
+                    ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
                 >
                   <Code className="w-3.5 h-3.5" /> Raw HTML Code
                 </button>
@@ -690,7 +891,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
 
             {/* Article Content Display */}
             {viewMode === "preview" ? (
-              <div 
+              <div
                 className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-sm sm:text-base leading-relaxed [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h2]:border-b [&>h2]:border-zinc-200 dark:[&>h2]:border-zinc-800 [&>h2]:pb-1.5 [&>h3]:text-base [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&>li]:mb-1.5 [&>blockquote]:border-l-4 [&>blockquote]:border-[#e30613] [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 font-sans"
                 dangerouslySetInnerHTML={{ __html: formatHtmlForPreview(packageData.news.article) }}
               />
@@ -778,29 +979,15 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         {/* TAB 2: PubLive CMS & SEO Metadata (11 Fields) */}
         {activeTab === "seo" && packageData.seo && (
           <div className="space-y-5 animate-fadeIn">
-            {/* Header Notification & PubLive Sync Status */}
-            <div className="p-4 border border-[#e30613]/30 bg-[#e30613]/5 flex flex-wrap items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
-                    PubLive CMS 11-Field Metadata Package
-                  </span>
-                </div>
-                <p className="text-[12px] text-zinc-600 dark:text-zinc-400">
-                  All 11 metadata fields are populated and ready. Review or edit values below before pushing as a Draft to PubLive CMS.
-                </p>
+            {/* Read-Only Notice Banner */}
+            {readOnly && (
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-2 rounded-xs">
+                <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>🔒 Article is currently submitted for review / approved. Authors cannot edit content during review.</span>
               </div>
-              <button
-                type="button"
-                onClick={() => alert("🚀 PubLive CMS Draft Integration Staged!\n\nAll 11 metadata fields and full HTML body are ready. Once Prateek shares the PubLive API endpoint URL & Key, clicking this button will instantly create Draft #ID inside PubLive CMS.")}
-                className="px-4 py-2 text-xs font-bold bg-[#e30613] text-white hover:bg-[#b8040f] shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <ArrowRight className="w-4 h-4" /> Push Draft to PubLive CMS
-              </button>
-            </div>
+            )}
 
-            {/* Google snippet preview */}
+            {/* Google snippet preview with Actual Domain */}
             <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#1a1a1a] space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">Google & SERP Live Preview</span>
@@ -808,16 +995,49 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
               </div>
               <div className="space-y-0.5 font-sans">
                 <div className="text-[#1a0dab] dark:text-[#8ab4f8] text-[15px] font-medium hover:underline cursor-pointer leading-tight">
-                  {packageData.seo.meta_title || packageData.seo.seo_title}
+                  {metaFields.metaTitle || metaFields.title}
                 </div>
                 <div className="text-[#006621] dark:text-[#34a853] text-[12px]">
-                  https://www.cybermedia.co.in/news/{packageData.seo.permalink || packageData.seo.slug}
+                  https://www.{(magazines[magazine as MagazineKey] || magazines["Dataquest"]).domain}/news/{metaFields.permalink || packageData.seo.slug}
                 </div>
                 <div className="text-zinc-600 dark:text-zinc-400 text-[13px] leading-normal line-clamp-2 mt-0.5">
-                  {packageData.seo.meta_description}
+                  {metaFields.metaDescription}
                 </div>
               </div>
             </div>
+
+            {/* Universal Save Bar */}
+            <div className="flex items-center justify-between p-3.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xs">
+              <div>
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider block">Metadata</span>
+                <span className="text-[11px] text-zinc-500">Edit any values below and click Save Changes to persist your updates.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveMetadata}
+                disabled={readOnly || !isMetaDirty}
+                className={`flex items-center gap-1.5 whitespace-nowrap px-4 py-2 text-xs font-bold transition-all shadow-2xs rounded-xs ${
+                  readOnly
+                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-60"
+                    : isMetaDirty
+                    ? magazine === "Voice&Data" || magazine === "VoiceData"
+                      ? "bg-[#00839b] hover:bg-[#006b80] text-white cursor-pointer opacity-100"
+                      : "bg-[#e30613] hover:bg-[#b8040f] text-white cursor-pointer opacity-100"
+                    : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-60"
+                }`}
+                title={readOnly ? "Article is locked while in review" : isMetaDirty ? "Save changes to metadata" : "No unsaved changes"}
+              >
+                {readOnly ? (
+                  <><ShieldAlert className="w-3.5 h-3.5 text-amber-500" /> Article Locked</>
+                ) : isMetaDirty ? (
+                  <><Save className="w-3.5 h-3.5" /> Save Metadata Changes</>
+                ) : (
+                  <><Check className="w-3.5 h-3.5 text-emerald-500" /> Metadata Saved</>
+                )}
+              </button>
+            </div>
+
+
 
             {/* 11 METADATA FIELDS EDITABLE GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -826,8 +1046,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">1. Article Title (Headline)</label>
                 <input
                   type="text"
-                  defaultValue={packageData.seo.seo_title || packageData.news?.headline}
-                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.title}
+                  onChange={(e) => setMetaFields({ ...metaFields, title: e.target.value })}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613] disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -836,8 +1059,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">2. English Title</label>
                 <input
                   type="text"
-                  defaultValue={packageData.seo.english_title || packageData.news?.headline}
-                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.englishTitle}
+                  onChange={(e) => setMetaFields({ ...metaFields, englishTitle: e.target.value })}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613] disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -846,8 +1072,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">3. Permalink (URL Slug)</label>
                 <input
                   type="text"
-                  defaultValue={packageData.seo.permalink || packageData.seo.slug}
-                  className="w-full text-xs font-mono p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.permalink}
+                  onChange={(e) => setMetaFields({ ...metaFields, permalink: e.target.value })}
+                  className="w-full text-xs font-mono p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613] disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -856,8 +1085,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">4. Article Summary / Excerpt</label>
                 <textarea
                   rows={2}
-                  defaultValue={packageData.seo.summary || packageData.news?.subheadline}
-                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.summary}
+                  onChange={(e) => setMetaFields({ ...metaFields, summary: e.target.value })}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613] resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  style={{ resize: "none" }}
                 />
               </div>
 
@@ -866,8 +1099,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">5. Meta Title (SEO Title)</label>
                 <input
                   type="text"
-                  defaultValue={packageData.seo.meta_title || packageData.seo.seo_title}
-                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.metaTitle}
+                  onChange={(e) => setMetaFields({ ...metaFields, metaTitle: e.target.value })}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613] disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -876,8 +1112,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">6. Meta Description</label>
                 <textarea
                   rows={2}
-                  defaultValue={packageData.seo.meta_description}
-                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.metaDescription}
+                  onChange={(e) => setMetaFields({ ...metaFields, metaDescription: e.target.value })}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613] resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  style={{ resize: "none" }}
                 />
               </div>
 
@@ -886,8 +1126,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">7. OG Title (Social Graph)</label>
                 <input
                   type="text"
-                  defaultValue={packageData.seo.og_title || packageData.seo.seo_title}
-                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.ogTitle}
+                  onChange={(e) => setMetaFields({ ...metaFields, ogTitle: e.target.value })}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613] disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -896,8 +1139,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">8. OG Description (Social Graph)</label>
                 <textarea
                   rows={2}
-                  defaultValue={packageData.seo.og_description || packageData.seo.meta_description}
-                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.ogDescription}
+                  onChange={(e) => setMetaFields({ ...metaFields, ogDescription: e.target.value })}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613] resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  style={{ resize: "none" }}
                 />
               </div>
 
@@ -906,8 +1153,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-sky-500 uppercase tracking-wider block">9. Twitter Title (X Card)</label>
                 <input
                   type="text"
-                  defaultValue={packageData.seo.twitter_title || packageData.seo.seo_title}
-                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.twitterTitle}
+                  onChange={(e) => setMetaFields({ ...metaFields, twitterTitle: e.target.value })}
+                  className="w-full text-xs font-semibold p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613] disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -916,8 +1166,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-sky-500 uppercase tracking-wider block">10. Twitter Description (X Card)</label>
                 <textarea
                   rows={2}
-                  defaultValue={packageData.seo.twitter_description || packageData.seo.meta_description}
-                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.twitterDescription}
+                  onChange={(e) => setMetaFields({ ...metaFields, twitterDescription: e.target.value })}
+                  className="w-full text-xs p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xs focus:ring-1 focus:ring-[#e30613] resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  style={{ resize: "none" }}
                 />
               </div>
 
@@ -926,35 +1180,38 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 <label className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">11. Meta Keywords & Meta News Keywords</label>
                 <input
                   type="text"
-                  defaultValue={(packageData.seo.meta_keywords || packageData.seo.keywords || []).join(", ")}
-                  className="w-full text-xs font-medium p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613]"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={metaFields.keywords}
+                  onChange={(e) => setMetaFields({ ...metaFields, keywords: e.target.value })}
+                  className="w-full text-xs font-medium p-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xs focus:ring-1 focus:ring-[#e30613] disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
-              {packageData.news?.header_image_prompt && (
-                <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] md:col-span-2 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-[#e30613]" /> E-E-A-T Safe Header Image Prompt
-                    </div>
-                    <button
-                      onClick={() => triggerCopy(packageData.news?.header_image_prompt || "", "img-prompt")}
-                      className="text-[10px] font-bold text-[#e30613] hover:underline"
-                    >
-                      {copiedSection === "img-prompt" ? "Copied" : "Copy Prompt"}
-                    </button>
+            {packageData.news?.header_image_prompt && (
+              <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] md:col-span-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-[#e30613]" /> E-E-A-T Safe Header Image Prompt
                   </div>
-                  <code className="text-[11px] bg-zinc-50 dark:bg-zinc-900/60 p-2.5 border border-zinc-100 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono block leading-relaxed">
-                    {packageData.news.header_image_prompt}
-                  </code>
-                  {packageData.news.header_image_alt && (
-                    <p className="text-[11px] text-zinc-500 mt-1">
-                      <strong>SEO Alt Text:</strong> {packageData.news.header_image_alt}
-                    </p>
-                  )}
+                  <button
+                    onClick={() => triggerCopy(packageData.news?.header_image_prompt || "", "img-prompt")}
+                    className="text-[10px] font-bold text-[#e30613] hover:underline"
+                  >
+                    {copiedSection === "img-prompt" ? "Copied" : "Copy Prompt"}
+                  </button>
                 </div>
-              )}
+                <code className="text-[11px] bg-zinc-50 dark:bg-zinc-900/60 p-2.5 border border-zinc-100 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono block leading-relaxed">
+                  {packageData.news.header_image_prompt}
+                </code>
+                {packageData.news.header_image_alt && (
+                  <p className="text-[11px] text-zinc-500 mt-1">
+                    <strong>SEO Alt Text:</strong> {packageData.news.header_image_alt}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1140,44 +1397,142 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         {activeTab === "social" && packageData.social && (
           <div className="space-y-4 animate-fadeIn">
             {/* LinkedIn */}
-            <div className="border border-[#0a66c2]/20 bg-[#0a66c2]/5 dark:bg-[#0a66c2]/10">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#0a66c2]/15">
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 bg-[#0a66c2] text-white flex items-center justify-center font-black text-[11px]">in</span>
+            <div className="border border-[#0a66c2]/20 bg-[#0a66c2]/5 dark:bg-[#0a66c2]/10 rounded-xs overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#0a66c2]/15 bg-white/50 dark:bg-zinc-900/50">
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 bg-[#0a66c2] text-white flex items-center justify-center font-black text-[11px] rounded-xs shadow-2xs">in</span>
                   <div>
                     <h4 className="text-[13px] font-bold text-zinc-800 dark:text-zinc-200">LinkedIn Post</h4>
                     <p className="text-[10px] text-zinc-500">Optimized for professional networks</p>
                   </div>
                 </div>
-                <button onClick={() => triggerCopy(packageData.social?.linkedin_post || "", "linkedin")}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide bg-[#0a66c2] hover:bg-[#004182] text-white transition-colors">
-                  {copiedSection === "linkedin" ? <><Check className="w-3 h-3" />Copied</> : <><Copy className="w-3 h-3" />Copy</>}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleSaveLinkedIn}
+                    disabled={readOnly || !isLinkedInDirty}
+                    className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-all rounded-xs shadow-2xs ${
+                      readOnly
+                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-60"
+                        : isLinkedInDirty
+                        ? "bg-[#0a66c2] hover:bg-[#004182] text-white cursor-pointer opacity-100"
+                        : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-60"
+                    }`}
+                    title={readOnly ? "Article is locked while in review" : isLinkedInDirty ? "Save changes to LinkedIn post" : "No unsaved changes"}
+                  >
+                    {readOnly ? (
+                      <><ShieldAlert className="w-3 h-3 text-amber-500" /> Locked</>
+                    ) : isLinkedInDirty ? (
+                      <><Save className="w-3 h-3 text-white" /> Save</>
+                    ) : (
+                      <><Check className="w-3 h-3 text-emerald-500" /> Saved</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => triggerCopy(socialFields.linkedin, "linkedin")}
+                    className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide bg-[#0a66c2] hover:bg-[#004182] text-white transition-colors cursor-pointer rounded-xs shadow-2xs"
+                  >
+                    {copiedSection === "linkedin" ? <><Check className="w-3 h-3" />Copied</> : <><Copy className="w-3 h-3" />Copy</>}
+                  </button>
+                </div>
               </div>
-              <div className="p-4 text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans bg-white dark:bg-[#111] max-h-[220px] overflow-y-auto scroller">
-                {packageData.social.linkedin_post}
+              <div className="p-3 bg-white dark:bg-[#111]">
+                <textarea
+                  rows={7}
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={socialFields.linkedin}
+                  onChange={(e) => setSocialFields({ ...socialFields, linkedin: e.target.value })}
+                  className="w-full text-[13px] text-zinc-800 dark:text-zinc-200 leading-relaxed font-sans bg-transparent border border-zinc-200 dark:border-zinc-800 p-3 focus:outline-none focus:ring-1 focus:ring-[#0a66c2] rounded-xs resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  style={{ resize: "none" }}
+                  placeholder="Edit LinkedIn post content..."
+                />
               </div>
             </div>
 
             {/* X / Twitter */}
-            <div className="border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/40">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-[13px]">𝕏</span>
+            <div className="border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/40 rounded-xs overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-900/50">
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-[13px] rounded-xs shadow-2xs">𝕏</span>
                   <div>
                     <h4 className="text-[13px] font-bold text-zinc-800 dark:text-zinc-200">X / Twitter Post</h4>
                     <p className="text-[10px] text-zinc-500">Punchy summary under 280 characters</p>
                   </div>
                 </div>
-                <button onClick={() => triggerCopy(packageData.social?.twitter_post || "", "twitter")}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 dark:text-black text-white transition-colors">
-                  {copiedSection === "twitter" ? <><Check className="w-3 h-3" />Copied</> : <><Copy className="w-3 h-3" />Copy</>}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleSaveTwitter}
+                    disabled={readOnly || !isTwitterDirty}
+                    className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-all rounded-xs shadow-2xs ${
+                      readOnly
+                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-60"
+                        : isTwitterDirty
+                        ? "bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black cursor-pointer opacity-100"
+                        : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-60"
+                    }`}
+                    title={readOnly ? "Article is locked while in review" : isTwitterDirty ? "Save changes to X/Twitter post" : "No unsaved changes"}
+                  >
+                    {readOnly ? (
+                      <><ShieldAlert className="w-3 h-3 text-amber-500" /> Locked</>
+                    ) : isTwitterDirty ? (
+                      <><Save className="w-3 h-3" /> Save</>
+                    ) : (
+                      <><Check className="w-3 h-3 text-emerald-500" /> Saved</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => triggerCopy(socialFields.twitter, "twitter")}
+                    className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 dark:text-black text-white transition-colors cursor-pointer rounded-xs shadow-2xs"
+                  >
+                    {copiedSection === "twitter" ? <><Check className="w-3 h-3" />Copied</> : <><Copy className="w-3 h-3" />Copy</>}
+                  </button>
+                </div>
               </div>
-              <div className="p-4 text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans bg-white dark:bg-[#111]">
-                {packageData.social.twitter_post}
+              <div className="p-3 bg-white dark:bg-[#111]">
+                <textarea
+                  rows={6}
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  value={socialFields.twitter}
+                  onChange={(e) => setSocialFields({ ...socialFields, twitter: e.target.value })}
+                  className="w-full text-[13px] text-zinc-800 dark:text-zinc-200 leading-relaxed font-sans bg-transparent border border-zinc-200 dark:border-zinc-800 p-3 focus:outline-none focus:ring-1 focus:ring-zinc-400 rounded-xs resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  style={{ resize: "none" }}
+                  placeholder="Edit X / Twitter post content..."
+                />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Global Floating Toast Notifications Container */}
+        {toasts.length > 0 && (
+          <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+            {toasts.map((t) => (
+              <div
+                key={t.id}
+                className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-white shadow-2xl rounded-xs transition-all animate-in slide-in-from-bottom-2 duration-200 ${
+                  t.type === "success"
+                    ? "bg-emerald-600 border border-emerald-500"
+                    : t.type === "info"
+                    ? "bg-sky-600 border border-sky-500"
+                    : "bg-amber-600 border border-amber-500"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {t.type === "success" && <Check className="w-4 h-4 flex-shrink-0" />}
+                  {t.type === "info" && <FileDown className="w-4 h-4 flex-shrink-0" />}
+                  <span>{t.message}</span>
+                </div>
+                <button
+                  onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+                  className="text-white/80 hover:text-white font-bold ml-2 text-sm leading-none cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
         )}
 

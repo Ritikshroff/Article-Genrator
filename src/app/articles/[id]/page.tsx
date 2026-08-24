@@ -255,10 +255,15 @@ export default function ArticleDetailPage() {
           </div>
         )}
 
-        {/* Reuse OutputPanel to render the full article */}
+        {/* Reuse OutputPanel to render the full article with backend sync & read-only enforcement */}
         {article.news_data && (
           <div className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800">
-            <OutputPanel packageData={packageData} />
+            <OutputPanel
+              packageData={packageData}
+              magazine={article.publication}
+              articleId={article.id}
+              readOnly={user?.role === "author" && article.status !== "draft" && article.status !== "revision_requested"}
+            />
           </div>
         )}
       </main>

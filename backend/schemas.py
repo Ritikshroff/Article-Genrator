@@ -48,6 +48,7 @@ class ArticleCreate(BaseModel):
 
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
+    publication: Optional[str] = None
     news_data: Optional[dict] = None
     seo_data: Optional[dict] = None
     impact_data: Optional[dict] = None
