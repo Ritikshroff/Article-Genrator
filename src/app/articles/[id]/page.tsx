@@ -52,6 +52,27 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   published: { label: "Published", color: "bg-[#e30613]/10 text-[#e30613]" },
 };
 
+function formatIndianDateTime(dateStr?: string | null): string {
+  if (!dateStr) return "N/A";
+  let normalized = dateStr;
+  if (!normalized.endsWith("Z") && !normalized.includes("+") && !normalized.match(/-\d{2}:\d{2}$/)) {
+    normalized = normalized + "Z";
+  }
+  const dt = new Date(normalized);
+  if (isNaN(dt.getTime())) return dateStr;
+
+  return dt.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
+
 export default function ArticleDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -195,8 +216,8 @@ export default function ArticleDetailPage() {
         {/* Article Metadata Bar */}
         <div className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 p-4 flex flex-wrap items-center gap-4 text-[11px] text-zinc-500">
           <span className="flex items-center gap-1"><User className="w-3 h-3" /> Author: <strong className="text-zinc-700 dark:text-zinc-300">{article.created_by_name}</strong></span>
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Created: {new Date(article.created_at).toLocaleString("en-IN")}</span>
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Updated: {new Date(article.updated_at).toLocaleString("en-IN")}</span>
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Created: {formatIndianDateTime(article.created_at)}</span>
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Updated: {formatIndianDateTime(article.updated_at)}</span>
           {article.reviewed_by_name && (
             <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Reviewed by: <strong className="text-zinc-700 dark:text-zinc-300">{article.reviewed_by_name}</strong></span>
           )}

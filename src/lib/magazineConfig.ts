@@ -150,9 +150,9 @@ OUTPUT: Must be valid JSON per schema v1.1.`,
     accentRing: "focus:ring-red-500",
     accentHex: "#e30613",
     authorEntity: {
-      byline: "PCQuest Labs",
-      bioShort: "PCQuest Labs — Hands-on testing, hardware benchmarks, and tech guidance since 1993.",
-      expertiseTags: ["Hardware Benchmarks", "PCQuest Labs", "Consumer Tech", "SMB IT"],
+      byline: "PCquest Labs",
+      bioShort: "PCquest Labs — Hands-on testing, hardware benchmarks, and tech guidance since 1993.",
+      expertiseTags: ["Hardware Benchmarks", "PCquest Labs", "Consumer Tech", "SMB IT"],
     },
     editorialStyle: `## PCQUEST EDITORIAL & STYLESHEET RULES (Official PCQ Toolkit):
 - Target Audience: IT professionals, gamers, prosumers, tech buyers, and SMB decision-makers in India.

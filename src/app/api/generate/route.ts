@@ -378,10 +378,10 @@ E-E-A-T SIGNALS & AUTHOR RULES:
 - trust_footer: "Source: ${company || mag.name} Press Release, July 2026. This is an AI-assisted first draft based on press information. Specs per company release, awaiting independent verification. Reviewed by: [Editor Name]"
 
 PCQUEST EXPERIENCE GATE:
-${isFirstLook ? `CRITICAL PCQUEST RULE: hands_on_data is false! You MUST set content_type to "first_look". Title MUST start with "First Look: ". You MUST include mandatory disclaimer at top of body_html: "<p><em>Note: This first impression is based on official press release and specs. Hands-on review from PCQuest Labs is awaited.</em></p>". DO NOT invent battery life, thermals, or benchmark scores.` : ""}
+${isFirstLook ? `CRITICAL PCQUEST RULE: hands_on_data is false! You MUST set content_type to "first_look". Title MUST start with "First Look: ". You MUST include mandatory disclaimer at top of body_html: "<p><em>Note: This first impression is based on official press release and specs. Hands-on review from PCquest Labs is awaited.</em></p>". DO NOT invent battery life, thermals, or benchmark scores.` : ""}
 
 HEADER IMAGE PROMPT RULES:
-${magazineKey === "Dataquest" ? `DQ: Enterprise tech illustration, [AI workflow / semiconductor fab / BharatNet map], corporate blue-white, minimal, photorealistic, 8k --no text --no logos` : magazineKey === "Voice&Data" ? `V&D: Telecom infrastructure photorealistic, [5G BTS tower / satellite constellation], dusk, realistic --no people --no text` : `PCQ: Official press render of [product name], clean white background, studio lighting, accurate design, no hands --no text`}
+Create a custom, dynamic, E-E-A-T compliant image generation prompt (16:9 aspect ratio, 1280x720 resolution) specifically derived from the key subject, product name, and main entity of THIS input press release. DO NOT use generic boilerplate text. Format: "16:9 editorial banner, [specific product/technology/event from this press release], 1280x720 resolution, ${magazineKey === "Voice&Data" ? "telecom blue and amber lighting" : magazineKey === "PCquest" ? "studio hardware rendering" : "enterprise tech corporate style"}, photorealistic, 8k --no text --no brand logos".
 
 ${customPrompt ? `CUSTOM EDITORIAL INSTRUCTIONS:\n${customPrompt}\n` : ""}
 
@@ -514,42 +514,47 @@ Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
           const reviewData = cleanAndParseJson(reviewRes.response.text());
           controller.enqueue(encoder.encode(JSON.stringify({ type: "data", key: "review", data: reviewData }) + "\n"));
 
-          // Helper: Fetch image with Imagen 3.0 & Pollinations AI Fallback
+          // Helper: Direct Native Google Gemini Image Generation (nano-banana-pro-preview & gemini-3.1-flash-image)
           async function fetchBase64Image(prompt: string): Promise<{ base64: string; mimeType: string } | null> {
-            // 1. Try Imagen 3.0 API
-            try {
-              const imgRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-images:generate?key=${apiKey}`,
-                {
+            const masterPrompt = `${prompt}, octane render, vibrant 3d tech illustration, ultra-vivid rich colors, bright studio lighting, sharp 8k focus, commercial technology magazine visual --no text, --no watermark, --no brand logos, --no dark depressing room, --no blurry, --no out of focus, --no low res`;
+
+            const nativeGeminiModels = [
+              "nano-banana-pro-preview",
+              "gemini-3.1-flash-image",
+              "gemini-3-pro-image",
+              "gemini-2.5-flash-image"
+            ];
+
+            for (const modelName of nativeGeminiModels) {
+              try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                const res = await fetch(url, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    prompt: prompt,
-                    config: { numberOfImages: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" },
-                  }),
-                }
-              );
-              if (imgRes.ok) {
-                const imgJson = await imgRes.json();
-                const base64Img = imgJson.generatedImages?.[0]?.image?.imageBytes;
-                if (base64Img) return { base64: base64Img, mimeType: "image/jpeg" };
-              }
-            } catch (err) {
-              console.warn("Imagen 3.0 failed, trying Pollinations fallback:", err);
-            }
+                    contents: [
+                      {
+                        parts: [{ text: masterPrompt }]
+                      }
+                    ]
+                  })
+                });
 
-            // 2. Pollinations AI Fallback (Guaranteed 100% success)
-            try {
-              const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=720&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
-              const pollRes = await fetch(pollinationsUrl);
-              if (pollRes.ok) {
-                const arrayBuf = await pollRes.arrayBuffer();
-                const base64Img = Buffer.from(arrayBuf).toString("base64");
-                const mimeType = pollRes.headers.get("content-type") || "image/jpeg";
-                if (base64Img) return { base64: base64Img, mimeType };
+                if (res.ok) {
+                  const data = await res.json();
+                  const parts = data.candidates?.[0]?.content?.parts || [];
+                  for (const p of parts) {
+                    if (p.inlineData?.data) {
+                      return {
+                        base64: p.inlineData.data,
+                        mimeType: p.inlineData.mimeType || "image/jpeg"
+                      };
+                    }
+                  }
+                }
+              } catch (err) {
+                console.warn(`Native Gemini image model ${modelName} failed:`, err);
               }
-            } catch (pollErr) {
-              console.error("Pollinations fallback failed:", pollErr);
             }
 
             return null;
@@ -563,15 +568,62 @@ Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
                 JSON.stringify({
                   type: "step",
                   step: 5,
-                  message: `Generating ${count} E-E-A-T Safe Header & Article Image(s)...`,
+                  message: `Crafting Master Dataquest 3D Cover Visual & Generating ${count} High-Impact Image(s)...`,
                 }) + "\n"
               )
             );
 
+            // 🎨 Master AI Visual Art Director (Dataquest Editorial 3D Conceptual Art Formula)
+            let masterArtPrompt = pkgV11.header_image_prompt || "";
+            try {
+              const visualDirector = genAI.getGenerativeModel({
+                model: "gemini-3.5-flash",
+                generationConfig: { temperature: 0.7 },
+              });
+              const artPromptRes = await visualDirector.generateContent(
+                `You are the Chief Creative Officer for Dataquest India & CyberMedia publications (${mag.name}).
+Study this article and create a vibrant, high-contrast, breathtaking 16:9 editorial cover illustration prompt.
+
+ARTICLE HEADLINE: "${newsData.headline}"
+SUBHEADLINE: "${newsData.subheadline || ""}"
+PRESS RELEASE SUMMARY: "${pressRelease.slice(0, 600)}"
+
+DATAQUEST VISUAL COVER ART FORMULA:
+1. CONCEPTUAL & HIGH IMPACT: Do NOT generate dull, flat, out-of-focus portraits or dark dim room photos. Create a vibrant 3D tech conceptual illustration or high-contrast digital visual (Unreal Engine 5 style / Octane Render).
+2. CORE VISUAL SUBJECTS: Visually depict the key subjects of THIS article with rich detail:
+   - Example 1 (AI Education): Indian students enthusiastically using laptops with a glowing friendly blue AI sphere mascot floating between them, with colorful glowing floating icons for Q&A, math formulas, digital learning graphics.
+   - Example 2 (Automotive AI): Sleek luxury sports car connected to a glowing 3D AI neural brain in a high-tech facility.
+   - Example 3 (Semiconductors): Engineers in clean suits working on glowing microchips or silicon wafers with cyan data streams.
+3. LIGHTING & COLOR: Ultra-vivid saturated colors (cyan, gold, royal blue, amber), bright warm lighting, sharp 8k focus, glossy commercial tech magazine cover quality.
+4. NEGATIVE RULES: "--no text, --no watermark, --no brand logos, --no dark depressing room, --no blurry, --no out of focus, --no low res".
+
+Output ONLY the final English prompt string without any introductory text. Max 80 words.`
+              );
+              const generatedPromptText = artPromptRes.response.text().trim();
+              if (generatedPromptText && generatedPromptText.length > 20) {
+                masterArtPrompt = generatedPromptText.replace(/^["']|["']$/g, "");
+              }
+            } catch (promptErr) {
+              console.warn("AI Visual Director failed, using fallback prompt:", promptErr);
+            }
+
+            if (!masterArtPrompt) {
+              masterArtPrompt = `Vibrant 3D tech conceptual illustration representing ${newsData.headline}, glowing holographic icons, bright warm lighting, ultra-vivid colors, octane render, 8k resolution`;
+            }
+
             const imageSpecs = [
-              { title: "Header Cover Banner (16:9)", prompt: pkgV11.header_image_prompt || `Enterprise tech header banner for ${newsData.headline}, corporate minimal photorealistic 8k --no text` },
-              { title: "In-Article Feature Graphic", prompt: `Conceptual technology illustration showing ${newsData.headline}, clean modern editorial graphics 8k` },
-              { title: "Technical Overview Infographic", prompt: `Sleek tech infographic diagram illustrating ${newsData.headline}, high resolution minimalist chart 8k` }
+              {
+                title: "Header Cover Banner (16:9)",
+                prompt: masterArtPrompt
+              },
+              {
+                title: "In-Article Feature Graphic",
+                prompt: `Vivid 3D conceptual visual of ${newsData.headline}, glowing neon accents, modern enterprise technology, octane render 8k`
+              },
+              {
+                title: "Technical Overview Infographic",
+                prompt: `Sleek high-tech 3D render illustrating ${newsData.headline}, bright cyan and gold lighting, futuristic digital architecture`
+              }
             ];
 
             const generatedImages = [];
@@ -582,8 +634,8 @@ Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
                 generatedImages.push({
                   title: spec.title,
                   prompt: spec.prompt,
-                  base64: imgResult.base64,
                   mimeType: imgResult.mimeType,
+                  base64: imgResult.base64,
                 });
               }
             }

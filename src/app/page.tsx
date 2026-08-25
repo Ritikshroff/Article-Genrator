@@ -34,10 +34,10 @@ const defaultPrompts = {
 };
 
 const wordPresets = {
-  short:  { label: "Short (approx. 500 words)",     min: 400,  max: 600  },
-  medium: { label: "Medium (approx. 700 words)",    min: 600,  max: 800  },
-  long:   { label: "Long (approx. 1,000 words)",    min: 900,  max: 1100 },
-  feature:{ label: "Feature article (1,200+ words)",min: 1100, max: 1400 },
+  short: { label: "Short (approx. 500 words)", min: 400, max: 600 },
+  medium: { label: "Medium (approx. 700 words)", min: 600, max: 800 },
+  long: { label: "Long (approx. 1,000 words)", min: 900, max: 1100 },
+  feature: { label: "Feature article (1,200+ words)", min: 1100, max: 1400 },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -124,11 +124,10 @@ function EditorDashboardView() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <button
           onClick={() => setStatusFilter(statusFilter === "submitted" ? "" : "submitted")}
-          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${
-            statusFilter === "submitted"
+          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${statusFilter === "submitted"
               ? "border-blue-500 ring-2 ring-blue-500/20"
               : "border-zinc-200 dark:border-zinc-800 hover:border-blue-300"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Awaiting Review</span>
@@ -140,11 +139,10 @@ function EditorDashboardView() {
 
         <button
           onClick={() => setStatusFilter(statusFilter === "approved" ? "" : "approved")}
-          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${
-            statusFilter === "approved"
+          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${statusFilter === "approved"
               ? "border-emerald-500 ring-2 ring-emerald-500/20"
               : "border-zinc-200 dark:border-zinc-800 hover:border-emerald-300"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Approved</span>
@@ -156,11 +154,10 @@ function EditorDashboardView() {
 
         <button
           onClick={() => setStatusFilter(statusFilter === "revision_requested" ? "" : "revision_requested")}
-          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${
-            statusFilter === "revision_requested"
+          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${statusFilter === "revision_requested"
               ? "border-amber-500 ring-2 ring-amber-500/20"
               : "border-zinc-200 dark:border-zinc-800 hover:border-amber-300"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Revisions Requested</span>
@@ -172,11 +169,10 @@ function EditorDashboardView() {
 
         <button
           onClick={() => setStatusFilter("")}
-          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${
-            statusFilter === ""
+          className={`p-4 bg-white dark:bg-[#161616] border text-left transition-all ${statusFilter === ""
               ? "border-zinc-400 dark:border-zinc-600"
               : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Total Articles</span>
@@ -252,11 +248,10 @@ function EditorDashboardView() {
             return (
               <div
                 key={article.id}
-                className={`bg-white dark:bg-[#161616] border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors ${
-                  isSubmitted
+                className={`bg-white dark:bg-[#161616] border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors ${isSubmitted
                     ? "border-blue-400 dark:border-blue-800 shadow-sm bg-blue-50/20 dark:bg-blue-950/10"
                     : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
-                }`}
+                  }`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -457,9 +452,7 @@ export default function Dashboard() {
           interview_data: packageData.interview,
           review_data: packageData.review,
           social_data: packageData.social,
-          creative_data: packageData.creative
-            ? { images: packageData.creative.images?.map((img) => ({ title: img.title, prompt: img.prompt })) }
-            : null,
+          creative_data: packageData.creative || null,
         }),
       });
       setSavedArticleId(res.id);
@@ -524,11 +517,10 @@ export default function Dashboard() {
                       setPressRelease("");
                       handleReset();
                     }}
-                    className={`h-7 px-3 text-[11px] font-bold transition-all flex items-center justify-center rounded-xs ${
-                      isActive
+                    className={`h-7 px-3 text-[11px] font-bold transition-all flex items-center justify-center rounded-xs ${isActive
                         ? m.key === "Voice&Data" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
                         : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                    }`}
+                      }`}
                   >
                     {m.name}
                   </button>
@@ -601,6 +593,25 @@ export default function Dashboard() {
       ) : (
         /* AUTHOR WORKSPACE VIEW (Article Generator) */
         <>
+          {/* Global Sticky Generation Progress Banner */}
+          {status === "generating" && (
+            <div className="fixed top-0 left-0 right-0 z-[9999] bg-[#e30613] text-white px-5 py-2.5 shadow-2xl flex items-center justify-between border-b border-red-700 animate-pulse">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-5 h-5 animate-spin text-amber-300" />
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider block">⚡ AI ARTICLE GENERATION IN PROGRESS</span>
+                  <span className="text-[11px] opacity-90 font-medium">Step {currentStep || 1} of {getStepsForTopic().length || 4}: {stepMessage || "Writing 11-field PubLive metadata & editorial draft..."} — Please stay on this page!</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:inline-block text-[10px] font-black bg-white text-[#e30613] px-3 py-1 uppercase tracking-widest rounded-xs shadow-xs">
+                  {Math.round(((currentStep || 1) / (getStepsForTopic().length || 4)) * 100)}% COMPLETE
+                </span>
+                <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              </div>
+            </div>
+          )}
+
           {/* Publication Bar */}
           <div key={mag.key} className={`${magazine === "Voice&Data" ? "bg-[#00839b]/10 border-[#00839b]/20 text-[#00839b]" : "bg-[#e30613]/10 border-[#e30613]/20 text-[#e30613]"} border-b px-5 py-1.5 flex items-center justify-between text-[11px] font-semibold animate-fadeIn flex-shrink-0`}>
             <span className="flex items-center gap-2">
@@ -680,11 +691,10 @@ export default function Dashboard() {
                           key={type.id}
                           type="button"
                           onClick={() => setTopicType(type.id as any)}
-                          className={`p-3 border text-left transition-all ${
-                            isSelected
+                          className={`p-3 border text-left transition-all ${isSelected
                               ? magazine === "Voice&Data" ? "border-[#00839b] bg-[#00839b]/5 dark:bg-[#00839b]/10" : "border-[#e30613] bg-[#e30613]/5 dark:bg-[#e30613]/10"
                               : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2">
                             <Icon className={`w-4 h-4 ${isSelected ? magazine === "Voice&Data" ? "text-[#00839b]" : "text-[#e30613]" : "text-zinc-400"}`} />
@@ -723,10 +733,27 @@ export default function Dashboard() {
                         <input type="checkbox" checked={humanize} onChange={(e) => setHumanize(e.target.checked)} className="checkbox-editorial" style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }} />
                         Natural Human Journalist Tone
                       </label>
-                      <label className="flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
-                        <input type="checkbox" checked={generateImage} onChange={(e) => setGenerateImage(e.target.checked)} className="checkbox-editorial" style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }} />
-                        Generate Cover Banner Image
-                      </label>
+                      <div className="space-y-1">
+                        <label className="flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
+                          <input type="checkbox" checked={generateImage} onChange={(e) => setGenerateImage(e.target.checked)} className="checkbox-editorial" style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }} />
+                          Generate Cover Banner Image
+                        </label>
+                        {generateImage && (
+                          <div className="ml-6 pt-1 flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider shrink-0">Count:</span>
+                            <CustomSelect
+                              options={[
+                                { value: "1", label: "1 Image (Main 1280x720 Header Cover)" },
+                                { value: "2", label: "2 Images (Header Banner + Feature Graphic)" },
+                                { value: "3", label: "3 Images (Header + Feature + Infographic)" },
+                              ]}
+                              value={String(imageCount)}
+                              onChange={(val) => setImageCount(Number(val))}
+                              className="flex-1 max-w-[280px]"
+                            />
+                          </div>
+                        )}
+                      </div>
                       <label className="flex items-center gap-2 text-[13px] font-semibold cursor-pointer">
                         <input type="checkbox" checked={referencePCQuest} onChange={(e) => setReferencePCQuest(e.target.checked)} className="checkbox-editorial" style={{ accentColor: magazine === "Voice&Data" ? "#00839b" : "#e30613" }} />
                         Link to related {mag.name} articles
@@ -761,39 +788,6 @@ export default function Dashboard() {
                             />
                           </div>
 
-                          {/* Custom Gemini API Key */}
-                          <div className="space-y-1.5">
-                            <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                              Custom Gemini API Key (Optional)
-                            </label>
-                            <div className="flex gap-2">
-                              <input
-                                type={showApiKey ? "text" : "password"}
-                                value={customApiKey}
-                                onChange={(e) => {
-                                  setCustomApiKey(e.target.value);
-                                  setIsApiKeySaved(false);
-                                }}
-                                placeholder="AIzaSy..."
-                                className="flex-1 px-3 py-1.5 text-xs bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#e30613] font-mono"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (customApiKey.trim()) {
-                                    sessionStorage.setItem("gemini_api_key", customApiKey.trim());
-                                    setIsApiKeySaved(true);
-                                  } else {
-                                    sessionStorage.removeItem("gemini_api_key");
-                                    setIsApiKeySaved(false);
-                                  }
-                                }}
-                                className="px-3 py-1.5 text-xs font-bold bg-zinc-800 text-white hover:bg-black dark:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
-                              >
-                                {isApiKeySaved ? "Saved!" : "Save Key"}
-                              </button>
-                            </div>
-                          </div>
 
                           {/* Magazine Specific Checks */}
                           <div className="pt-1">

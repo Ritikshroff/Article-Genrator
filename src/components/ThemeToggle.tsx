@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from "react";
 
 export const ThemeToggle: React.FC = () => {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     const saved = localStorage.getItem("theme") as "light" | "dark" | null;
-    const initial = saved || "dark";
+    const initial = saved || "light";
     setTheme(initial);
     if (initial === "dark") {
       document.documentElement.classList.add("dark");

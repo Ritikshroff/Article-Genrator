@@ -54,6 +54,27 @@ const PUB_BADGE: Record<string, string> = {
   PCquest: "bg-[#e30613]",
 };
 
+function formatIndianDateTime(dateStr?: string | null): string {
+  if (!dateStr) return "N/A";
+  let normalized = dateStr;
+  if (!normalized.endsWith("Z") && !normalized.includes("+") && !normalized.match(/-\d{2}:\d{2}$/)) {
+    normalized = normalized + "Z";
+  }
+  const dt = new Date(normalized);
+  if (isNaN(dt.getTime())) return dateStr;
+
+  return dt.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
+
 export default function ArticlesPage() {
   const { user, isEditor, logout, isLoading: authLoading } = useAuth();
   const [allArticles, setAllArticles] = useState<ArticleListItem[]>([]);
@@ -345,13 +366,7 @@ export default function ArticlesPage() {
                     <div className="flex items-center gap-3 mt-1.5 text-[11px] text-zinc-400 flex-wrap">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        Created: {new Date(article.created_at).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        Created: {formatIndianDateTime(article.created_at)}
                       </span>
                       <span className="flex items-center gap-1">
                         <UserCheck className="w-3 h-3 text-zinc-400" /> Author: <strong className="text-zinc-600 dark:text-zinc-300">{article.created_by_name}</strong>
