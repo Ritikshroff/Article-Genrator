@@ -198,13 +198,30 @@ const reviewSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     marketing_claims: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    neutralized_terms: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    source_fidelity_checks: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    operational_checklist: {
+      type: SchemaType.OBJECT,
+      properties: {
+        product_name_verified: { type: SchemaType.BOOLEAN },
+        pricing_preserved: { type: SchemaType.BOOLEAN },
+        release_date_verified: { type: SchemaType.BOOLEAN },
+        specs_table_present: { type: SchemaType.BOOLEAN },
+        quote_verbatim_bottom: { type: SchemaType.BOOLEAN },
+      },
+      required: ["product_name_verified", "pricing_preserved", "release_date_verified", "specs_table_present", "quote_verbatim_bottom"],
+    },
     missing_data: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     customer_reference_gaps: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     india_relevance: { type: SchemaType.STRING },
     fact_check_items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     reporting_conflicts: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
   },
-  required: ["marketing_claims", "missing_data", "customer_reference_gaps", "india_relevance", "fact_check_items", "reporting_conflicts"],
+  required: [
+    "marketing_claims", "neutralized_terms", "source_fidelity_checks",
+    "operational_checklist", "missing_data", "customer_reference_gaps",
+    "india_relevance", "fact_check_items", "reporting_conflicts"
+  ],
 };
 
 const socialSchema: Schema = {
@@ -362,13 +379,13 @@ INPUT PARAMETERS:
 RAG GROUNDING & CITATION RULES (MANDATORY):
 1. PR is Ground Truth for News Facts: Company name, product name, launch dates, claims.
 2. RETRIEVED_CHUNKS are Ground Truth for Context: Market context, regulatory policy, past specs.
-3. For any statement about market, policy, TRAI/DoT guidelines, history, or competition, you MUST cite a retrieved chunk as [id] in body_html. Example: "India's 5G BTS count reached 464,990 by Dec 2024 [vd_bts_2024]".
+3. HYPERLINK ALL CITATIONS DIRECTLY IN HTML: For any statement using historical data, TRAI/DoT guidelines, or background from RETRIEVED_CHUNKS, embed a clean HTML hyperlink using the exact chunk URL. Example: <a href="URL" target="_blank" rel="noopener noreferrer">Title/Topic</a>. DO NOT output raw bracket tag markers like [vd_jio_1] or [vd_bts_2024] directly in paragraph prose.
 4. For statements about this specific announcement, cite PR facts implicitly (no marker needed).
 5. If you cannot find a fact in PR or chunks, say "Price/availability not disclosed in release" — DO NOT INVENT facts.
 
 INTERNAL LINKING & "ALSO READ" RULES (MANDATORY):
 1. You MUST include 1 to 2 "Also Read" internal hyperlinked references inside body_html using the URLs and Titles provided in RETRIEVED_CHUNKS.
-2. Format: <p><strong>Also Read: </strong><a href="URL" target="_blank" rel="noopener noreferrer">Title</a></p> or markdown [Also Read: Title](URL).
+2. Format STRICTLY as: <p><strong>Also Read: </strong><a href="URL" target="_blank" rel="noopener noreferrer">Exact Article Title</a></p>. Never leave the "Also Read" title unlinked.
 3. Insert these "Also Read" callouts between major sections to increase reader engagement and SEO internal linking.
 
 E-E-A-T SIGNALS & AUTHOR RULES:
@@ -378,12 +395,12 @@ E-E-A-T SIGNALS & AUTHOR RULES:
 - trust_footer: "Source: ${company || mag.name} Press Release, July 2026. This is an AI-assisted first draft based on press information. Specs per company release, awaiting independent verification. Reviewed by: [Editor Name]"
 
 PCQUEST EXPERIENCE GATE:
-${isFirstLook ? `CRITICAL PCQUEST RULE: hands_on_data is false! You MUST set content_type to "first_look". Title MUST start with "First Look: ". You MUST include mandatory disclaimer at top of body_html: "<p><em>Note: This first impression is based on official press release and specs. Hands-on review from PCquest Labs is awaited.</em></p>". DO NOT invent battery life, thermals, or benchmark scores.` : ""}
+${isFirstLook ? 'CRITICAL PCQUEST RULE: hands_on_data is false! You MUST set content_type to "first_look". Title MUST start with "First Look: ". You MUST include mandatory disclaimer at top of body_html: "<p><em>Note: This first impression is based on official press release and specs. Hands-on review from PCquest Labs is awaited.</em></p>". DO NOT invent battery life, thermals, or benchmark scores.' : ''}
 
 HEADER IMAGE PROMPT RULES:
 Create a custom, dynamic, E-E-A-T compliant image generation prompt (16:9 aspect ratio, 1280x720 resolution) specifically derived from the key subject, product name, and main entity of THIS input press release. DO NOT use generic boilerplate text. Format: "16:9 editorial banner, [specific product/technology/event from this press release], 1280x720 resolution, ${magazineKey === "Voice&Data" ? "telecom blue and amber lighting" : magazineKey === "PCquest" ? "studio hardware rendering" : "enterprise tech corporate style"}, photorealistic, 8k --no text --no brand logos".
 
-${customPrompt ? `CUSTOM EDITORIAL INSTRUCTIONS:\n${customPrompt}\n` : ""}
+${customPrompt ? `CUSTOM EDITORIAL INSTRUCTIONS:\n${customPrompt}\n` : ''}
 
 Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
 `;
@@ -508,9 +525,22 @@ Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
             model: "gemini-3.5-flash",
             generationConfig: { responseMimeType: "application/json", responseSchema: reviewSchema, temperature: 0.2 },
           });
-          const reviewRes = await reviewModel.generateContent(
-            `Perform editorial review & fact-check checklist for ${mag.name}:\n${pressRelease}`
-          );
+          const reviewAuditPrompt = "Perform a thorough Editorial Neutrality, Source Fidelity and Operational Checklist Audit for " + mag.name + ":\n\n" +
+"ARTICLE DRAFT HEADLINE: " + JSON.stringify(newsData.headline || "") + "\n" +
+"ARTICLE DRAFT BODY: " + JSON.stringify((newsData.article || "").slice(0, 2000)) + "\n" +
+"ORIGINAL PRESS RELEASE: " + JSON.stringify((pressRelease || "").slice(0, 3000)) + "\n\n" +
+"AUDIT INSTRUCTIONS:\n" +
+"1. marketing_claims: List marketing hype claims from PR flagged for neutralization.\n" +
+"2. neutralized_terms: List promotional words sanitized into objective text.\n" +
+"3. source_fidelity_checks: 3 to 5 bullet points verifying draft claims match PR facts strictly with 0 percent inference.\n" +
+"4. operational_checklist: Return boolean flags for product_name_verified, pricing_preserved, release_date_verified, specs_table_present, quote_verbatim_bottom.\n" +
+"5. missing_data: List missing specs or metrics.\n" +
+"6. customer_reference_gaps: List customer reference gaps.\n" +
+"7. india_relevance: Assess India market relevance.\n" +
+"8. fact_check_items: 4 to 6 specific facts to check.\n" +
+"9. reporting_conflicts: Conflicts with previous reporting.";
+
+          const reviewRes = await reviewModel.generateContent(reviewAuditPrompt);
           const reviewData = cleanAndParseJson(reviewRes.response.text());
           controller.enqueue(encoder.encode(JSON.stringify({ type: "data", key: "review", data: reviewData }) + "\n"));
 

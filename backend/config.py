@@ -6,7 +6,7 @@
 import os
 from pathlib import Path
 
-DEFAULT_MONGO = "mongodb://cmrslpx1b:l%40HdEvS%23)TR%267dC@api.srvr2px.cyberads.io:27017/?authSource=admin&readPreference=primary&ssl=false"
+DEFAULT_MONGO = "mongodb://cmrslpx1b:l%40HdEvS%23)TR%267dC@api.srvr2px.cyberads.io:27017/?authSource=admin&readPreference=primary&ssl=false&directConnection=true"
 MONGO_URI: str = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or os.getenv("MONGODB_URL") or DEFAULT_MONGO
 DB_NAME: str = os.getenv("DB_NAME", "cybermedia_editorial")
 

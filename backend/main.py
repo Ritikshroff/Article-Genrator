@@ -16,7 +16,9 @@ from seed import seed_users
 from routers.auth_router import router as auth_router
 from routers.articles_router import router as articles_router
 from routers.users_router import router as users_router
-
+from routers.inbound_email_router import router as inbound_email_router
+from services.email_listener import imap_poller
+import asyncio
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,12 +29,16 @@ async def lifespan(app: FastAPI):
         print("✓ MongoDB connected & Beanie initialised")
         await seed_users()
         print("✓ Default users seeded in MongoDB")
+        if imap_poller.is_configured():
+            asyncio.create_task(imap_poller.start_polling_loop())
+            print("✓ IMAP Email Listener started in background")
     except Exception as e:
         print(f"❌ MongoDB connection error on startup: {e}")
         raise e
     print("─" * 50)
     yield
     print("👋 Shutting down backend...")
+    imap_poller.stop()
 
 
 app = FastAPI(
@@ -55,6 +61,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(articles_router)
 app.include_router(users_router)
+app.include_router(inbound_email_router)
 
 
 # ── Root & Health check ───────────────────────────────────────

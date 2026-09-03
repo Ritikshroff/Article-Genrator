@@ -91,10 +91,10 @@ async def get_review_queue(current_user: User = Depends(require_editor)):
     """Get all articles with status 'submitted' awaiting editor review."""
     articles = await Article.find(
         Article.status == "submitted"
-    ).sort("-created_at").to_list()
+    ).project(ArticleListItem).sort("-created_at").to_list()
 
     return ArticleListResponse(
-        articles=[_article_to_list_item(a) for a in articles],
+        articles=articles,
         total=len(articles),
     )
 
@@ -155,10 +155,10 @@ async def list_articles(
     if status_filter:
         query_filters["status"] = status_filter
 
-    articles = await Article.find(query_filters).sort("-updated_at").to_list()
+    articles = await Article.find(query_filters).project(ArticleListItem).sort("-updated_at").to_list()
 
     return ArticleListResponse(
-        articles=[_article_to_list_item(a) for a in articles],
+        articles=articles,
         total=len(articles),
     )
 

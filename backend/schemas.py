@@ -4,9 +4,9 @@
 # ─────────────────────────────────────────────────────────────
 
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional, Literal, Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, BeforeValidator
 
 
 # ── Auth ──────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ class ArticleResponse(BaseModel):
 
 
 class ArticleListItem(BaseModel):
-    id: str
+    id: Annotated[str, BeforeValidator(str)] = Field(alias="_id", serialization_alias="id")
     title: str
     publication: str
     status: str

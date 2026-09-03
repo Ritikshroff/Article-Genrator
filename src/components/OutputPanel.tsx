@@ -59,6 +59,15 @@ interface InterviewData {
 
 interface ReviewData {
   marketing_claims: string[];
+  neutralized_terms?: string[];
+  source_fidelity_checks?: string[];
+  operational_checklist?: {
+    product_name_verified?: boolean;
+    pricing_preserved?: boolean;
+    release_date_verified?: boolean;
+    specs_table_present?: boolean;
+    quote_verbatim_bottom?: boolean;
+  };
   missing_data: string[];
   customer_reference_gaps: string[];
   india_relevance: string;
@@ -147,16 +156,31 @@ const formatArticleBody = (text: string) => {
   return clean;
 };
 
-const formatHtmlForPreview = (html: string) => {
+const formatHtmlForPreview = (html: string, ragSources?: { id: string; url: string; title: string; snippet: string }[]) => {
   if (!html) return "";
   let clean = html.replace(
     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
     '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#e30613] underline hover:text-[#b8040f] font-medium">$1</a>'
   );
-  clean = clean.replace(
-    /\[([a-zA-Z0-9_-]+)\]/g,
-    '<button type="button" onclick="const el=document.getElementById(\'rag-source-$1\'); if(el){el.scrollIntoView({behavior:\'smooth\',block:\'center\'}); el.classList.add(\'ring-2\',\'ring-[#e30613]\',\'bg-[#e30613]/5\'); setTimeout(()=>el.classList.remove(\'ring-2\',\'ring-[#e30613]\',\'bg-[#e30613]/5\'), 2500);}" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-[#e30613]/10 hover:bg-[#e30613]/25 text-[#e30613] border border-[#e30613]/30 rounded-xs mx-0.5 cursor-pointer transition-all hover:scale-105" title="Click to view RAG Grounding Citation Source">$1 ↗</button>'
-  );
+
+  // Map raw bracket citation markers like [vd_jio_1] directly to hyperlinked URLs
+  clean = clean.replace(/\[([a-zA-Z0-9_-]+)\]/g, (match, id) => {
+    const src = ragSources?.find((s) => s.id === id);
+    if (src && src.url) {
+      return `<a href="${src.url}" target="_blank" rel="noopener noreferrer" class="text-[#e30613] underline hover:text-[#b8040f] font-medium ml-1" title="${src.title.replace(/"/g, '&quot;')}">[Source]</a>`;
+    }
+    // If no matching source URL, strip the raw bracket tag so vd_jio_1 doesn't clutter published text
+    return "";
+  });
+
+  // Auto-hyperlink plain text "Also Read: Title" lines if they lack an <a> tag
+  clean = clean.replace(/(<p>(?:<strong>)?Also Read:\s*(?:<\/strong>)?)(?!<a\b)([^<]+)(<\/p>)/gi, (match, prefix, titleText, suffix) => {
+    const trimmedTitle = titleText.trim();
+    const matchedSource = ragSources?.find((s) => s.title.toLowerCase().includes(trimmedTitle.toLowerCase()) || trimmedTitle.toLowerCase().includes(s.title.toLowerCase()));
+    const targetUrl = matchedSource?.url || "#";
+    return `${prefix}<a href="${targetUrl}" target="_blank" rel="noopener noreferrer" class="text-[#e30613] underline hover:text-[#b8040f] font-bold">${trimmedTitle}</a>${suffix}`;
+  });
+
   return clean;
 };
 
@@ -899,7 +923,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
               </div>
             )}
 
-            {/* View Mode Switcher Bar (Rendered Preview vs Raw HTML Code) */}
+            {/* View Mode Switcher Bar (Rendered Preview vs Edit Copy vs Raw HTML Code) */}
             <div className="flex items-center justify-between border-y border-zinc-200 dark:border-zinc-800 py-2 my-4">
               <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm">
                 <button
@@ -914,6 +938,16 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setViewMode("edit" as any)}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${viewMode === ("edit" as any)
+                    ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
+                >
+                  <Code className="w-3.5 h-3.5" /> Edit Copy
+                </button>
+                <button
+                  type="button"
                   onClick={() => setViewMode("code")}
                   className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold transition-all ${viewMode === "code"
                     ? magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b] text-white shadow-xs" : "bg-[#e30613] text-white shadow-xs"
@@ -924,7 +958,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                 </button>
               </div>
               <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider hidden sm:inline">
-                {viewMode === "preview" ? "Formatted Visual Mode" : "CMS Copy-Paste Mode"}
+                {viewMode === "preview" ? "Formatted Visual Mode" : viewMode === ("edit" as any) ? "Interactive On-Platform Editor" : "CMS Copy-Paste Mode"}
               </span>
             </div>
 
@@ -932,8 +966,46 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             {viewMode === "preview" ? (
               <div
                 className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-sm sm:text-base leading-relaxed [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h2]:border-b [&>h2]:border-zinc-200 dark:[&>h2]:border-zinc-800 [&>h2]:pb-1.5 [&>h3]:text-base [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&>li]:mb-1.5 [&>blockquote]:border-l-4 [&>blockquote]:border-[#e30613] [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 font-sans"
-                dangerouslySetInnerHTML={{ __html: formatHtmlForPreview(packageData.news.article) }}
+                dangerouslySetInnerHTML={{ __html: formatHtmlForPreview(packageData.news.article, packageData.news.rag_sources) }}
               />
+            ) : viewMode === ("edit" as any) ? (
+              <div className="space-y-3 animate-fadeIn">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-500">
+                  <span>Edit Article Headline & Body (Changes update instantly for Copy/CMS export)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showToast("💾 Editorial copy changes saved!", "success");
+                      setViewMode("preview");
+                    }}
+                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xs shadow-xs"
+                  >
+                    Save & Return to Preview
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Article Headline</label>
+                  <input
+                    type="text"
+                    value={packageData.news.headline}
+                    onChange={(e) => {
+                      packageData.news!.headline = e.target.value;
+                    }}
+                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm font-bold text-zinc-900 dark:text-zinc-100 rounded-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Article HTML / Body Copy</label>
+                  <textarea
+                    rows={16}
+                    value={packageData.news.article}
+                    onChange={(e) => {
+                      packageData.news!.article = e.target.value;
+                    }}
+                    className="w-full p-3 font-mono text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 leading-relaxed rounded-xs"
+                  />
+                </div>
+              </div>
             ) : (
               <div className="space-y-2 animate-fadeIn">
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
@@ -1463,9 +1535,76 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         {/* TAB 5: Editorial Review */}
         {activeTab === "review" && packageData.review && (
           <div className="space-y-4 animate-fadeIn">
+            {/* Neutralized Terms Audit */}
+            {packageData.review.neutralized_terms && packageData.review.neutralized_terms.length > 0 && (
+              <div className="p-4 border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/10 space-y-2.5">
+                <h3 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-500" /> PR Neutrality Audit (Marketing Words Sanitized)
+                </h3>
+                <p className="text-[11px] text-zinc-500">
+                  The following promotional/hype terms were neutralized into factual, objective journalistic language:
+                </p>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {packageData.review.neutralized_terms.map((term, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 font-mono text-[11px] border border-emerald-300 dark:border-emerald-800 rounded-xs">
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Operational Specs Checklist */}
+            {packageData.review.operational_checklist && (
+              <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-3">
+                <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5" /> Operational Specs Checklist
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  <div className={`p-2.5 border flex items-center gap-2 ${packageData.review.operational_checklist.product_name_verified ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400' : 'border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'}`}>
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-[12px] font-medium">Product / Model Name Preserved</span>
+                  </div>
+                  <div className={`p-2.5 border flex items-center gap-2 ${packageData.review.operational_checklist.pricing_preserved ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400' : 'border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'}`}>
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-[12px] font-medium">Pricing (INR/USD) Audit</span>
+                  </div>
+                  <div className={`p-2.5 border flex items-center gap-2 ${packageData.review.operational_checklist.release_date_verified ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400' : 'border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'}`}>
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-[12px] font-medium">Launch Date & Availability</span>
+                  </div>
+                  <div className={`p-2.5 border flex items-center gap-2 ${packageData.review.operational_checklist.specs_table_present ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400' : 'border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'}`}>
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-[12px] font-medium">Technical Specs Table</span>
+                  </div>
+                  <div className={`p-2.5 border flex items-center gap-2 ${packageData.review.operational_checklist.quote_verbatim_bottom ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400' : 'border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'}`}>
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-[12px] font-medium">Verbatim Quote at Bottom</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Source Fidelity Verification */}
+            {packageData.review.source_fidelity_checks && packageData.review.source_fidelity_checks.length > 0 && (
+              <div className="p-4 border border-blue-500/20 bg-blue-500/5 dark:bg-blue-950/10 space-y-2.5">
+                <h3 className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-blue-500" /> Source Fidelity Verification (0% Inference Rule)
+                </h3>
+                <ul className="space-y-1.5">
+                  {packageData.review.source_fidelity_checks.map((check, i) => (
+                    <li key={i} className="text-[12px] text-zinc-700 dark:text-zinc-300 flex items-start gap-2">
+                      <span className="text-blue-500 font-bold mt-0.5 select-none">•</span>
+                      <span>{check}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="p-4 border border-amber-500/20 bg-amber-500/5 dark:bg-amber-950/10 space-y-3">
               <h3 className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5" /> Marketing Claims to Strip
+                <ShieldAlert className="w-3.5 h-3.5" /> Marketing Claims Flagged
               </h3>
               {packageData.review.marketing_claims.length > 0 ? (
                 <ul className="space-y-2">
