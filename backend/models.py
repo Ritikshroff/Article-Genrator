@@ -58,6 +58,11 @@ class Article(Document):
     # Editor workflow
     editor_notes: Optional[str] = None
 
+    # Author feedback / quality rating (1-5 stars, submitted by the article's own author)
+    author_rating: Optional[int] = None        # 1 = poor … 5 = excellent
+    author_rating_note: Optional[str] = None   # optional short comment from author
+    author_rated_at: Optional[datetime] = None
+
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

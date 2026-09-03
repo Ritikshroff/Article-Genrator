@@ -4,7 +4,7 @@
 # ─────────────────────────────────────────────────────────────
 
 from datetime import datetime
-from typing import Optional, Literal, Annotated
+from typing import Optional, Literal, Annotated, Union
 
 from pydantic import BaseModel, Field, BeforeValidator
 
@@ -76,6 +76,9 @@ class ArticleResponse(BaseModel):
     social_data: Optional[dict] = None
     creative_data: Optional[dict] = None
     editor_notes: Optional[str] = None
+    author_rating: Optional[int] = None
+    author_rating_note: Optional[str] = None
+    author_rated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -87,6 +90,7 @@ class ArticleListItem(BaseModel):
     status: str
     created_by_name: str
     reviewed_by_name: Optional[str] = None
+    author_rating: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -99,3 +103,8 @@ class ArticleListResponse(BaseModel):
 class ReviewAction(BaseModel):
     action: Literal["approve", "request_revision"]
     notes: Optional[str] = None
+
+
+class AuthorFeedback(BaseModel):
+    rating: int          # Must be 1–5 (validated in the router)
+    note: Optional[str] = None

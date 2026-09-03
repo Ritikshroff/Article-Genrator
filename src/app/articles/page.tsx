@@ -23,7 +23,8 @@ import {
   CheckSquare,
   RefreshCw,
   LogOut,
-  UserCheck
+  UserCheck,
+  Star,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArticleRowSkeleton, FullPageSkeleton } from "@/components/Skeletons";
@@ -38,6 +39,7 @@ interface ArticleListItem {
   reviewed_by_name: string | null;
   created_at: string;
   updated_at: string;
+  author_rating?: number | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -372,6 +374,14 @@ export default function ArticlesPage() {
                       <span className="flex items-center gap-1">
                         <UserCheck className="w-3 h-3 text-zinc-400" /> Author: <strong className="text-zinc-600 dark:text-zinc-300">{article.created_by_name}</strong>
                       </span>
+                      {article.author_rating && (
+                        <span className="flex items-center gap-0.5" title={`Author rated this ${article.author_rating}/5`}>
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} className={`w-2.5 h-2.5 ${s <= article.author_rating! ? "text-amber-400 fill-amber-400" : "text-zinc-200 dark:text-zinc-700"}`} />
+                          ))}
+                          <span className="ml-0.5 text-amber-500 font-semibold">{article.author_rating}/5</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 

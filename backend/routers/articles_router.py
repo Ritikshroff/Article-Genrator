@@ -18,6 +18,7 @@ from schemas import (
     ArticleListItem,
     ArticleListResponse,
     ReviewAction,
+    AuthorFeedback,
 )
 
 router = APIRouter(prefix="/articles", tags=["Articles"])
@@ -44,6 +45,9 @@ def _article_to_response(article: Article) -> ArticleResponse:
         social_data=article.social_data,
         creative_data=article.creative_data,
         editor_notes=article.editor_notes,
+        author_rating=article.author_rating,
+        author_rating_note=article.author_rating_note,
+        author_rated_at=article.author_rated_at,
         created_at=article.created_at,
         updated_at=article.updated_at,
     )
@@ -282,6 +286,44 @@ async def review_article(
         "reviewed_by_id": str(current_user.id),
         "reviewed_by_name": current_user.full_name,
         "editor_notes": body.notes or "",
+        "updated_at": datetime.now(timezone.utc),
+    })
+    return _article_to_response(article)
+
+
+# ── AUTHOR FEEDBACK / QUALITY RATING ─────────────────────────
+
+@router.post("/{article_id}/feedback", response_model=ArticleResponse)
+async def submit_author_feedback(
+    article_id: str,
+    body: AuthorFeedback,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Author rates the AI-generated article quality (1–5 stars).
+    - Only the article's own author may submit feedback.
+    - Editors are not permitted (403).
+    - Rating can be updated (re-submission overwrites previous rating).
+    """
+    if current_user.role == "editor":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Editors do not submit author quality ratings.",
+        )
+
+    if body.rating < 1 or body.rating > 5:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Rating must be an integer between 1 and 5.",
+        )
+
+    article = await _get_article_or_404(article_id)
+    _check_own_article(article, current_user)
+
+    await article.set({
+        "author_rating": body.rating,
+        "author_rating_note": body.note or "",
+        "author_rated_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     })
     return _article_to_response(article)

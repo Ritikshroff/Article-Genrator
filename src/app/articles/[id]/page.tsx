@@ -20,6 +20,7 @@ import {
   User,
   FileText,
   Newspaper,
+  Star,
 } from "lucide-react";
 
 interface ArticleDetail {
@@ -40,6 +41,9 @@ interface ArticleDetail {
   social_data: any;
   creative_data: any;
   editor_notes: string | null;
+  author_rating: number | null;
+  author_rating_note: string | null;
+  author_rated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +89,13 @@ export default function ArticleDetailPage() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [isReviewing, setIsReviewing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Author feedback / rating
+  const [hoveredStar, setHoveredStar] = useState(0);
+  const [selectedStar, setSelectedStar] = useState(0);
+  const [ratingNote, setRatingNote] = useState("");
+  const [isRating, setIsRating] = useState(false);
+  const [ratingSuccess, setRatingSuccess] = useState(false);
 
   const articleId = params?.id as string;
 
@@ -136,6 +147,24 @@ export default function ArticleDetailPage() {
     }
   };
 
+  const handleSubmitRating = async () => {
+    if (!article || selectedStar === 0) return;
+    setIsRating(true);
+    try {
+      const updated = await apiFetch<ArticleDetail>(`/articles/${article.id}/feedback`, {
+        method: "POST",
+        body: JSON.stringify({ rating: selectedStar, note: ratingNote }),
+      });
+      setArticle(updated);
+      setRatingSuccess(true);
+      setTimeout(() => setRatingSuccess(false), 3000);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsRating(false);
+    }
+  };
+
   if (authLoading || isLoading) {
     return <ArticleDetailSkeleton />;
   }
@@ -155,6 +184,15 @@ export default function ArticleDetailPage() {
   const isOwnArticle = article.created_by_id === user?.id;
   const canSubmit = isOwnArticle && (article.status === "draft" || article.status === "revision_requested");
   const canReview = isEditor && article.status === "submitted";
+  const canRate = !isEditor && isOwnArticle; // Authors can rate their own articles
+
+  // Initialise star from existing rating on mount / article change
+  React.useEffect(() => {
+    if (article?.author_rating) {
+      setSelectedStar(article.author_rating);
+      setRatingNote((article as any).author_rating_note || "");
+    }
+  }, [article?.id]);
 
   // Convert article data to EditorialPackage for OutputPanel
   const packageData: EditorialPackage = {
@@ -289,6 +327,107 @@ export default function ArticleDetailPage() {
               articleId={article.id}
               readOnly={user?.role === "author" && article.status !== "draft" && article.status !== "revision_requested"}
             />
+          </div>
+        )}
+
+        {/* ── Author Quality Feedback Panel ─────────────────────── */}
+        {canRate && (
+          <div className="bg-white dark:bg-[#161616] border-2 border-amber-200 dark:border-amber-800/50 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-amber-700 dark:text-amber-400">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                Rate Generated Content Quality
+              </div>
+              {article.author_rating && (
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700">
+                  Previously rated: {article.author_rating}/5
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              How well did the AI capture the press release faithfully? Your rating helps improve future generation quality.
+            </p>
+
+            {/* Star selector */}
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const isActive = star <= (hoveredStar || selectedStar);
+                const labels = ["", "Poor", "Fair", "Good", "Very Good", "Excellent"];
+                return (
+                  <button
+                    key={star}
+                    title={labels[star]}
+                    onMouseEnter={() => setHoveredStar(star)}
+                    onMouseLeave={() => setHoveredStar(0)}
+                    onClick={() => setSelectedStar(star)}
+                    className={`w-9 h-9 flex items-center justify-center rounded-xs transition-all duration-100 ${
+                      isActive
+                        ? "text-amber-400 scale-110"
+                        : "text-zinc-300 dark:text-zinc-600 hover:text-amber-300"
+                    }`}
+                  >
+                    <Star
+                      className="w-6 h-6"
+                      fill={isActive ? "currentColor" : "none"}
+                      strokeWidth={isActive ? 0 : 1.5}
+                    />
+                  </button>
+                );
+              })}
+              {(hoveredStar || selectedStar) > 0 && (
+                <span className="ml-2 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  {["", "Poor", "Fair", "Good", "Very Good", "Excellent"][hoveredStar || selectedStar]}
+                </span>
+              )}
+            </div>
+
+            {/* Optional note */}
+            <textarea
+              value={ratingNote}
+              onChange={(e) => setRatingNote(e.target.value)}
+              placeholder="Optional: Add a note about what was good or needs improvement..."
+              rows={2}
+              className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none placeholder:text-zinc-400"
+            />
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSubmitRating}
+                disabled={isRating || selectedStar === 0}
+                className="px-5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Star className="w-3.5 h-3.5 fill-white" />
+                {isRating ? "Saving..." : article.author_rating ? "Update Rating" : "Submit Rating"}
+              </button>
+
+              {/* Success toast */}
+              {ratingSuccess && (
+                <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 animate-pulse">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Rating saved — thank you!
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Read-only rating display for editors viewing author-rated articles */}
+        {isEditor && article.author_rating && (
+          <div className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 p-4 flex flex-wrap items-center gap-4">
+            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Author Quality Rating</span>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star
+                  key={s}
+                  className={`w-4 h-4 ${s <= article.author_rating! ? "text-amber-400 fill-amber-400" : "text-zinc-200 dark:text-zinc-700"}`}
+                />
+              ))}
+              <span className="ml-1 text-xs font-bold text-amber-600 dark:text-amber-400">{article.author_rating}/5</span>
+            </div>
+            {(article as any).author_rating_note && (
+              <span className="text-xs text-zinc-500 italic">&ldquo;{(article as any).author_rating_note}&rdquo;</span>
+            )}
           </div>
         )}
       </main>

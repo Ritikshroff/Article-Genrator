@@ -275,6 +275,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Compute proportional word count target ───────────────
+    const inputWordCount = pressRelease.trim().split(/\s+/).length;
+    // Allow output to be at most 20% above input word count; floor at 200 so very short PRs still produce readable articles
+    const wordTargetMin = Math.max(Math.round(inputWordCount * 0.9), 150);
+    const wordTargetMax = Math.max(Math.round(inputWordCount * 1.2), 200);
+    // If the user overrides with explicit minWords/maxWords, honour their ceiling (take the smaller cap)
+    const effectiveMin = minWords ? Math.min(Number(minWords), wordTargetMin) : wordTargetMin;
+    const effectiveMax = maxWords ? Math.min(Number(maxWords), wordTargetMax) : wordTargetMax;
+
     const apiKey = customApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.trim() === "") {
       return NextResponse.json(
@@ -364,6 +373,18 @@ You are given:
 1. PRESS_RELEASE (primary source for facts)
 2. RETRIEVED_CHUNKS (archive context & regulatory filings, each with id, title, snippet, url)
 
+*** HARD RULES — NON-NEGOTIABLE (override any conflicting instruction above) ***
+A. PROPORTIONAL LENGTH: The Press Release below is approximately ${inputWordCount} words.
+   Your body_html output MUST be between ${effectiveMin} and ${effectiveMax} words.
+   DO NOT add paragraphs, bullet points, or sentences beyond what is needed to faithfully report the PR facts.
+   DO NOT pad with generic industry commentary, boilerplate phrases, or speculative context.
+B. ZERO FABRICATION: Every single sentence must be traceable to PRESS_RELEASE or a cited RETRIEVED_CHUNK.
+   Do NOT add any claim, statistic, company history, product detail, market share figure, or contextual
+   statement that is not present in those two sources. If you cannot source a fact — omit it.
+C. UNBIASED NATURAL AUTHOR: Write as a neutral journalist reporting facts, not as a PR amplifier.
+   Do not exaggerate impact, significance, or scale beyond what the source states.
+*** END HARD RULES ***
+
 PRESS_RELEASE:
 ${pressRelease}
 
@@ -374,7 +395,7 @@ INPUT PARAMETERS:
 - publication: "${magazineKey.toLowerCase()}"
 - content_type: "${contentType}"
 - hands_on_data: ${hands_on_data}
-- target_word_count: ${minWords || 700}-${maxWords || 900} words
+- target_word_count: ${effectiveMin}-${effectiveMax} words (MANDATORY — do not exceed)
 
 RAG GROUNDING & CITATION RULES (MANDATORY):
 1. PR is Ground Truth for News Facts: Company name, product name, launch dates, claims.

@@ -69,6 +69,10 @@ export const magazines: Record<MagazineKey, MagazineConfig> = {
 Given PRESS_RELEASE + RETRIEVED_CHUNKS (from Dataquest archive + regulatory docs).
 TASK: Create E-E-A-T + RAG compliant first draft following the Official Dataquest Toolkit.
 
+CRITICAL NON-NEGOTIABLE RULES (apply before all other instructions):
+0. PROPORTIONAL LENGTH: Your output word count MUST stay within ±20% of the input Press Release word count. If the PR is 300 words, write 240–360 words. If the PR is 600 words, write 480–720 words. DO NOT pad with generic industry commentary, boilerplate observations, or speculative context to inflate word count. Short PRs deserve short articles.
+0b. ZERO FABRICATION: Every single sentence in your output must be directly traceable to either the PRESS_RELEASE or an explicitly cited RETRIEVED_CHUNK. Do NOT add any claim, statistic, company history, product detail, market share figure, or contextual statement that does not appear in those two sources. If you cannot source a fact, omit it entirely.
+
 STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 1. SPELLING & FORMAT: Strict UK English (-ise, programme, colour, digitisation, centre). Strip corporate suffixes (Pvt, Ltd, Inc, LLC).
 2. ZERO PR BIASED / MARKETING LANGUAGE: Completely eliminate all promotional adjectives and hype calls-to-action (e.g. stylish, highly anticipated, must-have, act fast, game-changer, revolutionary, unmatched, world-class, cutting-edge, leading, best-in-class, groundbreaking, don't miss out, buy now, unbeatable, state-of-the-art). Write in neutral, matter-of-fact journalistic prose. Convert marketing praise into objective technical specifications or attribute them directly: "The company states that...". DO NOT change the strength, scope, or technical meaning of claims while simplifying copy.
@@ -82,11 +86,11 @@ STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 STRUCTURE:
 1. Headline: Factual news headline (60-65 chars, no end punctuation).
 2. Sub-headline: Implication + context (140-155 chars).
-3. Body (800-1200 words):
+3. Body (scale with input PR length, see rule 0 above):
    - P1: Lead with implication + Company + Core announcement (PR facts strictly)
    - P2: Technical specifications & operational details (pricing, specs, availability - PR facts strictly)
-   - P3: India / Enterprise Context - MUST use RETRIEVED_CHUNKS and cite as [id] / [Also Read: Title](URL)
-   - P4: Market impact & enterprise analysis
+   - P3: India / Enterprise Context - MUST use RETRIEVED_CHUNKS and cite as [id] / [Also Read: Title](URL) — ONLY if directly relevant
+   - P4: Market impact & enterprise analysis — ONLY if directly supported by RETRIEVED_CHUNKS
    - P5: Verbatim spokesperson quote at the bottom + objective summary of next steps
 4. Footer: Add mandatory Trust footer with Source + AI disclosure.
 
@@ -127,6 +131,10 @@ OUTPUT: Must be valid JSON per schema v1.1.`,
 Given PRESS_RELEASE + RETRIEVED_CHUNKS (Voice&Data archive + TRAI/DoT docs).
 TASK: Create E-E-A-T + RAG compliant first draft following the Official Voice&Data Stylesheet.
 
+CRITICAL NON-NEGOTIABLE RULES (apply before all other instructions):
+0. PROPORTIONAL LENGTH: Your output word count MUST stay within ±20% of the input Press Release word count. If the PR is 300 words, write 240–360 words. If the PR is 600 words, write 480–720 words. DO NOT pad with generic industry commentary, boilerplate observations, or speculative context to inflate word count. Short PRs deserve short articles.
+0b. ZERO FABRICATION: Every single sentence in your output must be directly traceable to either the PRESS_RELEASE or an explicitly cited RETRIEVED_CHUNK. Do NOT add any claim, statistic, company history, product detail, market share figure, or contextual statement that does not appear in those two sources. If you cannot source a fact, omit it entirely.
+
 STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 1. SPELLING & FORMAT: Strict UK English (-ise, programme, colour, digitisation). Strip corporate suffixes. Write "Voice&Data" with no spaces.
 2. ZERO PR BIASED / MARKETING LANGUAGE: Completely eliminate all promotional adjectives and sales fluff (e.g. stylish, highly anticipated, must-have, act fast, game-changer, revolutionary, unmatched, world-class, cutting-edge, leading, best-in-class, groundbreaking, unbeatable, state-of-the-art). Express all technical capabilities factually. DO NOT alter claim strength or technical meaning while simplifying copy.
@@ -140,11 +148,11 @@ STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 STRUCTURE:
 1. Headline: Metric + Operator + What (60-65 chars, no end punctuation).
 2. Sub-headline: Factual rollout scope & specs (140-155 chars).
-3. Body (600-900 words):
+3. Body (scale with input PR length, see rule 0 above):
    - P1: Operator + factual numbers + location (PR facts strictly)
    - P2: Technical details - band, infrastructure tech, vendor partners (PR facts strictly)
-   - P3: Regulatory/Business implication - MUST use RETRIEVED_CHUNKS (e.g., TRAI pricing 4% AGR [trai_satcom_2025]) and cite/link
-   - P4: Competitive context - Jio vs Airtel vs Vi vs BSNL (cite archive if using historical numbers)
+   - P3: Regulatory/Business implication - use RETRIEVED_CHUNKS ONLY if directly relevant (e.g., TRAI pricing 4% AGR [trai_satcom_2025]) and cite/link
+   - P4: Competitive context - Jio vs Airtel vs Vi vs BSNL — ONLY if supported by RETRIEVED_CHUNKS, do not invent comparisons
    - P5: Key Takeaways (3-5 bullet points ending with period) + Verbatim spokesperson quote at bottom
 4. Footer: Trust footer + Source: Press Release.
 
@@ -180,6 +188,10 @@ Given PRESS_RELEASE + RETRIEVED_CHUNKS (PCQuest archive) + hands_on_data flag.
 TASK: Create E-E-A-T + RAG compliant first draft following PCQuest Labs standards.
 TONE: Objective, clear, analytical, expert. 12-18 word sentences. ZERO PR hype.
 
+CRITICAL NON-NEGOTIABLE RULES (apply before all other instructions):
+0. PROPORTIONAL LENGTH: Your output word count MUST stay within ±20% of the input Press Release word count. If the PR is 300 words, write 240–360 words. If the PR is 600 words, write 480–720 words. DO NOT pad with generic technology observations, boilerplate commentary, or speculative buyer analysis to inflate word count. Short PRs deserve short articles.
+0b. ZERO FABRICATION: Every single sentence in your output must be directly traceable to either the PRESS_RELEASE or an explicitly cited RETRIEVED_CHUNK. Do NOT add any benchmark score, thermal result, battery life estimate, price comparison, market share figure, or contextual statement that does not appear in those two sources. If you cannot source a fact, omit it entirely.
+
 STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 1. ZERO PR MARKETING BIAS: Ban hype adjectives and promotional sales phrases ("stylish", "highly anticipated", "must-have", "act fast", "game-changer", "revolutionary", "unmatched", "world-class", "cutting-edge", "leading", "best-in-class", "groundbreaking", "don't miss out", "buy now", "unbeatable", "stunning", "gorgeous"). Express hardware features strictly by their technical attributes (e.g. "120Hz display" instead of "stunning 120Hz display"). DO NOT weaken or alter the technical meaning of claims.
 2. STRICT SOURCE FIDELITY & VERBATIM FAITHFULNESS: Maintain 100% verbatim fidelity to PR specifications (processor, RAM, battery, ports, dimensions, price, executive quotes, model numbers). Never fabricate benchmark scores, thermals, or unstated specs.
@@ -193,11 +205,11 @@ STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 STRUCTURE:
 1. Headline: Factual Benefit + Product (60-65 chars). If first_look, prefix "First Look: "
 2. Sub-headline: Target user + key technical spec (140-155 chars).
-3. Body (500-800 news, 900-1400 review):
+3. Body (scale with input PR length, see rule 0 above):
    - P1: Factual Hook - technology context & core product announcement
    - P2: Detailed specifications & operational breakdown in clear language (PR facts strictly)
    - P3: Technical specs table / bullet points (PR facts strictly)
-   - P4: Context from archive - e.g., how it compares to previous model, cite as [id] / [Also Read: Title](URL)
+   - P4: Context from archive - e.g., how it compares to previous model, cite as [id] / [Also Read: Title](URL) — ONLY if supported by RETRIEVED_CHUNKS
    - P5: Objective target buyer analysis / Official pricing (Rs) & availability + Verbatim quote at bottom
 4. Add Bottom line box.
 5. Footer: Trust footer + Source: Press Release.
