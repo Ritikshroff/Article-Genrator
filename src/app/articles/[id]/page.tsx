@@ -99,21 +99,31 @@ export default function ArticleDetailPage() {
 
   const articleId = params?.id as string;
 
-  const fetchArticle = async () => {
-    setIsLoading(true);
-    try {
-      const data = await apiFetch<ArticleDetail>(`/articles/${articleId}`);
-      setArticle(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (!authLoading && user && articleId) fetchArticle();
+    if (authLoading) return; // still resolving — show skeleton
+    if (!user || !articleId) return; // AuthProvider handles redirect if !user
+
+    const fetchArticle = async () => {
+      setIsLoading(true);
+      try {
+        const data = await apiFetch<ArticleDetail>(`/articles/${articleId}`);
+        setArticle(data);
+        // Initialise rating state from the freshly-fetched article in one go.
+        if (data.author_rating) {
+          setSelectedStar(data.author_rating);
+          setRatingNote((data as any).author_rating_note || "");
+        }
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchArticle();
   }, [authLoading, user, articleId]);
+
+
 
   const handleSubmitForReview = async () => {
     if (!article) return;
@@ -185,14 +195,6 @@ export default function ArticleDetailPage() {
   const canSubmit = isOwnArticle && (article.status === "draft" || article.status === "revision_requested");
   const canReview = isEditor && article.status === "submitted";
   const canRate = !isEditor && isOwnArticle; // Authors can rate their own articles
-
-  // Initialise star from existing rating on mount / article change
-  React.useEffect(() => {
-    if (article?.author_rating) {
-      setSelectedStar(article.author_rating);
-      setRatingNote((article as any).author_rating_note || "");
-    }
-  }, [article?.id]);
 
   // Convert article data to EditorialPackage for OutputPanel
   const packageData: EditorialPackage = {
