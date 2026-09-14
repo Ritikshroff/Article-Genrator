@@ -61,6 +61,7 @@ def _article_to_list_item(article: Article) -> ArticleListItem:
         status=article.status,
         created_by_name=article.created_by_name,
         reviewed_by_name=article.reviewed_by_name,
+        author_rating=article.author_rating,
         created_at=article.created_at,
         updated_at=article.updated_at,
     )

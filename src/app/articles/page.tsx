@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/authContext";
+import { useToast } from "@/lib/toastContext";
 import { apiFetch } from "@/lib/apiClient";
 import Link from "next/link";
 import {
@@ -29,18 +30,8 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArticleRowSkeleton, FullPageSkeleton } from "@/components/Skeletons";
 import { CustomSelect } from "@/components/CustomSelect";
-
-interface ArticleListItem {
-  id: string;
-  title: string;
-  publication: string;
-  status: string;
-  created_by_name: string;
-  reviewed_by_name: string | null;
-  created_at: string;
-  updated_at: string;
-  author_rating?: number | null;
-}
+import { resolvePublication } from "@/lib/magazineConfig";
+import type { ArticleListItem } from "@/lib/types";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   draft: { label: "Draft", color: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300", icon: <FileText className="w-3 h-3" /> },
@@ -79,36 +70,45 @@ function formatIndianDateTime(dateStr?: string | null): string {
 
 export default function ArticlesPage() {
   const { user, isEditor, logout, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [allArticles, setAllArticles] = useState<ArticleListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [pubFilter, setPubFilter] = useState<string>("");
 
-  const fetchArticles = async () => {
-    setIsLoading(true);
-    setError("");
+  const fetchArticles = async (isManual: boolean = false) => {
     try {
+      setIsLoading(true);
       const data = await apiFetch<{ articles: ArticleListItem[]; total: number }>("/articles");
       setAllArticles(data.articles);
+      if (isManual) {
+        toast.info("Articles list refreshed.");
+      }
     } catch (err: any) {
       setError(err.message);
+      toast.error("Failed to load articles: " + err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!authLoading && user) fetchArticles();
+    if (!authLoading && user) fetchArticles(false);
   }, [authLoading, user]);
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Delete article "${title}"? This cannot be undone.`)) return;
+    const confirmed = await toast.confirm(
+      `Delete article "${title}"? This cannot be undone.`,
+      { title: "Delete Article", confirmText: "Delete", isDestructive: true }
+    );
+    if (!confirmed) return;
     try {
       await apiFetch(`/articles/${id}`, { method: "DELETE" });
+      toast.success("Article deleted successfully");
       fetchArticles();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -120,7 +120,7 @@ export default function ArticlesPage() {
 
   const displayedArticles = allArticles.filter((a) => {
     if (statusFilter && a.status !== statusFilter) return false;
-    if (pubFilter && a.publication !== pubFilter) return false;
+    if (pubFilter && resolvePublication(a.publication).key !== pubFilter) return false;
     return true;
   });
 
@@ -167,19 +167,23 @@ export default function ArticlesPage() {
 
             {/* Refresh button */}
             <button
-              onClick={fetchArticles}
-              className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-xs transition-colors"
+              onClick={() => fetchArticles(true)}
+              className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-xs transition-colors cursor-pointer"
               title="Refresh List"
+              disabled={isLoading}
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
             </button>
 
             <ThemeToggle />
 
             {/* Logout */}
             <button
-              onClick={logout}
-              className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors"
+              onClick={() => {
+                toast.info("You have been signed out.");
+                logout();
+              }}
+              className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -206,7 +210,11 @@ export default function ArticlesPage() {
                 <span className="text-xs font-bold uppercase tracking-wider">Awaiting Review</span>
                 <Inbox className="w-4 h-4" />
               </div>
-              <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{submittedCount}</div>
+              {isLoading ? (
+                <div className="h-8 w-14 shimmer rounded-xs my-0.5" />
+              ) : (
+                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{submittedCount}</div>
+              )}
               <p className="text-[11px] text-zinc-400 mt-1">Submitted drafts to review</p>
             </button>
 
@@ -222,7 +230,11 @@ export default function ArticlesPage() {
                 <span className="text-xs font-bold uppercase tracking-wider">Approved</span>
                 <CheckSquare className="w-4 h-4" />
               </div>
-              <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{approvedCount}</div>
+              {isLoading ? (
+                <div className="h-8 w-14 shimmer rounded-xs my-0.5" />
+              ) : (
+                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{approvedCount}</div>
+              )}
               <p className="text-[11px] text-zinc-400 mt-1">Ready for CMS publish</p>
             </button>
 
@@ -238,7 +250,11 @@ export default function ArticlesPage() {
                 <span className="text-xs font-bold uppercase tracking-wider">Revisions Requested</span>
                 <AlertTriangle className="w-4 h-4" />
               </div>
-              <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{revisionCount}</div>
+              {isLoading ? (
+                <div className="h-8 w-14 shimmer rounded-xs my-0.5" />
+              ) : (
+                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{revisionCount}</div>
+              )}
               <p className="text-[11px] text-zinc-400 mt-1">Returned to authors</p>
             </button>
 
@@ -254,7 +270,11 @@ export default function ArticlesPage() {
                 <span className="text-xs font-bold uppercase tracking-wider">All Submissions</span>
                 <FileText className="w-4 h-4" />
               </div>
-              <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{totalCount}</div>
+              {isLoading ? (
+                <div className="h-8 w-14 shimmer rounded-xs my-0.5" />
+              ) : (
+                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{totalCount}</div>
+              )}
               <p className="text-[11px] text-zinc-400 mt-1">Total articles in database</p>
             </button>
           </div>
@@ -338,6 +358,7 @@ export default function ArticlesPage() {
               const articleId = article.id || (article as any)._id || "";
               const st = STATUS_CONFIG[article.status] || STATUS_CONFIG.draft;
               const isSubmitted = article.status === "submitted";
+              const pubMeta = resolvePublication(article.publication);
               return (
                 <div
                   key={articleId}
@@ -349,8 +370,8 @@ export default function ArticlesPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${PUB_BADGE[article.publication] || "bg-zinc-600"}`}>
-                        {article.publication === "DataQuest" ? "DQ" : article.publication === "VoiceData" ? "V&D" : "PCQ"}
+                      <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${pubMeta.badgeBg}`}>
+                        {pubMeta.code}
                       </span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
                         {st.icon} {st.label}

@@ -5,10 +5,12 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/lib/authContext";
+import { useToast } from "@/lib/toastContext";
 import { Newspaper, Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { toast } = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,8 +23,11 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(username, password);
+      toast.success(`Welcome back, ${username}!`);
     } catch (err: any) {
-      setError(err.message || "Login failed. Please check your credentials.");
+      const msg = err.message || "Login failed. Please check your credentials.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

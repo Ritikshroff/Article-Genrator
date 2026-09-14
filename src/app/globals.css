@@ -48,6 +48,10 @@
   /* DQ Brand Red — used sparingly, only for primary actions */
   --color-dq-red: #e30613;
   --color-dq-red-dark: #b8040f;
+
+  /* Voice&Data Teal */
+  --color-vd: #00839b;
+  --color-vd-dark: #006478;
 }
 
 /* ─── Light mode ──────────────────────────────────────────────── */
@@ -79,6 +83,10 @@
   --sidebar-accent-foreground: #111111;
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #e30613;
+
+  /* Voice&Data */
+  --color-vd: #00839b;
+  --color-vd-dark: #006478;
 }
 
 /* ─── Dark mode ───────────────────────────────────────────────── */

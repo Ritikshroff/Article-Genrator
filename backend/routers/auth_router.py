@@ -3,13 +3,11 @@
 # Authentication endpoints — login & current user
 # ─────────────────────────────────────────────────────────────
 
-import asyncio
 from fastapi import APIRouter, HTTPException, status, Depends
 
 from models import User
-from auth import verify_password, hash_password, create_access_token, get_current_user
+from auth import verify_password, create_access_token, get_current_user
 from schemas import LoginRequest, TokenResponse, UserResponse
-from seed import DEFAULT_USERS
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

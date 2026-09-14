@@ -145,7 +145,8 @@ async def handle_inbound_email_webhook(
         social_data={},
         review_data={},
         creative_data={},
-        created_by=f"Automated Email Ingestion ({from_email or 'Webhook'})",
+        created_by_id="inbound_automation",
+        created_by_name=f"Inbound ({from_email or 'Webhook'})",
         status="submitted"
     )
 

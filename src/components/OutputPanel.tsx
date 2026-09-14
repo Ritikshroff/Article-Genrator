@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {
-  Copy, Check, FileDown, Briefcase, Cpu, Award, Users,
+  Copy, Check, Briefcase, Cpu, Award, Users,
   HelpCircle, Eye, ShieldAlert, Sparkles, Clipboard, ArrowRight,
   ExternalLink, Target, Code, Save, Maximize2, Minimize2, Download
 } from "lucide-react";
 import { magazines, MagazineKey } from "../lib/magazineConfig";
 import { apiFetch } from "../lib/apiClient";
+import { useToast } from "@/lib/toastContext";
+import { formatHtmlForPreview } from "@/lib/htmlUtils";
+export { formatHtmlForPreview };
 
 interface NewsData {
   headline: string;
@@ -156,40 +159,12 @@ const formatArticleBody = (text: string) => {
   return clean;
 };
 
-const formatHtmlForPreview = (html: string, ragSources?: { id: string; url: string; title: string; snippet: string }[]) => {
-  if (!html) return "";
-  let clean = html.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#e30613] underline hover:text-[#b8040f] font-medium">$1</a>'
-  );
-
-  // Map raw bracket citation markers like [vd_jio_1] directly to hyperlinked URLs
-  clean = clean.replace(/\[([a-zA-Z0-9_-]+)\]/g, (match, id) => {
-    const src = ragSources?.find((s) => s.id === id);
-    if (src && src.url) {
-      return `<a href="${src.url}" target="_blank" rel="noopener noreferrer" class="text-[#e30613] underline hover:text-[#b8040f] font-medium ml-1" title="${src.title.replace(/"/g, '&quot;')}">[Source]</a>`;
-    }
-    // If no matching source URL, strip the raw bracket tag so vd_jio_1 doesn't clutter published text
-    return "";
-  });
-
-  // Auto-hyperlink plain text "Also Read: Title" lines if they lack an <a> tag
-  clean = clean.replace(/(<p>(?:<strong>)?Also Read:\s*(?:<\/strong>)?)(?!<a\b)([^<]+)(<\/p>)/gi, (match, prefix, titleText, suffix) => {
-    const trimmedTitle = titleText.trim();
-    const matchedSource = ragSources?.find((s) => s.title.toLowerCase().includes(trimmedTitle.toLowerCase()) || trimmedTitle.toLowerCase().includes(s.title.toLowerCase()));
-    const targetUrl = matchedSource?.url || "#";
-    return `${prefix}<a href="${targetUrl}" target="_blank" rel="noopener noreferrer" class="text-[#e30613] underline hover:text-[#b8040f] font-bold">${trimmedTitle}</a>${suffix}`;
-  });
-
-  return clean;
-};
-
 const MAGAZINE_PHRASES: Record<string, { title: string; details: string[] }> = {
   Dataquest: {
     title: "Synthesizing Dataquest Enterprise Package...",
     details: [
       "Analyzing press release facts & executive announcements...",
-      "Searching CyberMedia Dataquest archives & B2B RAG corpus...",
+      "Searching CyberMedia Dataquest archives & publication database...",
       "Structuring inverted pyramid story for IT decision makers...",
       "Formulating enterprise impact, CIO takeaways & market context...",
       "Generating SEO metadata, primary keywords & LSI tags...",
@@ -236,6 +211,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
   readOnly = false,
   onSaveBackend
 }) => {
+  const { toast } = useToast();
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [imagePrompt, setImagePrompt] = useState("");
 
@@ -269,6 +245,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
       : (magazine === "PCQuest" || magazine === "PCquest") ? "PCquest"
         : "Dataquest";
 
+  const mag = magazines[normalizedMagKey] || magazines["Dataquest"];
   const currentPhrases = MAGAZINE_PHRASES[normalizedMagKey] || MAGAZINE_PHRASES["Dataquest"];
 
   useEffect(() => {
@@ -286,7 +263,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
     "news",
     "seo",
     "social",
-    "impact",
+    // "impact", // Hidden for now per editorial request
     "interview",
     "review"
   ];
@@ -319,15 +296,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
     twitterTitle: "", twitterDescription: "", keywords: ""
   });
 
-  // Toast Notifications State
-  const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "info" | "warning" }[]>([]);
-
+  // Toast Notifications using global toast context
   const showToast = (message: string, type: "success" | "info" | "warning" = "success") => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev.slice(-3), { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3200);
+    if (type === "success") toast.success(message);
+    else if (type === "info") toast.info(message);
+    else if (type === "warning") toast.warning(message);
+    else toast.info(message);
   };
 
   useEffect(() => {
@@ -526,100 +500,6 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
     }
   };
 
-  // Build markdown structure for export
-  const buildMarkdownReport = (): string => {
-    const { news, seo, social, impact, interview, review } = packageData;
-    let md = `# DQ AI Editorial Copilot - Consolidated Editorial Package\n\n`;
-
-    if (news) {
-      md += `## Article Text\n\n`;
-      md += `### ${news.headline}\n`;
-      md += `*${news.subheadline}*\n\n`;
-      md += `**Category:** ${news.category}  \n`;
-      md += `**Tags:** ${news.tags.join(", ")}\n\n`;
-      md += `${news.article}\n\n`;
-      md += `---\n\n`;
-    }
-
-    if (seo) {
-      md += `## SEO Metadata\n\n`;
-      if (seo.primary_keyword) md += `- **Primary Keyword:** ${seo.primary_keyword}\n`;
-      md += `- **SEO Title:** ${seo.seo_title}\n`;
-      md += `- **Meta Description:** ${seo.meta_description}\n`;
-      md += `- **Slug:** ${seo.slug}\n`;
-      md += `- **Focus Keywords:** ${seo.keywords.join(", ")}\n`;
-      if (seo.semantic_keywords && seo.semantic_keywords.length > 0) {
-        md += `- **Semantic/LSI Keywords:** ${seo.semantic_keywords.join(", ")}\n`;
-      }
-      md += `\n---\n\n`;
-    }
-
-    if (social) {
-      md += `## Social Media Copy\n\n`;
-      md += `### LinkedIn Post\n\n${social.linkedin_post}\n\n`;
-      md += `### Twitter / X Post\n\n${social.twitter_post}\n\n`;
-      md += `---\n\n`;
-    }
-
-    if (impact) {
-      md += `## Industry Impact\n\n`;
-      md += `### Why It Matters\n${impact.why_it_matters}\n\n`;
-      md += `### Industries Affected\n${impact.industries_affected.join(", ")}\n\n`;
-      md += `### Business Impact\n${impact.business_impact}\n\n`;
-      md += `### Technology Impact\n${impact.technology_impact}\n\n`;
-      md += `### Competitive Landscape\n${impact.competitive_landscape}\n\n`;
-      md += `---\n\n`;
-    }
-
-    if (interview) {
-      md += `## Interview Opportunities\n\n`;
-      md += `### Potential Interview Candidates\n${interview.candidates.map(c => `- ${c}`).join("\n")}\n\n`;
-      md += `### 10 Interview Questions\n${interview.questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}\n\n`;
-      md += `### Follow-up Stories\n${interview.follow_up_stories.map(s => `- ${s}`).join("\n")}\n\n`;
-      md += `---\n\n`;
-    }
-
-    if (review) {
-      md += `## Editorial Review Warnings & Checks\n\n`;
-      md += `### Marketing Claims Flagged\n${review.marketing_claims.map(c => `- ${c}`).join("\n")}\n\n`;
-      md += `### Missing Data Points\n${review.missing_data.map(d => `- ${d}`).join("\n")}\n\n`;
-      md += `### Customer Reference Gaps\n${review.customer_reference_gaps.map(g => `- ${g}`).join("\n")}\n\n`;
-      md += `### India Market Relevance\n${review.india_relevance}\n\n`;
-      md += `### Fact-Check Checklists\n${review.fact_check_items.map(i => `- ${i}`).join("\n")}\n\n`;
-      if (review.reporting_conflicts && review.reporting_conflicts.length > 0) {
-        md += `### Potential Conflicts with Previous Reporting\n${review.reporting_conflicts.map(i => `- ${i}`).join("\n")}\n\n`;
-      }
-    }
-
-    return md;
-  };
-
-  const handleExportMarkdown = () => {
-    const mdContent = buildMarkdownReport();
-    const blob = new Blob([mdContent], { type: "text/markdown;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `editorial_package_${packageData.seo?.slug || "export"}.md`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("📥 Exported Editorial Package as Markdown (.md)", "info");
-  };
-
-  const handleExportJSON = () => {
-    const jsonContent = JSON.stringify(packageData, null, 2);
-    const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `editorial_package_${packageData.seo?.slug || "export"}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("📥 Exported Editorial Package as JSON (.json)", "info");
-  };
-
   // Get current active section content string for simple copy (includes FAQs & Formatted Metadata)
   const getActiveTabContentString = (): string => {
     switch (activeTab) {
@@ -691,13 +571,6 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
               ) : (
                 <><Copy className="w-3 h-3" />Copy</>
               )}
-            </button>
-
-            <button
-              onClick={handleExportMarkdown}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-wide cursor-pointer bg-white dark:bg-zinc-800 rounded-xs shadow-2xs"
-            >
-              <FileDown className="w-3 h-3" />Markdown
             </button>
           </div>
         )}
@@ -965,8 +838,8 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             {/* Article Content Display */}
             {viewMode === "preview" ? (
               <div
-                className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-sm sm:text-base leading-relaxed [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h2]:border-b [&>h2]:border-zinc-200 dark:[&>h2]:border-zinc-800 [&>h2]:pb-1.5 [&>h3]:text-base [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&>li]:mb-1.5 [&>blockquote]:border-l-4 [&>blockquote]:border-[#e30613] [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 font-sans"
-                dangerouslySetInnerHTML={{ __html: formatHtmlForPreview(packageData.news.article, packageData.news.rag_sources) }}
+                className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-sm sm:text-base leading-relaxed [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h2]:border-b [&>h2]:border-zinc-200 dark:[&>h2]:border-zinc-800 [&>h2]:pb-1.5 [&>h3]:text-base [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&>li]:mb-1.5 [&>blockquote]:border-l-4 [&>blockquote]:border-[#e30613] [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 font-sans [&_a]:underline [&_a]:underline-offset-2 [&_a]:decoration-1 [&_a]:font-semibold"
+                dangerouslySetInnerHTML={{ __html: formatHtmlForPreview(packageData.news.article, packageData.news.rag_sources, mag.accentHex) }}
               />
             ) : viewMode === ("edit" as any) ? (
               <div className="space-y-3 animate-fadeIn">
@@ -1033,11 +906,11 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
               </div>
             )}
 
-            {/* RAG Sources Citations Box */}
+            {/* Reference Sources & Background Reading Box */}
             {packageData.news.rag_sources && packageData.news.rag_sources.length > 0 && (
               <div className="p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1a1a1a] space-y-2 mt-4">
                 <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <ExternalLink className="w-3.5 h-3.5 text-[#e30613]" /> RAG Grounding Citation Sources
+                  <ExternalLink className="w-3.5 h-3.5 text-[#e30613]" /> Reference Sources & Background Reading
                 </div>
                 <div className="space-y-1.5 pt-1">
                   {packageData.news.rag_sources.map((src, i) => (
@@ -1810,36 +1683,6 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         )}
       </div>
     )}
-
-        {/* Global Floating Toast Notifications Container */}
-        {toasts.length > 0 && (
-          <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
-            {toasts.map((t) => (
-              <div
-                key={t.id}
-                className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-white shadow-2xl rounded-xs transition-all animate-in slide-in-from-bottom-2 duration-200 ${
-                  t.type === "success"
-                    ? "bg-emerald-600 border border-emerald-500"
-                    : t.type === "info"
-                    ? "bg-sky-600 border border-sky-500"
-                    : "bg-amber-600 border border-amber-500"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {t.type === "success" && <Check className="w-4 h-4 flex-shrink-0" />}
-                  {t.type === "info" && <FileDown className="w-4 h-4 flex-shrink-0" />}
-                  <span>{t.message}</span>
-                </div>
-                <button
-                  onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-                  className="text-white/80 hover:text-white font-bold ml-2 text-sm leading-none cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
 
       </div>
     </div>

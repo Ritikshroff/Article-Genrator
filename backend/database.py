@@ -15,11 +15,18 @@ async def init_db() -> None:
     from models import User, Article
 
     uri = MONGO_URI
-    if "directConnection" not in uri:
+    is_srv = uri.startswith("mongodb+srv://")
+
+    # directConnection is only applicable for standalone direct instances, never SRV/replica sets
+    if not is_srv and "directConnection" not in uri:
         delimiter = "&" if "?" in uri else "?"
         uri += f"{delimiter}directConnection=true"
 
-    client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000, directConnection=True)
+    client_kwargs = {"serverSelectionTimeoutMS": 5000}
+    if not is_srv:
+        client_kwargs["directConnection"] = True
+
+    client = AsyncIOMotorClient(uri, **client_kwargs)
     db = client[DB_NAME]
 
     await init_beanie(

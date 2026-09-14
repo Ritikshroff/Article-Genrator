@@ -58,11 +58,20 @@ class ArticleUpdate(BaseModel):
     creative_data: Optional[dict] = None
 
 
+ArticleStatus = Literal[
+    "draft",
+    "submitted",
+    "approved",
+    "revision_requested",
+    "published",
+]
+
+
 class ArticleResponse(BaseModel):
     id: str
     title: str
     publication: str
-    status: str
+    status: ArticleStatus
     created_by_id: str
     created_by_name: str
     reviewed_by_id: Optional[str] = None
@@ -87,7 +96,7 @@ class ArticleListItem(BaseModel):
     id: Annotated[str, BeforeValidator(str)] = Field(alias="_id", serialization_alias="id")
     title: str
     publication: str
-    status: str
+    status: ArticleStatus
     created_by_name: str
     reviewed_by_name: Optional[str] = None
     author_rating: Optional[int] = None
@@ -106,5 +115,6 @@ class ReviewAction(BaseModel):
 
 
 class AuthorFeedback(BaseModel):
-    rating: int          # Must be 1–5 (validated in the router)
+    rating: int = Field(..., ge=1, le=5, description="Author rating between 1 and 5")
     note: Optional[str] = None
+

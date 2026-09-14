@@ -14,14 +14,9 @@ import React, {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch } from "./apiClient";
+import type { AuthUser } from "./types";
 
-export interface AuthUser {
-  id: string;
-  username: string;
-  full_name: string;
-  role: "author" | "editor";
-  is_active: boolean;
-}
+export type { AuthUser };
 
 interface AuthContextValue {
   user: AuthUser | null;

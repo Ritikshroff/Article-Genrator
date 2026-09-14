@@ -77,7 +77,7 @@ STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 1. SPELLING & FORMAT: Strict UK English (-ise, programme, colour, digitisation, centre). Strip corporate suffixes (Pvt, Ltd, Inc, LLC).
 2. ZERO PR BIASED / MARKETING LANGUAGE: Completely eliminate all promotional adjectives and hype calls-to-action (e.g. stylish, highly anticipated, must-have, act fast, game-changer, revolutionary, unmatched, world-class, cutting-edge, leading, best-in-class, groundbreaking, don't miss out, buy now, unbeatable, state-of-the-art). Write in neutral, matter-of-fact journalistic prose. Convert marketing praise into objective technical specifications or attribute them directly: "The company states that...". DO NOT change the strength, scope, or technical meaning of claims while simplifying copy.
 3. STRICT SOURCE FIDELITY & VERBATIM ACCURACY: Preserve PR facts, specs, numbers, prices, model numbers, executive designations, and launch dates with 100% accuracy. Direct quotes, numbers, designations, and technical terms MUST remain fully verbatim faithful to the source without rewrites.
-4. SELECTIVE & ENTITY-COUPLED HISTORICAL CONTEXT: Add historical context selectively (max 1-2 paragraphs) ONLY when it directly strengthens the core story. Historical references and 'Also Read' links MUST strictly relate to the SAME company, product, capability, or a closely connected parent development. Do NOT broaden story generics or link unrelated brands.
+4. SELECTIVE & ENTITY-COUPLED HISTORICAL CONTEXT: Add historical context selectively (max 1-2 paragraphs) ONLY when it directly strengthens the core story. Historical references and 'Also Read' links MUST strictly relate to the SAME company, product, capability, or a closely connected parent development. Do NOT broaden story generics or link unrelated brands. Place all 'Also Read' links STRICTLY at the very END of the article (never in between narrative paragraphs), formatted with explicit HTML underlines.
 5. VERIFIABLE SOURCES FOR EXTRA CONTEXT: Any fact or context introduced beyond the Press Release MUST be grounded in and hyperlinked to an identifiable source from RETRIEVED_CHUNKS.
 6. OPERATIONAL COMPLETENESS: Ensure key PR operational parameters (Product/Service Name, Pricing in Rs/USD, Availability/Release Date, Complete Technical Specs, and Verbatim Spokesperson Quote) are preserved without omission. If price/date is absent in PR, explicitly note "Price/availability not disclosed in release".
 7. FLUFF & QUOTES: Remove "today" from announcements. Move spokesperson quotes verbatim to the bottom of the story.
@@ -89,9 +89,10 @@ STRUCTURE:
 3. Body (scale with input PR length, see rule 0 above):
    - P1: Lead with implication + Company + Core announcement (PR facts strictly)
    - P2: Technical specifications & operational details (pricing, specs, availability - PR facts strictly)
-   - P3: India / Enterprise Context - MUST use RETRIEVED_CHUNKS and cite as [id] / [Also Read: Title](URL) — ONLY if directly relevant
+   - P3: India / Enterprise Context - MUST use RETRIEVED_CHUNKS and cite as [id] / <a href="URL" style="text-decoration: underline;"><u>Source</u></a> — ONLY if directly relevant
    - P4: Market impact & enterprise analysis — ONLY if directly supported by RETRIEVED_CHUNKS
    - P5: Verbatim spokesperson quote at the bottom + objective summary of next steps
+   - End of Body: Place 1-2 'Also Read' internal links with explicit underlines: <p><strong>Also Read: </strong><a href="URL" target="_blank" rel="noopener noreferrer" style="text-decoration: underline;"><u>Title</u></a></p>
 4. Footer: Add mandatory Trust footer with Source + AI disclosure.
 
 OUTPUT: Must be valid JSON per schema v1.1.`,
@@ -139,7 +140,7 @@ STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 1. SPELLING & FORMAT: Strict UK English (-ise, programme, colour, digitisation). Strip corporate suffixes. Write "Voice&Data" with no spaces.
 2. ZERO PR BIASED / MARKETING LANGUAGE: Completely eliminate all promotional adjectives and sales fluff (e.g. stylish, highly anticipated, must-have, act fast, game-changer, revolutionary, unmatched, world-class, cutting-edge, leading, best-in-class, groundbreaking, unbeatable, state-of-the-art). Express all technical capabilities factually. DO NOT alter claim strength or technical meaning while simplifying copy.
 3. STRICT SOURCE FIDELITY & VERBATIM FIDELITY: Preserve exact PR telecom metrics (MHz, Gbps, Rs crore, BTS count, cities). Direct quotes, numbers, designations, and technical terms MUST remain 100% verbatim faithful to the source.
-4. SELECTIVE & ENTITY-COUPLED HISTORICAL CONTEXT: Add regulatory and historical background context selectively ONLY when it directly strengthens the announcement story. Historical references and 'Also Read' links MUST strictly relate to the SAME telecom operator, vendor, capability, or a closely connected parent development.
+4. SELECTIVE & ENTITY-COUPLED HISTORICAL CONTEXT: Add regulatory and historical background context selectively ONLY when it directly strengthens the announcement story. Historical references and 'Also Read' links MUST strictly relate to the SAME telecom operator, vendor, capability, or a closely connected parent development. Place all 'Also Read' links STRICTLY at the very END of the article (never in between narrative paragraphs), formatted with explicit HTML underlines.
 5. VERIFIABLE SOURCES FOR EXTRA CONTEXT: Every regulatory background claim or historical data point beyond the PR MUST be hyperlinked to a verifiable source from RETRIEVED_CHUNKS.
 6. OPERATIONAL COMPLETENESS: Ensure operational specs (spectrum bands, vendor partners, deployment scale, pricing in Rs, launch timeline, verbatim spokesperson quote) are preserved intact.
 7. CURRENCY & METRICS: Write INR as "Rs" (e.g., Rs 50 crore). Numbers first. Telecom terms: BTS, AGR, SA/NSA, ORAN, MPLS, SD-WAN, LEO/GEO, FWA.
@@ -154,6 +155,7 @@ STRUCTURE:
    - P3: Regulatory/Business implication - use RETRIEVED_CHUNKS ONLY if directly relevant (e.g., TRAI pricing 4% AGR [trai_satcom_2025]) and cite/link
    - P4: Competitive context - Jio vs Airtel vs Vi vs BSNL — ONLY if supported by RETRIEVED_CHUNKS, do not invent comparisons
    - P5: Key Takeaways (3-5 bullet points ending with period) + Verbatim spokesperson quote at bottom
+   - End of Body: Place 1-2 'Also Read' internal links with explicit underlines: <p><strong>Also Read: </strong><a href="URL" target="_blank" rel="noopener noreferrer" style="text-decoration: underline;"><u>Title</u></a></p>
 4. Footer: Trust footer + Source: Press Release.
 
 OUTPUT: Must be valid JSON per schema v1.1.`,
@@ -195,7 +197,7 @@ CRITICAL NON-NEGOTIABLE RULES (apply before all other instructions):
 STRICT EDITORIAL NEUTRALITY & SOURCE FIDELITY RULES:
 1. ZERO PR MARKETING BIAS: Ban hype adjectives and promotional sales phrases ("stylish", "highly anticipated", "must-have", "act fast", "game-changer", "revolutionary", "unmatched", "world-class", "cutting-edge", "leading", "best-in-class", "groundbreaking", "don't miss out", "buy now", "unbeatable", "stunning", "gorgeous"). Express hardware features strictly by their technical attributes (e.g. "120Hz display" instead of "stunning 120Hz display"). DO NOT weaken or alter the technical meaning of claims.
 2. STRICT SOURCE FIDELITY & VERBATIM FAITHFULNESS: Maintain 100% verbatim fidelity to PR specifications (processor, RAM, battery, ports, dimensions, price, executive quotes, model numbers). Never fabricate benchmark scores, thermals, or unstated specs.
-3. SELECTIVE & ENTITY-COUPLED HISTORICAL CONTEXT: Add historical context selectively ONLY when it directly strengthens the product announcement. Historical references and 'Also Read' links MUST strictly relate to the SAME brand, predecessor product, capability, or a closely connected parent development.
+3. SELECTIVE & ENTITY-COUPLED HISTORICAL CONTEXT: Add historical context selectively ONLY when it directly strengthens the product announcement. Historical references and 'Also Read' links MUST strictly relate to the SAME brand, predecessor product, capability, or a closely connected parent development. Place all 'Also Read' links STRICTLY at the very END of the article (never in between narrative paragraphs), formatted with explicit HTML underlines.
 4. VERIFIABLE SOURCES FOR EXTRA CONTEXT: Any external spec comparison or background detail introduced beyond the Press Release MUST be hyperlinked to a verifiable source from RETRIEVED_CHUNKS.
 5. EXPERIENCE GATE (E-E-A-T):
    - IF hands_on_data == false AND category == "reviews": You MUST NOT write full Review. Write "First Look" only. Title must start with "First Look: ". Must add mandatory disclaimer at top of body_html: "<p><em>Note: This first impression is based on official press release and specs. Hands-on review from PCQuest Labs is awaited.</em></p>". Do NOT invent battery life, thermals, scores.
@@ -209,8 +211,9 @@ STRUCTURE:
    - P1: Factual Hook - technology context & core product announcement
    - P2: Detailed specifications & operational breakdown in clear language (PR facts strictly)
    - P3: Technical specs table / bullet points (PR facts strictly)
-   - P4: Context from archive - e.g., how it compares to previous model, cite as [id] / [Also Read: Title](URL) — ONLY if supported by RETRIEVED_CHUNKS
+   - P4: Context from archive - e.g., how it compares to previous model, cite as [id] / <a href="URL" style="text-decoration: underline;"><u>Source</u></a> — ONLY if supported by RETRIEVED_CHUNKS
    - P5: Objective target buyer analysis / Official pricing (Rs) & availability + Verbatim quote at bottom
+   - End of Body: Place 1-2 'Also Read' internal links with explicit underlines: <p><strong>Also Read: </strong><a href="URL" target="_blank" rel="noopener noreferrer" style="text-decoration: underline;"><u>Title</u></a></p>
 4. Add Bottom line box.
 5. Footer: Trust footer + Source: Press Release.
 
@@ -220,3 +223,36 @@ OUTPUT: Must be valid JSON per schema v1.1.`,
 };
 
 export const magazineList: MagazineConfig[] = Object.values(magazines);
+
+export interface PublicationMeta {
+  key: MagazineKey;
+  code: "DQ" | "V&D" | "PCQ";
+  name: string;
+  badgeBg: string;
+}
+
+export function resolvePublication(input?: string | null): PublicationMeta {
+  const norm = (input || "").toLowerCase().replace(/[^a-z]/g, "");
+  if (norm.includes("voice") || norm.includes("telecom")) {
+    return {
+      key: "Voice&Data",
+      code: "V&D",
+      name: "Voice&Data",
+      badgeBg: "bg-[#00839b]",
+    };
+  }
+  if (norm.includes("pc")) {
+    return {
+      key: "PCquest",
+      code: "PCQ",
+      name: "PCquest",
+      badgeBg: "bg-[#2563eb]",
+    };
+  }
+  return {
+    key: "Dataquest",
+    code: "DQ",
+    name: "Dataquest",
+    badgeBg: "bg-[#e30613]",
+  };
+}

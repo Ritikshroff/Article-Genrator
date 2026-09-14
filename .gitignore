@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+!backend/.env.example
 
 # vercel
 .vercel
@@ -42,3 +44,13 @@ next-env.d.ts
 
 # deployment zips
 *.zip
+
+# python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+backend/venv/
+backend/.venv/
+

@@ -2,6 +2,7 @@ import { GoogleGenerativeAI, SchemaType, Schema } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { getRAGChunks, RAGChunk } from "@/lib/ragCorpus";
 import { magazines, MagazineKey } from "@/lib/magazineConfig";
+import { formatHtmlForPreview } from "@/lib/htmlUtils";
 
 export const runtime = "nodejs";
 
@@ -306,13 +307,13 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // ── STEP 1: RAG Context Retrieval ───────────────────────────
+          // ── STEP 1: Archive Context Retrieval ──────────────────────
           controller.enqueue(
             encoder.encode(
               JSON.stringify({
                 type: "step",
                 step: 1,
-                message: `Retrieving RAG ground truth & regulatory context for ${mag.name}...`,
+                message: `Retrieving background context & regulatory archive for ${mag.name}...`,
               }) + "\n"
             )
           );
@@ -355,13 +356,13 @@ export async function POST(req: NextRequest) {
             isFirstLook = true;
           }
 
-          // ── STEP 2: Generate Schema v1.1 Package ────────────────────
+          // ── STEP 2: Generate Editorial Draft ───────────────────────
           controller.enqueue(
             encoder.encode(
               JSON.stringify({
                 type: "step",
                 step: 2,
-                message: `Generating E-E-A-T + RAG compliant draft for ${mag.name}...`,
+                message: `Generating editorial draft with archive references for ${mag.name}...`,
               }) + "\n"
             )
           );
@@ -404,10 +405,12 @@ RAG GROUNDING & CITATION RULES (MANDATORY):
 4. For statements about this specific announcement, cite PR facts implicitly (no marker needed).
 5. If you cannot find a fact in PR or chunks, say "Price/availability not disclosed in release" — DO NOT INVENT facts.
 
-INTERNAL LINKING & "ALSO READ" RULES (MANDATORY):
-1. You MUST include 1 to 2 "Also Read" internal hyperlinked references inside body_html using the URLs and Titles provided in RETRIEVED_CHUNKS.
-2. Format STRICTLY as: <p><strong>Also Read: </strong><a href="URL" target="_blank" rel="noopener noreferrer">Exact Article Title</a></p>. Never leave the "Also Read" title unlinked.
-3. Insert these "Also Read" callouts between major sections to increase reader engagement and SEO internal linking.
+INTERNAL LINKING & "ALSO READ / READ MORE" RULES (MANDATORY):
+1. NEVER insert "Also Read" or "Read More" links in between body paragraphs or in the middle of the narrative text.
+2. ALL "Also Read" / "Read More" links MUST be placed STRICTLY at the very END of body_html (immediately after the concluding paragraph / key takeaways, before trust footer).
+3. Format each link with an explicit HTML hyperlink and underline style using exact URL and Title from RETRIEVED_CHUNKS:
+   <p><strong>Also Read: </strong><a href="EXACT_URL" target="_blank" rel="noopener noreferrer" style="text-decoration: underline;"><u>Exact Article Title</u></a></p>
+4. Include 1 to 2 relevant links. Never leave an "Also Read" title unlinked or place them in between body paragraphs.
 
 E-E-A-T SIGNALS & AUTHOR RULES:
 - author_byline: "${mag.authorEntity.byline}"
@@ -443,7 +446,7 @@ Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
           const newsData = {
             headline: pkgV11.h1 || pkgV11.title_seo,
             subheadline: pkgV11.excerpt || pkgV11.meta_description,
-            article: pkgV11.body_html,
+            article: formatHtmlForPreview(pkgV11.body_html, pkgV11.rag_sources || ragChunks, mag.accentHex),
             category: pkgV11.category || "Technology",
             tags: pkgV11.tags || [],
             faq: (pkgV11.faqs || []).map((f: any) => ({ question: f.q || f.question, answer: f.a || f.answer })),

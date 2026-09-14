@@ -7,9 +7,12 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/authContext";
+import { useToast } from "@/lib/toastContext";
 import { apiFetch } from "@/lib/apiClient";
 import { OutputPanel, EditorialPackage } from "@/components/OutputPanel";
 import { ArticleDetailSkeleton } from "@/components/Skeletons";
+import { resolvePublication } from "@/lib/magazineConfig";
+import type { ArticleDetail } from "@/lib/types";
 import {
   ArrowLeft,
   Send,
@@ -22,31 +25,6 @@ import {
   Newspaper,
   Star,
 } from "lucide-react";
-
-interface ArticleDetail {
-  id: string;
-  title: string;
-  publication: string;
-  status: string;
-  created_by_id: string;
-  created_by_name: string;
-  reviewed_by_id: string | null;
-  reviewed_by_name: string | null;
-  press_release: string;
-  news_data: any;
-  seo_data: any;
-  impact_data: any;
-  interview_data: any;
-  review_data: any;
-  social_data: any;
-  creative_data: any;
-  editor_notes: string | null;
-  author_rating: number | null;
-  author_rating_note: string | null;
-  author_rated_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: "Draft", color: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
@@ -81,6 +59,7 @@ export default function ArticleDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isEditor, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [article, setArticle] = useState<ArticleDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -111,7 +90,7 @@ export default function ArticleDetailPage() {
         // Initialise rating state from the freshly-fetched article in one go.
         if (data.author_rating) {
           setSelectedStar(data.author_rating);
-          setRatingNote((data as any).author_rating_note || "");
+          setRatingNote(data.author_rating_note || "");
         }
       } catch (err: any) {
         setError(err.message);
@@ -133,8 +112,9 @@ export default function ArticleDetailPage() {
         method: "POST",
       });
       setArticle(updated);
+      toast.success("Article submitted for review!");
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -150,8 +130,9 @@ export default function ArticleDetailPage() {
       });
       setArticle(updated);
       setReviewNotes("");
+      toast.success(action === "approve" ? "Article approved!" : "Revision requested!");
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setIsReviewing(false);
     }
@@ -167,9 +148,10 @@ export default function ArticleDetailPage() {
       });
       setArticle(updated);
       setRatingSuccess(true);
+      toast.success("Feedback submitted!");
       setTimeout(() => setRatingSuccess(false), 3000);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setIsRating(false);
     }
@@ -198,13 +180,13 @@ export default function ArticleDetailPage() {
 
   // Convert article data to EditorialPackage for OutputPanel
   const packageData: EditorialPackage = {
-    news: article.news_data,
-    seo: article.seo_data,
-    impact: article.impact_data,
-    interview: article.interview_data,
-    review: article.review_data,
-    social: article.social_data,
-    creative: article.creative_data,
+    news: (article.news_data as any) || undefined,
+    seo: (article.seo_data as any) || undefined,
+    impact: (article.impact_data as any) || undefined,
+    interview: (article.interview_data as any) || undefined,
+    review: (article.review_data as any) || undefined,
+    social: (article.social_data as any) || undefined,
+    creative: (article.creative_data as any) || undefined,
   };
 
   return (
@@ -222,9 +204,14 @@ export default function ArticleDetailPage() {
             </Link>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${article.publication === "Voice&Data" || article.publication === "VoiceData" ? "bg-[#00839b]" : "bg-[#e30613]"}`}>
-                  {article.publication === "Dataquest" || article.publication === "DataQuest" ? "DQ" : article.publication === "Voice&Data" || article.publication === "VoiceData" ? "V&D" : "PCQ"}
-                </span>
+                {(() => {
+                  const pubMeta = resolvePublication(article.publication);
+                  return (
+                    <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${pubMeta.badgeBg}`}>
+                      {pubMeta.code}
+                    </span>
+                  );
+                })()}
                 <span className={`px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
                   {st.label}
                 </span>
@@ -427,8 +414,8 @@ export default function ArticleDetailPage() {
               ))}
               <span className="ml-1 text-xs font-bold text-amber-600 dark:text-amber-400">{article.author_rating}/5</span>
             </div>
-            {(article as any).author_rating_note && (
-              <span className="text-xs text-zinc-500 italic">&ldquo;{(article as any).author_rating_note}&rdquo;</span>
+            {article.author_rating_note && (
+              <span className="text-xs text-zinc-500 italic">&ldquo;{article.author_rating_note}&rdquo;</span>
             )}
           </div>
         )}

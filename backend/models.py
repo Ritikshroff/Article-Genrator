@@ -69,3 +69,9 @@ class Article(Document):
 
     class Settings:
         name = "articles"
+        indexes = [
+            "created_by_id",
+            "status",
+            "publication",
+            [("created_at", -1)],
+        ]
