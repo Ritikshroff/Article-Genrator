@@ -9,8 +9,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CyberMedia AI Editorial Copilot",
-  description: "Transform press releases into publication-quality editorial content — powered by Google Gemini.",
+  title: "AI Stack for Edit desk (ASED) — CyberMedia",
+  description: "AI Stack for Edit desk (ASED) — Transform press releases into publication-quality editorial content for Dataquest, Voice&Data, and PCquest.",
   icons: {
     icon: "/feviconicon.webp",
     shortcut: "/feviconicon.webp",

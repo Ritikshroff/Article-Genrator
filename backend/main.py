@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────
 # main.py
 # FastAPI application entry point
-# CyberMedia AI Editorial Copilot — Backend API
+# AI Stack for Edit desk (ASED) — Backend API
 # ─────────────────────────────────────────────────────────────
 
 from contextlib import asynccontextmanager
@@ -17,13 +17,14 @@ from routers.auth_router import router as auth_router
 from routers.articles_router import router as articles_router
 from routers.users_router import router as users_router
 from routers.inbound_email_router import router as inbound_email_router
+from routers.analytics_router import router as analytics_router
 from services.email_listener import imap_poller
 import asyncio
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: init DB + seed users. Shutdown: cleanup."""
-    print("🚀 Starting CyberMedia AI Copilot Backend...")
+    print("🚀 Starting AI Stack for Edit desk (ASED) Backend...")
     try:
         await init_db()
         print("✓ MongoDB connected & Beanie initialised")
@@ -42,8 +43,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="CyberMedia AI Editorial Copilot API",
-    description="Backend API for the CyberMedia multi-brand AI article generation platform",
+    title="AI Stack for Edit desk (ASED) API",
+    description="Backend API for the CyberMedia AI Stack for Edit desk (ASED) platform",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -62,14 +63,15 @@ app.include_router(auth_router)
 app.include_router(articles_router)
 app.include_router(users_router)
 app.include_router(inbound_email_router)
+app.include_router(analytics_router)
 
 
 # ── Root & Health check ───────────────────────────────────────
 @app.get("/", tags=["System"])
 async def root():
-    return {"message": "CyberMedia AI Copilot Backend API is running", "status": "healthy"}
+    return {"message": "AI Stack for Edit desk (ASED) Backend API is running", "status": "healthy"}
 
 
 @app.get("/health", tags=["System"])
 async def health_check():
-    return {"status": "healthy", "service": "CyberMedia AI Copilot Backend"}
+    return {"status": "healthy", "service": "AI Stack for Edit desk (ASED) Backend"}

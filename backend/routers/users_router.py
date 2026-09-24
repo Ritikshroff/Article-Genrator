@@ -21,8 +21,14 @@ async def list_users(current_user: User = Depends(require_editor)):
         UserResponse(
             id=str(u.id),
             username=u.username,
+            email=u.email,
             full_name=u.full_name,
             role=u.role,
+            team=u.team,
+            can_review_pr=u.can_review_pr,
+            can_edit_ai_draft=u.can_edit_ai_draft,
+            can_approve=u.can_approve,
+            can_publish=u.can_publish,
             is_active=u.is_active,
             created_at=u.created_at,
         )
@@ -45,8 +51,14 @@ async def get_user(user_id: str, current_user: User = Depends(require_editor)):
     return UserResponse(
         id=str(user.id),
         username=user.username,
+        email=user.email,
         full_name=user.full_name,
         role=user.role,
+        team=user.team,
+        can_review_pr=user.can_review_pr,
+        can_edit_ai_draft=user.can_edit_ai_draft,
+        can_approve=user.can_approve,
+        can_publish=user.can_publish,
         is_active=user.is_active,
         created_at=user.created_at,
     )

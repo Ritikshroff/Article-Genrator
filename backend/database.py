@@ -12,7 +12,7 @@ from config import MONGO_URI, DB_NAME
 async def init_db() -> None:
     """Initialise Motor client and Beanie document models."""
     # Lazy import to avoid circular imports
-    from models import User, Article
+    from models import User, Article, ActivityLog
 
     uri = MONGO_URI
     is_srv = uri.startswith("mongodb+srv://")
@@ -31,5 +31,5 @@ async def init_db() -> None:
 
     await init_beanie(
         database=db,
-        document_models=[User, Article],
+        document_models=[User, Article, ActivityLog],
     )

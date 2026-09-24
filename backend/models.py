@@ -14,14 +14,61 @@ class User(Document):
     """CyberMedia internal user (pre-seeded, no signup)."""
 
     username: Indexed(str, unique=True)
+    email: Optional[str] = None
     hashed_password: str
     full_name: str
     role: Literal["author", "editor"] = "author"
+    team: str = "Editorial"
+    can_review_pr: bool = False
+    can_edit_ai_draft: bool = False
+    can_approve: bool = False
+    can_publish: bool = False
+    can_access_monitoring: bool = False
     is_active: bool = True
+    last_login_at: Optional[datetime] = None
+    last_active_at: Optional[datetime] = None
+    total_logins: int = 0
+    total_active_seconds: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "users"
+        indexes = [
+            "email",
+            "role",
+            "last_active_at",
+        ]
+
+
+class ActivityLog(Document):
+    """Event log capturing user activity, generations, reviews, and sessions."""
+
+    user_id: str
+    user_name: str
+    user_role: Literal["author", "editor"]
+    event_type: Literal[
+        "login",
+        "heartbeat",
+        "generate_ai",
+        "save_draft",
+        "submit_review",
+        "review_approve",
+        "review_revision",
+        "export_publive",
+    ]
+    publication: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    details: Optional[dict] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "activity_logs"
+        indexes = [
+            "user_id",
+            "event_type",
+            "publication",
+            [("created_at", -1)],
+        ]
 
 
 class Article(Document):

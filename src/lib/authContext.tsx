@@ -24,6 +24,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isEditor: boolean;
   isAuthor: boolean;
+  canAccessMonitoring: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -61,6 +62,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoading, token, pathname, router]);
 
+  // Periodic heartbeat tracking for management analytics
+  useEffect(() => {
+    if (!token || !user) return;
+
+    // Send initial heartbeat
+    apiFetch("/analytics/heartbeat", {
+      method: "POST",
+      body: JSON.stringify({ duration_seconds: 60, current_path: pathname }),
+    }).catch(() => {});
+
+    // Periodic heartbeat every 60 seconds when active
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        apiFetch("/analytics/heartbeat", {
+          method: "POST",
+          body: JSON.stringify({ duration_seconds: 60, current_path: window.location.pathname }),
+        }).catch(() => {});
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [token, user, pathname]);
+
   const login = useCallback(
     async (username: string, password: string) => {
       const data = await apiFetch<{
@@ -88,6 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   }, [router]);
 
+  const canAccessMonitoring = Boolean(
+    user && (
+      user.can_access_monitoring === true ||
+      user.username === "sudeshp" ||
+      user.email?.toLowerCase() === "sudeshp@cybermedia.co.in" ||
+      user.full_name?.toLowerCase().includes("sudesh")
+    )
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -96,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isEditor: user?.role === "editor",
         isAuthor: user?.role === "author",
+        canAccessMonitoring,
         login,
         logout,
       }}

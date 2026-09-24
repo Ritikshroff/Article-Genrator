@@ -26,6 +26,7 @@ import {
   LogOut,
   UserCheck,
   Star,
+  BarChart3,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArticleRowSkeleton, FullPageSkeleton } from "@/components/Skeletons";
@@ -69,7 +70,7 @@ function formatIndianDateTime(dateStr?: string | null): string {
 }
 
 export default function ArticlesPage() {
-  const { user, isEditor, logout, isLoading: authLoading } = useAuth();
+  const { user, isEditor, canAccessMonitoring, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [allArticles, setAllArticles] = useState<ArticleListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,7 +143,7 @@ export default function ArticlesPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-black text-zinc-900 dark:text-zinc-50">
-                  {isEditor ? "Editor Control Hub & Review Queue" : "Author Workspace — My Articles"}
+                  {isEditor ? "ASED • Editor Hub & Review Queue" : "ASED • Author Workspace — My Articles"}
                 </h1>
                 <span className={`px-2 py-0.5 text-[9px] font-black uppercase text-white rounded-xs ${isEditor ? "bg-blue-600" : "bg-zinc-600"}`}>
                   {isEditor ? "EDITOR ROLE" : "AUTHOR ROLE"}
@@ -162,6 +163,17 @@ export default function ArticlesPage() {
                 className="px-3.5 py-1.5 text-xs font-bold bg-[#e30613] hover:bg-[#b8040f] text-white transition-colors flex items-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5" /> Generate Article
+              </Link>
+            )}
+
+            {/* Analytics button for authorized executive (Sudesh Prasad) */}
+            {canAccessMonitoring && (
+              <Link
+                href="/analytics"
+                className="px-3.5 py-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors flex items-center gap-1.5 rounded-xs"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-[#e30613]" />
+                <span className="hidden sm:inline">ASED Monitor</span>
               </Link>
             )}
 

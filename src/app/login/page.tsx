@@ -1,6 +1,6 @@
 "use client";
 // ─────────────────────────────────────────────────────────────
-// Login Page — CyberMedia AI Editorial Copilot
+// Login Page — AI Stack for Edit desk (ASED)
 // ─────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
@@ -43,10 +43,10 @@ export default function LoginPage() {
             <Newspaper className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-            Cyber Media AI Copilot
+            AI Stack for Edit desk (ASED)
           </h1>
           <p className="text-sm text-zinc-500 mt-1">
-            Sign in to access the Editorial AI platform
+            CyberMedia Editorial Intelligence Platform
           </p>
         </div>
 
@@ -62,17 +62,17 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Username */}
+            {/* Username / Email */}
             <div>
               <label htmlFor="username" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
-                Username
+                Username or Email
               </label>
               <input
                 id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Enter your username or @cybermedia.co.in email"
                 required
                 autoFocus
                 className="w-full px-4 py-3 text-sm bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#e30613]/30 focus:border-[#e30613] transition-all placeholder:text-zinc-400"
@@ -134,7 +134,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-zinc-400 mt-6">
-          CyberMedia AI Editorial Copilot © 2026
+          AI Stack for Edit desk (ASED) • CyberMedia © 2026
         </p>
       </div>
     </div>

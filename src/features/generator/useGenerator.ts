@@ -206,6 +206,20 @@ export function useGenerator(isEditor: boolean = false) {
               setPackageData((prev) => ({ ...prev, [payload.key]: payload.data }));
             } else if (payload.type === "done") {
               setStatus("completed");
+              // Record analytics event
+              apiFetch("/analytics/event", {
+                method: "POST",
+                body: JSON.stringify({
+                  event_type: "generate_ai",
+                  publication: magazine,
+                  details: {
+                    topic_type: topicType,
+                    word_count: wordCount,
+                    min_words: minWords,
+                    max_words: maxWords,
+                  },
+                }),
+              }).catch(() => {});
               toast.success("Editorial package generated successfully! All sections are ready.");
               import("canvas-confetti").then((m) =>
                 m.default({

@@ -9,7 +9,7 @@ from typing import Optional
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from models import User, Article
+from models import User, Article, ActivityLog
 from auth import get_current_user, require_editor
 from schemas import (
     ArticleCreate,
@@ -133,6 +133,14 @@ async def create_article(
         creative_data=body.creative_data,
     )
     await article.insert()
+    await ActivityLog(
+        user_id=str(current_user.id),
+        user_name=current_user.full_name,
+        user_role=current_user.role,
+        event_type="save_draft",
+        publication=article.publication,
+        details={"article_id": str(article.id), "title": article.title},
+    ).insert()
     return _article_to_response(article)
 
 
@@ -260,6 +268,14 @@ async def submit_for_review(
         "status": "submitted",
         "updated_at": datetime.now(timezone.utc),
     })
+    await ActivityLog(
+        user_id=str(current_user.id),
+        user_name=current_user.full_name,
+        user_role=current_user.role,
+        event_type="submit_review",
+        publication=article.publication,
+        details={"article_id": str(article.id), "title": article.title},
+    ).insert()
     return _article_to_response(article)
 
 
@@ -289,6 +305,14 @@ async def review_article(
         "editor_notes": body.notes or "",
         "updated_at": datetime.now(timezone.utc),
     })
+    await ActivityLog(
+        user_id=str(current_user.id),
+        user_name=current_user.full_name,
+        user_role=current_user.role,
+        event_type="review_approve" if body.action == "approve" else "review_revision",
+        publication=article.publication,
+        details={"article_id": str(article.id), "title": article.title, "action": body.action},
+    ).insert()
     return _article_to_response(article)
 
 

@@ -13,6 +13,7 @@ import {
   LogOut,
   FolderOpen,
   Save,
+  BarChart3,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OutputPanel } from "@/components/OutputPanel";
@@ -25,7 +26,7 @@ import { GeneratorForm } from "@/features/generator/GeneratorForm";
 import { useGenerator } from "@/features/generator/useGenerator";
 
 export default function Dashboard() {
-  const { user, isEditor, logout, isLoading: authLoading } = useAuth();
+  const { user, isEditor, canAccessMonitoring, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const gen = useGenerator(isEditor);
 
@@ -53,7 +54,7 @@ export default function Dashboard() {
                   CYBERMEDIA
                 </span>
                 <span className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase hidden sm:inline">
-                  {isEditor ? "Editor Control Hub" : "AI Editorial Copilot"}
+                  {isEditor ? "ASED • Editor Hub" : "AI Stack for Edit desk (ASED)"}
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[200px] sm:max-w-none">
@@ -93,6 +94,16 @@ export default function Dashboard() {
 
           {/* Right Controls */}
           <div className="flex items-center gap-2">
+            {canAccessMonitoring && (
+              <Link
+                href="/analytics"
+                className="h-8 px-3 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors inline-flex items-center gap-1.5 rounded-xs"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-[#e30613]" />
+                <span className="hidden sm:inline">ASED Monitor</span>
+              </Link>
+            )}
+
             <Link
               href="/articles"
               className="h-8 px-3 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors inline-flex items-center gap-1.5 rounded-xs"

@@ -37,35 +37,34 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ---
 
-# AI Article Generator
+# AI Stack for Edit desk (ASED)
 
-The migration of the persistence layer to a Python FastAPI backend with MongoDB (using the Beanie ODM) is complete. The system now supports authentication, persistent storage for generated articles, and a 2-tier editorial review workflow.
+**AI Stack for Edit desk (ASED)** is CyberMedia's editorial intelligence and automated multi-brand content generation platform, paired with **ASED Monitor** for executive productivity tracking. The system features a Python FastAPI backend with MongoDB (using Beanie ODM), JWT authentication, persistent storage, a 2-tier editorial review workflow, and real-time management analytics.
 
 ## What Was Accomplished
 
 1. **FastAPI Backend Structure**
    - Built a fully asynchronous API using **FastAPI**.
    - Connected to **MongoDB** using the **Motor** driver and **Beanie** ODM, ensuring full Pydantic compatibility and eliminating schema duplication.
-   - Designed robust ORM documents for `User` and `Article`, properly capturing every piece of generated content (news, seo, impact, social, interview, images).
+   - Designed robust ORM documents for `User`, `Article`, and `ActivityLog`, capturing all generated content, editorial reviews, and active work sessions.
    
-2. **Authentication & Roles**
+2. **Authentication & Team Roles**
    - Implemented JWT-based authentication via `passlib[bcrypt]` and `python-jose`.
-   - Idempotent seed script runs on backend startup, generating **3 pre-seeded users**:
-     - `editor1` (Role: Editor) — Password: `CyberMedia@2026`
-     - `author1` (Role: Author) — Password: `Author@2026`
-     - `author2` (Role: Author) — Password: `Author@2026`
+   - Comprehensive user credentials seeded for the editorial & author team.
+   - Dual-role capability: **Editor** (full review queue, approvals, publishing, and executive oversight) vs. **Author** (draft creation, AI generation, and submission).
 
-3. **Editorial Workflow (CRUD)**
+3. **ASED Monitor (Executive Analytics & Oversight)**
+   - Real-time team monitoring dashboard (`/analytics`) tracking live heartbeats, individual user activity, man-hours saved, and article throughput.
+   - Downloadable executive CSV reports with complete productivity breakdowns.
+
+4. **Editorial Workflow (CRUD)**
    - **Authors** can generate articles, save them as drafts, and "Submit for Review".
-   - **Editors** have a dedicated "Review Queue" where they can view submitted articles, provide notes, and either "Approve" or "Request Revision".
+   - **Editors** have a dedicated "Review Queue" (`/articles`) to review submissions, leave notes, and "Approve" or "Request Revision".
    - Articles transition cleanly between states: `draft` ➝ `submitted` ➝ `approved` / `revision_requested`.
 
-4. **Frontend Integration**
-   - Added an `AuthProvider` via a new `Providers` layout wrapper to manage global authentication state.
-   - Built a sleek, branded **Login Page** (`/login`).
-   - Built an **Articles List Page** (`/articles`) with publication and status filters.
-   - Built an **Article Detail Page** (`/articles/[id]`) with a built-in Editor Review Panel (visible only to editors on submitted articles).
-   - Wired the main generation dashboard (`/`) to include a "Save Article" button and dynamic User Badge in the header.
+5. **Frontend Integration**
+   - Sleek, branded **Login Page** (`/login`).
+   - Clean navigation across **ASED Editorial Workspace**, **ASED Review Queue**, and **ASED Monitor**.
 
 ## How to Test and Run
 

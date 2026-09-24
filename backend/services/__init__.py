@@ -1,1 +1,1 @@
-# Services module for CyberMedia AI Editorial Copilot
+# Services module for AI Stack for Edit desk (ASED)
