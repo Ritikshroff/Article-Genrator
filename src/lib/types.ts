@@ -10,7 +10,7 @@ export type ArticleStatus =
   | "revision_requested"
   | "published";
 
-export type UserRole = "author" | "editor";
+export type UserRole = "author" | "editor" | "admin";
 
 export type Publication = "Dataquest" | "Voice&Data" | "PCQuest" | "CIOL";
 

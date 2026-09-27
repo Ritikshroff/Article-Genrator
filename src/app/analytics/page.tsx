@@ -55,7 +55,7 @@ export default function AnalyticsPage() {
     if (!user) return; // AuthProvider redirects to /login
 
     if (!canAccessMonitoring) {
-      toast.error("Access restricted: Only Sudesh Prasad (sudeshp@cybermedia.co.in) is authorized to access ASED Monitor.");
+      toast.error("Access restricted: Only System Admin has access to the ASED Monitoring Portal.");
       router.push("/");
       return;
     }

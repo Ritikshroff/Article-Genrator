@@ -24,6 +24,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isEditor: boolean;
   isAuthor: boolean;
+  isAdmin: boolean;
   canAccessMonitoring: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -112,12 +113,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   }, [router]);
 
+  const isAdmin = user?.role === "admin";
+  const isEditor = user?.role === "editor" || user?.role === "admin";
+  const isAuthor = user?.role === "author";
   const canAccessMonitoring = Boolean(
     user && (
-      user.can_access_monitoring === true ||
-      user.username === "sudeshp" ||
-      user.email?.toLowerCase() === "sudeshp@cybermedia.co.in" ||
-      user.full_name?.toLowerCase().includes("sudesh")
+      user.role === "admin" ||
+      user.username === "admin" ||
+      user.can_access_monitoring === true
     )
   );
 
@@ -127,8 +130,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         token,
         isLoading,
-        isEditor: user?.role === "editor",
-        isAuthor: user?.role === "author",
+        isEditor,
+        isAuthor,
+        isAdmin,
         canAccessMonitoring,
         login,
         logout,

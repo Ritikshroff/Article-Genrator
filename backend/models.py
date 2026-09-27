@@ -17,7 +17,7 @@ class User(Document):
     email: Optional[str] = None
     hashed_password: str
     full_name: str
-    role: Literal["author", "editor"] = "author"
+    role: Literal["author", "editor", "admin"] = "author"
     team: str = "Editorial"
     can_review_pr: bool = False
     can_edit_ai_draft: bool = False
@@ -45,7 +45,7 @@ class ActivityLog(Document):
 
     user_id: str
     user_name: str
-    user_role: Literal["author", "editor"]
+    user_role: Literal["author", "editor", "admin"]
     event_type: Literal[
         "login",
         "heartbeat",

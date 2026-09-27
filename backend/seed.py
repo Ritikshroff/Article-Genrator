@@ -8,6 +8,21 @@ from auth import hash_password, verify_password
 
 
 DEFAULT_USERS = [
+    # ── Executive System Admin (ASED Monitor & Executive Oversight) ──
+    {
+        "username": "admin",
+        "email": "admin@cybermedia.co.in",
+        "full_name": "Executive Admin",
+        "password": "Admin@CyberMedia2026",
+        "role": "admin",
+        "team": "Management",
+        "can_review_pr": True,
+        "can_edit_ai_draft": True,
+        "can_approve": True,
+        "can_publish": True,
+        "can_access_monitoring": True,
+    },
+
     # ── Test / Development Users ─────────────────────────────
     {
         "username": "editor1",
@@ -20,6 +35,7 @@ DEFAULT_USERS = [
         "can_edit_ai_draft": True,
         "can_approve": True,
         "can_publish": True,
+        "can_access_monitoring": False,
     },
     {
         "username": "author1",
@@ -106,7 +122,7 @@ DEFAULT_USERS = [
         "can_edit_ai_draft": True,
         "can_approve": True,
         "can_publish": True,
-        "can_access_monitoring": True,
+        "can_access_monitoring": False,
     },
     {
         "username": "ayushis",
@@ -222,6 +238,8 @@ async def seed_users() -> None:
                 update_data["hashed_password"] = hash_password(user_data["password"])
             if existing.email != user_data.get("email"):
                 update_data["email"] = user_data.get("email")
+            if existing.role != user_data["role"]:
+                update_data["role"] = user_data["role"]
             if getattr(existing, "team", None) != user_data.get("team", "Editorial"):
                 update_data["team"] = user_data.get("team", "Editorial")
             if getattr(existing, "can_review_pr", None) != user_data.get("can_review_pr", False):

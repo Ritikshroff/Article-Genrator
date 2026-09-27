@@ -145,8 +145,16 @@ export default function ArticlesPage() {
                 <h1 className="text-lg font-black text-zinc-900 dark:text-zinc-50">
                   {isEditor ? "ASED • Editor Hub & Review Queue" : "ASED • Author Workspace — My Articles"}
                 </h1>
-                <span className={`px-2 py-0.5 text-[9px] font-black uppercase text-white rounded-xs ${isEditor ? "bg-blue-600" : "bg-zinc-600"}`}>
-                  {isEditor ? "EDITOR ROLE" : "AUTHOR ROLE"}
+                <span
+                  className={`px-2 py-0.5 text-[9px] font-black uppercase text-white rounded-xs ${
+                    user?.role === "admin"
+                      ? "bg-purple-600"
+                      : isEditor
+                      ? "bg-blue-600"
+                      : "bg-zinc-600"
+                  }`}
+                >
+                  {user?.role === "admin" ? "ADMIN ROLE" : isEditor ? "EDITOR ROLE" : "AUTHOR ROLE"}
                 </span>
               </div>
               <p className="text-xs text-zinc-400 mt-0.5">

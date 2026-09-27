@@ -144,10 +144,14 @@ export default function Dashboard() {
               <div className="h-8 px-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] inline-flex items-center gap-1.5 rounded-xs">
                 <span
                   className={`px-1.5 py-0.5 text-[9px] font-black text-white ${
-                    user.role === "editor" ? "bg-blue-600" : "bg-zinc-600"
+                    user.role === "admin"
+                      ? "bg-purple-600"
+                      : user.role === "editor"
+                      ? "bg-blue-600"
+                      : "bg-zinc-600"
                   }`}
                 >
-                  {user.role === "editor" ? "EDITOR" : "AUTHOR"}
+                  {user.role === "admin" ? "ADMIN" : user.role === "editor" ? "EDITOR" : "AUTHOR"}
                 </span>
                 <span className="font-bold text-zinc-700 dark:text-zinc-300">{user.full_name}</span>
               </div>

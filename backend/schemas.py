@@ -27,7 +27,7 @@ class UserResponse(BaseModel):
     username: str
     email: Optional[str] = None
     full_name: str
-    role: Literal["author", "editor"]
+    role: Literal["author", "editor", "admin"]
     team: Optional[str] = "Editorial"
     can_review_pr: bool = False
     can_edit_ai_draft: bool = False
@@ -152,7 +152,7 @@ class UserProductivityStats(BaseModel):
     full_name: str
     username: str
     email: Optional[str] = None
-    role: Literal["author", "editor"]
+    role: Literal["author", "editor", "admin"]
     team: str
     last_login_at: Optional[datetime] = None
     last_active_at: Optional[datetime] = None

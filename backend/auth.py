@@ -72,8 +72,8 @@ async def get_current_user(
 async def require_editor(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Dependency that ensures the user has the 'editor' role."""
-    if current_user.role != "editor":
+    """Dependency that ensures the user has 'editor' or 'admin' role."""
+    if current_user.role not in ("editor", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Editor access required",
@@ -84,16 +84,16 @@ async def require_editor(
 async def require_monitoring_access(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Dependency that ensures the user is specifically authorized to access executive monitoring (Sudesh Prasad)."""
-    is_authorized = (
-        current_user.username == "sudeshp"
-        or (current_user.email and current_user.email.lower() == "sudeshp@cybermedia.co.in")
-        or getattr(current_user, "can_access_monitoring", False)
+    """Dependency that ensures the user is specifically the Admin."""
+    is_admin = (
+        current_user.role == "admin"
+        or current_user.username == "admin"
+        or (current_user.email and current_user.email.lower() == "admin@cybermedia.co.in")
     )
-    if not is_authorized:
+    if not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access restricted: Only Sudesh Prasad (sudeshp@cybermedia.co.in) is authorized to access ASED Monitor.",
+            detail="Access restricted: Only System Admin has access to the ASED Monitoring Portal.",
         )
     return current_user
 
