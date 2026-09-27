@@ -180,6 +180,24 @@ Every page/section that fetches data must show a skeleton while loading, not a b
 
 ---
 
+## Deployment Rules (CRITICAL)
+
+### Production Server Directory:
+```bash
+cd ~/public_html/editorial-frontend/
+```
+
+### After any frontend change, build and restart:
+```bash
+cd ~/public_html/editorial-frontend/
+unzip -o frontend.zip
+npm install
+npm run build
+pm2 restart editorial-frontend
+```
+
+---
+
 ## What NOT to do
 - ❌ Do not add `useRouter` to `useEffect` dependency arrays unless `router` is actually used inside the effect
 - ❌ Do not create new auth state — all auth is in `authContext.tsx`
@@ -187,3 +205,5 @@ Every page/section that fetches data must show a skeleton while loading, not a b
 - ❌ Do not put business logic in page files — use components or custom hooks
 - ❌ Do not commit `.env.local` — it is gitignored for a reason
 - ❌ Do not commit `node_modules/`, `.next/`, or `*.zip` files
+- ❌ Do not use wrong frontend server path — it is strictly `~/public_html/editorial-frontend/`
+
