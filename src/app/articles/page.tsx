@@ -370,7 +370,9 @@ export default function ArticlesPage() {
                 ]}
                 value={authorFilter}
                 onChange={(val) => setAuthorFilter(val)}
-                className="w-44"
+                className="w-48"
+                searchable={true}
+                searchPlaceholder="Search author..."
               />
             )}
 

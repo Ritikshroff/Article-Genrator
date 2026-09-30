@@ -257,6 +257,8 @@ export function EditorDashboardView() {
             value={authorFilter}
             onChange={(val) => setAuthorFilter(val)}
             className="w-48"
+            searchable={true}
+            searchPlaceholder="Search author..."
           />
 
           {(statusFilter || pubFilter || authorFilter) && (
