@@ -3,7 +3,7 @@
 // Articles List & Review Queue Page — Editor Hub & Author Workspace
 // ─────────────────────────────────────────────────────────────
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/authContext";
 import { useToast } from "@/lib/toastContext";
 import { apiFetch } from "@/lib/apiClient";
@@ -32,7 +32,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArticleRowSkeleton, FullPageSkeleton } from "@/components/Skeletons";
 import { CustomSelect } from "@/components/CustomSelect";
 import { resolvePublication } from "@/lib/magazineConfig";
-import type { ArticleListItem } from "@/lib/types";
+import type { ArticleListItem, UserResponse } from "@/lib/types";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   draft: { label: "Draft", color: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300", icon: <FileText className="w-3 h-3" /> },
@@ -77,6 +77,8 @@ export default function ArticlesPage() {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [pubFilter, setPubFilter] = useState<string>("");
+  const [authorFilter, setAuthorFilter] = useState<string>("");
+  const [userAuthors, setUserAuthors] = useState<string[]>([]);
 
   const fetchArticles = async (isManual: boolean = false) => {
     try {
@@ -95,8 +97,18 @@ export default function ArticlesPage() {
   };
 
   useEffect(() => {
-    if (!authLoading && user) fetchArticles(false);
-  }, [authLoading, user]);
+    if (!authLoading && user) {
+      fetchArticles(false);
+      if (isEditor || canAccessMonitoring) {
+        apiFetch<UserResponse[]>("/users")
+          .then((users) => {
+            const names = users.map((u) => u.full_name?.trim()).filter(Boolean);
+            setUserAuthors(names);
+          })
+          .catch(() => {});
+      }
+    }
+  }, [authLoading, user, isEditor, canAccessMonitoring]);
 
   const handleDelete = async (id: string, title: string) => {
     const confirmed = await toast.confirm(
@@ -119,9 +131,20 @@ export default function ArticlesPage() {
   const revisionCount = allArticles.filter(a => a.status === "revision_requested").length;
   const totalCount = allArticles.length;
 
+  const uniqueAuthors = useMemo(() => {
+    const authorSet = new Set<string>(userAuthors);
+    allArticles.forEach((a) => {
+      if (a.created_by_name?.trim()) {
+        authorSet.add(a.created_by_name.trim());
+      }
+    });
+    return Array.from(authorSet).sort((a, b) => a.localeCompare(b));
+  }, [allArticles, userAuthors]);
+
   const displayedArticles = allArticles.filter((a) => {
     if (statusFilter && a.status !== statusFilter) return false;
     if (pubFilter && resolvePublication(a.publication).key !== pubFilter) return false;
+    if (authorFilter && a.created_by_name?.trim().toLowerCase() !== authorFilter.trim().toLowerCase()) return false;
     return true;
   });
 
@@ -333,10 +356,25 @@ export default function ArticlesPage() {
               className="w-44"
             />
 
-            {(statusFilter || pubFilter) && (
+            {(isEditor || canAccessMonitoring || uniqueAuthors.length > 1) && (
+              <CustomSelect
+                options={[
+                  { value: "", label: "All Authors" },
+                  ...uniqueAuthors.map((author) => ({
+                    value: author,
+                    label: author,
+                  })),
+                ]}
+                value={authorFilter}
+                onChange={(val) => setAuthorFilter(val)}
+                className="w-44"
+              />
+            )}
+
+            {(statusFilter || pubFilter || authorFilter) && (
               <button
-                onClick={() => { setStatusFilter(""); setPubFilter(""); }}
-                className="text-xs text-[#e30613] hover:underline font-semibold"
+                onClick={() => { setStatusFilter(""); setPubFilter(""); setAuthorFilter(""); }}
+                className="text-xs text-[#e30613] hover:underline font-semibold cursor-pointer"
               >
                 Clear Filters
               </button>
@@ -363,11 +401,26 @@ export default function ArticlesPage() {
             <FileText className="w-12 h-12 text-zinc-300 dark:text-zinc-700 mx-auto mb-3" />
             <p className="text-sm font-bold text-zinc-500">No articles found matching filters</p>
             <p className="text-xs text-zinc-400 mt-1">
-              {isEditor ? "No articles have been submitted yet." : "Generate an article on the dashboard to see it here."}
+              {authorFilter ? (
+                <>No articles by author <strong>&quot;{authorFilter}&quot;</strong> match current criteria.</>
+              ) : isEditor ? (
+                "No articles have been submitted yet."
+              ) : (
+                "Generate an article on the dashboard to see it here."
+              )}
             </p>
-            <Link href="/" className="inline-block mt-4 px-4 py-2 bg-[#e30613] text-white text-xs font-bold hover:bg-[#b8040f] transition-colors">
-              Go to Article Generator
-            </Link>
+            {(statusFilter || pubFilter || authorFilter) ? (
+              <button
+                onClick={() => { setStatusFilter(""); setPubFilter(""); setAuthorFilter(""); }}
+                className="inline-block mt-4 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-bold hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            ) : (
+              <Link href="/" className="inline-block mt-4 px-4 py-2 bg-[#e30613] text-white text-xs font-bold hover:bg-[#b8040f] transition-colors">
+                Go to Article Generator
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -410,7 +463,19 @@ export default function ArticlesPage() {
                         Created: {formatIndianDateTime(article.created_at)}
                       </span>
                       <span className="flex items-center gap-1">
-                        <UserCheck className="w-3 h-3 text-zinc-400" /> Author: <strong className="text-zinc-600 dark:text-zinc-300">{article.created_by_name}</strong>
+                        <UserCheck className="w-3 h-3 text-zinc-400" /> Author:{" "}
+                        {isEditor || canAccessMonitoring ? (
+                          <button
+                            type="button"
+                            onClick={() => setAuthorFilter(article.created_by_name)}
+                            className="font-bold text-zinc-700 dark:text-zinc-300 hover:text-[#e30613] dark:hover:text-[#e30613] hover:underline cursor-pointer"
+                            title={`Filter articles by ${article.created_by_name}`}
+                          >
+                            {article.created_by_name}
+                          </button>
+                        ) : (
+                          <strong className="text-zinc-600 dark:text-zinc-300">{article.created_by_name}</strong>
+                        )}
                       </span>
                       {article.author_rating && (
                         <span className="flex items-center gap-0.5" title={`Author rated this ${article.author_rating}/5`}>

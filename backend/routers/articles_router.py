@@ -145,6 +145,7 @@ async def create_article(
 async def list_articles(
     publication: Optional[str] = Query(None),
     status_filter: Optional[str] = Query(None, alias="status"),
+    author: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -162,6 +163,8 @@ async def list_articles(
         query_filters["publication"] = publication
     if status_filter:
         query_filters["status"] = status_filter
+    if author:
+        query_filters["created_by_name"] = author
 
     articles = await Article.find(query_filters).project(ArticleListItem).sort("-updated_at").to_list()
 

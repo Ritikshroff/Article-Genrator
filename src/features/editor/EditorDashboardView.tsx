@@ -4,7 +4,7 @@
 // Review Queue and Articles Management for Editors
 // ─────────────────────────────────────────────────────────────
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Send,
@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/lib/toastContext";
 import { apiFetch } from "@/lib/apiClient";
-import type { ArticleListItem } from "@/lib/types";
+import type { ArticleListItem, UserResponse } from "@/lib/types";
 import { ArticleRowSkeleton } from "@/components/Skeletons";
 import { CustomSelect } from "@/components/CustomSelect";
 import { resolvePublication } from "@/lib/magazineConfig";
@@ -61,6 +61,8 @@ export function EditorDashboardView() {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [pubFilter, setPubFilter] = useState("");
+  const [authorFilter, setAuthorFilter] = useState("");
+  const [userAuthors, setUserAuthors] = useState<string[]>([]);
 
   const fetchArticles = async () => {
     setIsLoading(true);
@@ -77,6 +79,12 @@ export function EditorDashboardView() {
 
   useEffect(() => {
     fetchArticles();
+    apiFetch<UserResponse[]>("/users")
+      .then((users) => {
+        const names = users.map((u) => u.full_name?.trim()).filter(Boolean);
+        setUserAuthors(names);
+      })
+      .catch(() => {});
   }, []);
 
   const handleDelete = async (id: string, title: string) => {
@@ -99,9 +107,20 @@ export function EditorDashboardView() {
   const revisionCount = allArticles.filter((a) => a.status === "revision_requested").length;
   const totalCount = allArticles.length;
 
+  const uniqueAuthors = useMemo(() => {
+    const authorSet = new Set<string>(userAuthors);
+    allArticles.forEach((a) => {
+      if (a.created_by_name?.trim()) {
+        authorSet.add(a.created_by_name.trim());
+      }
+    });
+    return Array.from(authorSet).sort((a, b) => a.localeCompare(b));
+  }, [allArticles, userAuthors]);
+
   const displayedArticles = allArticles.filter((a) => {
     if (statusFilter && a.status !== statusFilter) return false;
     if (pubFilter && resolvePublication(a.publication).key !== pubFilter) return false;
+    if (authorFilter && a.created_by_name?.trim().toLowerCase() !== authorFilter.trim().toLowerCase()) return false;
     return true;
   });
 
@@ -224,13 +243,27 @@ export function EditorDashboardView() {
             className="w-48"
           />
 
-          {(statusFilter || pubFilter) && (
+          <CustomSelect
+            options={[
+              { value: "", label: "All Authors" },
+              ...uniqueAuthors.map((author) => ({
+                value: author,
+                label: author,
+              })),
+            ]}
+            value={authorFilter}
+            onChange={(val) => setAuthorFilter(val)}
+            className="w-48"
+          />
+
+          {(statusFilter || pubFilter || authorFilter) && (
             <button
               onClick={() => {
                 setStatusFilter("");
                 setPubFilter("");
+                setAuthorFilter("");
               }}
-              className="text-xs text-[#e30613] hover:underline font-bold"
+              className="text-xs text-[#e30613] hover:underline font-bold cursor-pointer"
             >
               Clear filters
             </button>
@@ -256,7 +289,23 @@ export function EditorDashboardView() {
         <div className="p-12 text-center bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 text-zinc-400">
           <Inbox className="w-10 h-10 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
           <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">No articles in this queue</p>
-          <p className="text-xs mt-1">When authors submit articles for review, they will appear here.</p>
+          <p className="text-xs mt-1">
+            {authorFilter
+              ? `No articles by "${authorFilter}" match current filters.`
+              : "When authors submit articles for review, they will appear here."}
+          </p>
+          {(statusFilter || pubFilter || authorFilter) && (
+            <button
+              onClick={() => {
+                setStatusFilter("");
+                setPubFilter("");
+                setAuthorFilter("");
+              }}
+              className="mt-3 px-3 py-1.5 text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors rounded-xs cursor-pointer"
+            >
+              Clear all filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -289,9 +338,14 @@ export function EditorDashboardView() {
                     <span>Created: {new Date(article.created_at).toLocaleDateString("en-IN")}</span>
                     <span>
                       Author:{" "}
-                      <strong className="text-zinc-600 dark:text-zinc-300">
+                      <button
+                        type="button"
+                        onClick={() => setAuthorFilter(article.created_by_name)}
+                        className="font-bold text-zinc-700 dark:text-zinc-300 hover:text-[#e30613] dark:hover:text-[#e30613] hover:underline cursor-pointer"
+                        title={`Filter articles by ${article.created_by_name}`}
+                      >
                         {article.created_by_name}
-                      </strong>
+                      </button>
                     </span>
                   </div>
                 </div>
