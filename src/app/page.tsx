@@ -22,14 +22,12 @@ import { magazineList } from "@/lib/magazineConfig";
 import { useAuth } from "@/lib/authContext";
 import { useToast } from "@/lib/toastContext";
 import { FullPageSkeleton } from "@/components/Skeletons";
-import { EditorDashboardView } from "@/features/editor/EditorDashboardView";
 import { GeneratorForm } from "@/features/generator/GeneratorForm";
 import { useGenerator } from "@/features/generator/useGenerator";
 
 export default function Dashboard() {
   const { user, isEditor, canAccessMonitoring, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [editorTab, setEditorTab] = React.useState<"generator" | "queue">("generator");
   const gen = useGenerator(isEditor);
 
   const steps = gen.getStepsForTopic();
@@ -42,140 +40,115 @@ export default function Dashboard() {
     <div className="min-h-screen lg:h-screen lg:max-h-screen bg-[#f5f5f5] dark:bg-[#0d0d0d] text-zinc-900 dark:text-zinc-100 flex flex-col lg:overflow-hidden">
       {/* ── HEADER ────────────────────────────────────────────────── */}
       <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
             <div
-              className={`w-1 h-8 flex-shrink-0 transition-colors ${
+              className={`w-1 h-7 sm:h-8 flex-shrink-0 transition-colors ${
                 gen.magazine === "Voice&Data" ? "bg-[#00839b]" : "bg-[#e30613]"
               }`}
             />
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-serif text-[17px] font-black text-zinc-900 dark:text-zinc-50 leading-none">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-serif text-[16px] sm:text-[17px] font-black text-zinc-900 dark:text-zinc-50 leading-none">
                   CYBERMEDIA
                 </span>
                 <span className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase hidden sm:inline">
                   {isEditor ? "ASED • Editor Hub" : "AI Stack for Edit desk (ASED)"}
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[200px] sm:max-w-none">
+              <p className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px] hidden xl:block">
                 {isEditor ? "Generate, review, approve & publish articles" : gen.mag.tagline}
               </p>
             </div>
           </div>
 
-          {/* Publication Switcher (Visible in Generator Mode) */}
-          {(!isEditor || editorTab === "generator") && (
-            <div className="flex items-center p-0.5 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 rounded-xs h-8">
-              {magazineList.map((m) => {
-                const isActive = gen.magazine === m.key;
-                return (
-                  <button
-                    key={m.key}
-                    id={`segment-${m.key}`}
-                    onClick={() => {
-                      gen.setMagazine(m.key);
-                      gen.handleClearPR();
-                      gen.handleReset();
-                    }}
-                    className={`h-7 px-3 text-[11px] font-bold transition-all flex items-center justify-center rounded-xs cursor-pointer ${
-                      isActive
-                        ? m.key === "Voice&Data"
-                          ? "bg-[#00839b] text-white shadow-xs"
-                          : "bg-[#e30613] text-white shadow-xs"
-                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                    }`}
-                  >
-                    {m.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* Publication Switcher */}
+          <div className="flex items-center p-0.5 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 rounded-xs h-8 flex-shrink-0">
+            {magazineList.map((m) => {
+              const isActive = gen.magazine === m.key;
+              return (
+                <button
+                  key={m.key}
+                  id={`segment-${m.key}`}
+                  onClick={() => {
+                    gen.setMagazine(m.key);
+                    gen.handleClearPR();
+                    gen.handleReset();
+                  }}
+                  className={`h-7 px-2.5 sm:px-3 text-[11px] font-bold transition-all flex items-center justify-center rounded-xs cursor-pointer ${
+                    isActive
+                      ? m.key === "Voice&Data"
+                        ? "bg-[#00839b] text-white shadow-xs"
+                        : "bg-[#e30613] text-white shadow-xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                >
+                  {m.name}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Right Controls */}
-          <div className="flex items-center gap-2">
-            {/* Editor Workspace Mode Switcher */}
-            {isEditor && (
-              <div className="flex items-center p-0.5 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 rounded-xs h-8">
-                <button
-                  id="tab-generator"
-                  onClick={() => setEditorTab("generator")}
-                  className={`h-7 px-2.5 text-[11px] font-bold transition-all flex items-center gap-1.5 rounded-xs cursor-pointer ${
-                    editorTab === "generator"
-                      ? "bg-[#e30613] text-white shadow-xs"
-                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  }`}
-                  title="Switch to Story Generator"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Write Story</span>
-                </button>
-                <button
-                  id="tab-queue"
-                  onClick={() => setEditorTab("queue")}
-                  className={`h-7 px-2.5 text-[11px] font-bold transition-all flex items-center gap-1.5 rounded-xs cursor-pointer ${
-                    editorTab === "queue"
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  }`}
-                  title="Switch to Review Queue"
-                >
-                  <Inbox className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Review Queue</span>
-                </button>
-              </div>
-            )}
-
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {canAccessMonitoring && (
               <Link
                 href="/analytics"
-                className="h-8 px-3 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors inline-flex items-center gap-1.5 rounded-xs"
+                className="h-8 px-2.5 sm:px-3 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors inline-flex items-center gap-1.5 rounded-xs flex-shrink-0"
+                title="ASED Executive Analytics"
               >
-                <BarChart3 className="w-3.5 h-3.5 text-[#e30613]" />
-                <span className="hidden sm:inline">ASED Monitor</span>
+                <BarChart3 className="w-3.5 h-3.5 text-[#e30613] flex-shrink-0" />
+                <span className="hidden md:inline">ASED Monitor</span>
               </Link>
             )}
 
+            {/* Review Queue (for Editors) or My Articles (for Authors) */}
             <Link
               href="/articles"
-              className="h-8 px-3 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors inline-flex items-center gap-1.5 rounded-xs"
+              className={`h-8 px-2.5 sm:px-3 text-[11px] font-bold transition-colors inline-flex items-center gap-1.5 rounded-xs border flex-shrink-0 ${
+                isEditor
+                  ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60"
+                  : "bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }`}
+              title={isEditor ? "Open Review Queue & Article Submissions" : "Open My Drafts & Articles"}
             >
-              <FolderOpen className="w-3.5 h-3.5" />
-              {isEditor ? "All Articles" : "My Articles"}
+              {isEditor ? <Inbox className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" /> : <FolderOpen className="w-3.5 h-3.5 flex-shrink-0" />}
+              <span className="hidden sm:inline">{isEditor ? "Review Queue" : "My Articles"}</span>
             </Link>
 
+            {/* Save Article Button */}
             {gen.status === "completed" && gen.packageData.news && (
               gen.savedArticleId ? (
                 <Link
                   href={`/articles/${gen.savedArticleId}`}
-                  className="h-8 px-3 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 transition-colors inline-flex items-center gap-1.5 rounded-xs"
+                  className="h-8 px-2.5 sm:px-3 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 transition-colors inline-flex items-center gap-1.5 rounded-xs flex-shrink-0"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Saved
+                  <CheckCircle2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Saved</span>
                 </Link>
               ) : (
                 <button
                   onClick={gen.handleSaveArticle}
                   disabled={gen.isSaving}
-                  className="h-8 px-3 text-[11px] font-bold bg-[#e30613] text-white hover:bg-[#b8040f] transition-colors disabled:opacity-50 inline-flex items-center gap-1.5 rounded-xs cursor-pointer"
+                  className="h-8 px-2.5 sm:px-3 text-[11px] font-bold bg-[#e30613] text-white hover:bg-[#b8040f] transition-colors disabled:opacity-50 inline-flex items-center gap-1.5 rounded-xs cursor-pointer flex-shrink-0"
                 >
                   {gen.isSaving ? (
                     <>
                       <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Saving...
+                      <span className="hidden sm:inline">Saving...</span>
                     </>
                   ) : (
                     <>
-                      <Save className="w-3.5 h-3.5" /> Save Article
+                      <Save className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Save Article</span>
                     </>
                   )}
                 </button>
               )
             )}
 
+            {/* User Pill */}
             {user && (
-              <div className="h-8 px-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] inline-flex items-center gap-1.5 rounded-xs">
+              <div className="h-8 px-2 sm:px-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] inline-flex items-center gap-1.5 rounded-xs flex-shrink-0">
                 <span
                   className={`px-1.5 py-0.5 text-[9px] font-black text-white ${
                     user.role === "admin"
@@ -187,11 +160,13 @@ export default function Dashboard() {
                 >
                   {user.role === "admin" ? "ADMIN" : user.role === "editor" ? "EDITOR" : "AUTHOR"}
                 </span>
-                <span className="font-bold text-zinc-700 dark:text-zinc-300">{user.full_name}</span>
+                <span className="font-bold text-zinc-700 dark:text-zinc-300 max-w-[85px] sm:max-w-[120px] truncate hidden md:inline">
+                  {user.full_name}
+                </span>
               </div>
             )}
 
-            <div className="h-8 flex items-center">
+            <div className="h-8 flex items-center flex-shrink-0">
               <ThemeToggle />
             </div>
 
@@ -200,7 +175,7 @@ export default function Dashboard() {
                 toast.info("You have been signed out.");
                 logout();
               }}
-              className="h-8 w-8 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors inline-flex items-center justify-center border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 rounded-xs cursor-pointer"
+              className="h-8 w-8 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors inline-flex items-center justify-center border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 rounded-xs cursor-pointer flex-shrink-0"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -209,13 +184,8 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── DUAL WORKSPACE RENDER ───────────────────────────────────── */}
-      {isEditor && editorTab === "queue" ? (
-        /* EDITOR WORKSPACE VIEW (Review Queue) */
-        <EditorDashboardView />
-      ) : (
-        /* WORKSPACE VIEW (Article Generator for Authors & Editors) */
-        <>
+      {/* ── WORKSPACE RENDER (AI Generator for Authors & Editors) ───── */}
+      <>
           {/* Global Sticky Generation Progress Banner */}
           {gen.status === "generating" && (
             <div className="fixed top-0 left-0 right-0 z-[9999] bg-[#e30613] text-white px-5 py-2.5 shadow-2xl flex items-center justify-between border-b border-red-700 animate-pulse">
@@ -320,7 +290,6 @@ export default function Dashboard() {
             </section>
           </main>
         </>
-      )}
     </div>
   );
 }

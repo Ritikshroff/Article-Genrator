@@ -132,19 +132,19 @@ export default function ArticlesPage() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-100">
       {/* ── HEADER ────────────────────────────────────────────────── */}
-      <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors" title="Back to Generator">
+      <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 py-3.5 sticky top-0 z-50">
+        <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <Link href="/" className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors flex-shrink-0" title="Back to Generator">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black text-zinc-900 dark:text-zinc-50">
+                <h1 className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-50 truncate">
                   {isEditor ? "ASED • Editor Hub & Review Queue" : "ASED • Author Workspace — My Articles"}
                 </h1>
                 <span
-                  className={`px-2 py-0.5 text-[9px] font-black uppercase text-white rounded-xs ${
+                  className={`px-2 py-0.5 text-[9px] font-black uppercase text-white rounded-xs flex-shrink-0 ${
                     user?.role === "admin"
                       ? "bg-purple-600"
                       : isEditor
@@ -152,32 +152,35 @@ export default function ArticlesPage() {
                       : "bg-zinc-600"
                   }`}
                 >
-                  {user?.role === "admin" ? "ADMIN ROLE" : isEditor ? "EDITOR ROLE" : "AUTHOR ROLE"}
+                  {user?.role === "admin" ? "ADMIN" : isEditor ? "EDITOR" : "AUTHOR"}
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-400 mt-0.5 truncate hidden sm:block">
                 {isEditor ? "Review, approve, or request revisions for submitted articles" : "Manage your draft articles and submission statuses"}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             {/* Generate Article button for all users */}
             <Link
               href="/"
-              className="px-3.5 py-1.5 text-xs font-bold bg-[#e30613] hover:bg-[#b8040f] text-white transition-colors flex items-center gap-1.5"
+              className="px-3 sm:px-3.5 py-1.5 text-xs font-bold bg-[#e30613] hover:bg-[#b8040f] text-white transition-colors flex items-center gap-1.5 rounded-xs flex-shrink-0"
+              title="Return to Story Generator"
             >
-              <Sparkles className="w-3.5 h-3.5" /> Generate Article
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Generate Article</span>
+              <span className="sm:hidden">Write</span>
             </Link>
 
             {/* Analytics button for authorized executive (Sudesh Prasad) */}
             {canAccessMonitoring && (
               <Link
                 href="/analytics"
-                className="px-3.5 py-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors flex items-center gap-1.5 rounded-xs"
+                className="px-3 sm:px-3.5 py-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors flex items-center gap-1.5 rounded-xs flex-shrink-0"
               >
                 <BarChart3 className="w-3.5 h-3.5 text-[#e30613]" />
-                <span className="hidden sm:inline">ASED Monitor</span>
+                <span className="hidden md:inline">ASED Monitor</span>
               </Link>
             )}
 
