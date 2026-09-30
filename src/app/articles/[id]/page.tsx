@@ -174,7 +174,7 @@ export default function ArticleDetailPage() {
 
   const st = STATUS_LABELS[article.status] || STATUS_LABELS.draft;
   const isOwnArticle = article.created_by_id === user?.id;
-  const canSubmit = isOwnArticle && (article.status === "draft" || article.status === "revision_requested");
+  const canSubmit = isOwnArticle && (article.status === "draft" || article.status === "revision_requested") && !isEditor;
   const canReview = isEditor && (article.status === "submitted" || article.status === "draft");
   const canRate = isOwnArticle; // Anyone who authored the article can rate it
 
@@ -215,6 +215,11 @@ export default function ArticleDetailPage() {
                 <span className={`px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
                   {st.label}
                 </span>
+                {isOwnArticle && isEditor && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-black uppercase bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 rounded-xs">
+                    My Story
+                  </span>
+                )}
               </div>
               <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-md">
                 {article.title}
@@ -223,7 +228,7 @@ export default function ArticleDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Submit for Review (Author) */}
+            {/* Submit for Review (Authors only) */}
             {canSubmit && (
               <button
                 onClick={handleSubmitForReview}
@@ -242,7 +247,12 @@ export default function ArticleDetailPage() {
 
         {/* Article Metadata Bar */}
         <div className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 p-4 flex flex-wrap items-center gap-4 text-[11px] text-zinc-500">
-          <span className="flex items-center gap-1"><User className="w-3 h-3" /> Author: <strong className="text-zinc-700 dark:text-zinc-300">{article.created_by_name}</strong></span>
+          <span className="flex items-center gap-1">
+            <User className="w-3 h-3" /> Author:{" "}
+            <strong className="text-zinc-700 dark:text-zinc-300">
+              {article.created_by_name} {isOwnArticle ? "(You)" : ""}
+            </strong>
+          </span>
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Created: {formatIndianDateTime(article.created_at)}</span>
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Updated: {formatIndianDateTime(article.updated_at)}</span>
           {article.reviewed_by_name && (
@@ -274,15 +284,19 @@ export default function ArticleDetailPage() {
 
         {/* Editor Review Panel */}
         {canReview && (
-          <div className="bg-white dark:bg-[#161616] border-2 border-blue-300 dark:border-blue-800 p-5 space-y-4">
-            <div className="flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-blue-300">
+          <div className={`bg-white dark:bg-[#161616] border-2 p-5 space-y-4 ${
+            isOwnArticle ? "border-purple-300 dark:border-purple-800" : "border-blue-300 dark:border-blue-800"
+          }`}>
+            <div className={`flex items-center gap-2 text-sm font-bold ${
+              isOwnArticle ? "text-purple-700 dark:text-purple-300" : "text-blue-700 dark:text-blue-300"
+            }`}>
               <FileText className="w-4 h-4" />
-              Editor Review Panel
+              {isOwnArticle ? "Editor Self-Review & Direct Approval (My Story)" : "Editor Review Panel"}
             </div>
             <textarea
               value={reviewNotes}
               onChange={(e) => setReviewNotes(e.target.value)}
-              placeholder="Add review notes (optional for approval, recommended for revision requests)..."
+              placeholder={isOwnArticle ? "Add final editorial notes (optional)..." : "Add review notes (optional for approval, recommended for revision requests)..."}
               rows={3}
               className="w-full px-4 py-3 text-sm bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
             />
@@ -290,19 +304,21 @@ export default function ArticleDetailPage() {
               <button
                 onClick={() => handleReview("approve")}
                 disabled={isReviewing}
-                className="px-5 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="px-5 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                {isReviewing ? "Processing..." : "Approve Article"}
+                {isReviewing ? "Processing..." : isOwnArticle ? "Self-Approve & Finalize Article" : "Approve Article"}
               </button>
-              <button
-                onClick={() => handleReview("request_revision")}
-                disabled={isReviewing}
-                className="px-5 py-2 text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-              >
-                <AlertTriangle className="w-3.5 h-3.5" />
-                {isReviewing ? "Processing..." : "Request Revision"}
-              </button>
+              {!isOwnArticle && (
+                <button
+                  onClick={() => handleReview("request_revision")}
+                  disabled={isReviewing}
+                  className="px-5 py-2 text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {isReviewing ? "Processing..." : "Request Revision"}
+                </button>
+              )}
             </div>
           </div>
         )}

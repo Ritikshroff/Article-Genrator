@@ -18,6 +18,7 @@ import {
   Eye,
   Inbox,
 } from "lucide-react";
+import { useAuth } from "@/lib/authContext";
 import { useToast } from "@/lib/toastContext";
 import { apiFetch } from "@/lib/apiClient";
 import type { ArticleListItem, UserResponse } from "@/lib/types";
@@ -55,6 +56,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 export function EditorDashboardView() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [allArticles, setAllArticles] = useState<ArticleListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,11 +83,12 @@ export function EditorDashboardView() {
     fetchArticles();
     apiFetch<UserResponse[]>("/users")
       .then((users) => {
-        const names = users.map((u) => u.full_name?.trim()).filter(Boolean);
+        const allowed = users.filter((u) => u.role === "author" || u.id === user?.id);
+        const names = allowed.map((u) => u.full_name?.trim()).filter(Boolean);
         setUserAuthors(names);
       })
       .catch(() => {});
-  }, []);
+  }, [user]);
 
   const handleDelete = async (id: string, title: string) => {
     const confirmed = await toast.confirm(
@@ -330,6 +333,11 @@ export function EditorDashboardView() {
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
                       {st.icon} {st.label}
                     </span>
+                    {article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase() && (
+                      <span className="px-1.5 py-0.5 text-[9px] font-black uppercase bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 rounded-xs">
+                        My Story
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
                     {article.title}
@@ -345,18 +353,26 @@ export function EditorDashboardView() {
                         title={`Filter articles by ${article.created_by_name}`}
                       >
                         {article.created_by_name}
+                        {article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase() ? " (You)" : ""}
                       </button>
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {isSubmitted ? (
+                  {isSubmitted || (article.status === "draft" && article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase()) ? (
                     <Link
                       href={`/articles/${article.id}`}
-                      className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1.5 shadow-sm"
+                      className={`px-4 py-2 text-xs font-bold text-white transition-colors flex items-center gap-1.5 shadow-sm ${
+                        article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase()
+                          ? "bg-purple-600 hover:bg-purple-700"
+                          : "bg-blue-600 hover:bg-blue-700"
+                      }`}
                     >
-                      <UserCheck className="w-3.5 h-3.5" /> Review & Approve →
+                      <UserCheck className="w-3.5 h-3.5" />
+                      {article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase()
+                        ? "Self-Review & Approve →"
+                        : "Review & Approve →"}
                     </Link>
                   ) : (
                     <Link

@@ -102,7 +102,10 @@ export default function ArticlesPage() {
       if (isEditor || canAccessMonitoring) {
         apiFetch<UserResponse[]>("/users")
           .then((users) => {
-            const names = users.map((u) => u.full_name?.trim()).filter(Boolean);
+            const allowed = isEditor && !canAccessMonitoring
+              ? users.filter((u) => u.role === "author" || u.id === user.id)
+              : users;
+            const names = allowed.map((u) => u.full_name?.trim()).filter(Boolean);
             setUserAuthors(names);
           })
           .catch(() => {});
@@ -446,6 +449,11 @@ export default function ArticlesPage() {
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
                         {st.icon} {st.label}
                       </span>
+                      {article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase() && isEditor && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-black uppercase bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 rounded-xs">
+                          My Story
+                        </span>
+                      )}
                       {article.reviewed_by_name && (
                         <span className="text-[10px] text-zinc-400">
                           Reviewed by {article.reviewed_by_name}
@@ -472,6 +480,7 @@ export default function ArticlesPage() {
                             title={`Filter articles by ${article.created_by_name}`}
                           >
                             {article.created_by_name}
+                            {article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase() ? " (You)" : ""}
                           </button>
                         ) : (
                           <strong className="text-zinc-600 dark:text-zinc-300">{article.created_by_name}</strong>
@@ -490,13 +499,20 @@ export default function ArticlesPage() {
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2 self-end sm:self-center">
-                    {/* Primary Editor Review Action */}
-                    {isEditor && isSubmitted ? (
+                    {/* Primary Editor Review / Action */}
+                    {isEditor && (isSubmitted || (article.status === "draft" && article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase())) ? (
                       <Link
                         href={`/articles/${articleId}`}
-                        className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1.5 shadow-sm"
+                        className={`px-4 py-2 text-xs font-bold text-white transition-colors flex items-center gap-1.5 shadow-sm ${
+                          article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase()
+                            ? "bg-purple-600 hover:bg-purple-700"
+                            : "bg-blue-600 hover:bg-blue-700"
+                        }`}
                       >
-                        <UserCheck className="w-3.5 h-3.5" /> Review & Approve →
+                        <UserCheck className="w-3.5 h-3.5" />
+                        {article.created_by_name?.toLowerCase() === user?.full_name?.toLowerCase()
+                          ? "Self-Review & Approve →"
+                          : "Review & Approve →"}
                       </Link>
                     ) : (
                       <Link

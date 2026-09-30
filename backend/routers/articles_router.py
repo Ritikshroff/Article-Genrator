@@ -78,24 +78,55 @@ async def _get_article_or_404(article_id: str) -> Article:
     return article
 
 
-def _check_own_article(article: Article, user: User) -> None:
-    """Raise 403 if author tries to access another user's article."""
-    if user.role == "editor":
-        return  # Editors can access everything
-    if article.created_by_id != str(user.id):
+async def _check_article_access(article: Article, user: User) -> None:
+    """
+    Enforce ownership and editorial privacy:
+    - Authors: can only access their own articles.
+    - Editors: can access their own articles and authors' articles (for review).
+               CANNOT access other editors' articles (editors self-review their own work).
+    - Admins: can access all articles.
+    """
+    if user.role == "admin":
+        return
+    if article.created_by_id == str(user.id):
+        return  # Creator always has access to their own article
+
+    if user.role == "author":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only access your own articles",
         )
+
+    if user.role == "editor":
+        # Check if the article was created by another editor
+        try:
+            creator_obj_id = PydanticObjectId(article.created_by_id)
+            creator = await User.get(creator_obj_id)
+            if creator and creator.role == "editor" and str(creator.id) != str(user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Editors manage their own stories independently. You cannot access another editor's articles.",
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            pass
 
 
 # ── REVIEW QUEUE (Editor only) ─── must be before /{id} ──────
 
 @router.get("/review/queue", response_model=ArticleListResponse)
 async def get_review_queue(current_user: User = Depends(require_editor)):
-    """Get all articles with status 'submitted' awaiting editor review."""
+    """Get all articles with status 'submitted' awaiting editor review (excluding other editors' stories)."""
+    query_filters = {"status": "submitted"}
+    if current_user.role == "editor":
+        other_editors = await User.find(User.role == "editor", User.id != current_user.id).to_list()
+        other_editor_ids = [str(u.id) for u in other_editors]
+        if other_editor_ids:
+            query_filters["created_by_id"] = {"$nin": other_editor_ids}
+
     articles = await Article.find(
-        Article.status == "submitted"
+        query_filters
     ).project(ArticleListItem).sort("-created_at").to_list()
 
     return ArticleListResponse(
@@ -151,13 +182,20 @@ async def list_articles(
     """
     List articles.
     - Authors: own articles only.
-    - Editors: all articles.
+    - Editors: own articles + authors' articles (other editors' articles excluded).
+    - Admins: all articles.
     """
     query_filters = {}
 
     # Authors can only see their own
     if current_user.role == "author":
         query_filters["created_by_id"] = str(current_user.id)
+    elif current_user.role == "editor":
+        # Other editors' stories are private to them; editors self-review their own stories
+        other_editors = await User.find(User.role == "editor", User.id != current_user.id).to_list()
+        other_editor_ids = [str(u.id) for u in other_editors]
+        if other_editor_ids:
+            query_filters["created_by_id"] = {"$nin": other_editor_ids}
 
     if publication:
         query_filters["publication"] = publication
@@ -183,7 +221,7 @@ async def get_article(
 ):
     """Get a single article with all sections."""
     article = await _get_article_or_404(article_id)
-    _check_own_article(article, current_user)
+    await _check_article_access(article, current_user)
     return _article_to_response(article)
 
 
@@ -198,10 +236,10 @@ async def update_article(
     """
     Update article content.
     - Authors: own drafts or revision_requested only.
-    - Editors: any article.
+    - Editors: own articles or authors' articles (other editors' articles excluded).
     """
     article = await _get_article_or_404(article_id)
-    _check_own_article(article, current_user)
+    await _check_article_access(article, current_user)
 
     # Authors can only edit drafts or revision-requested articles
     if current_user.role == "author" and article.status not in ("draft", "revision_requested"):
@@ -231,10 +269,10 @@ async def delete_article(
     """
     Delete an article.
     - Authors: own drafts only.
-    - Editors: any article.
+    - Editors: own articles or authors' articles (not other editors' articles).
     """
     article = await _get_article_or_404(article_id)
-    _check_own_article(article, current_user)
+    await _check_article_access(article, current_user)
 
     if current_user.role == "author" and article.status != "draft":
         raise HTTPException(
@@ -254,7 +292,7 @@ async def submit_for_review(
 ):
     """Author submits a draft article for editor review."""
     article = await _get_article_or_404(article_id)
-    _check_own_article(article, current_user)
+    await _check_article_access(article, current_user)
 
     if article.status not in ("draft", "revision_requested"):
         raise HTTPException(
@@ -287,6 +325,7 @@ async def review_article(
 ):
     """Editor approves or requests revision on a submitted article."""
     article = await _get_article_or_404(article_id)
+    await _check_article_access(article, current_user)
 
     if article.status not in ("submitted", "draft"):
         raise HTTPException(
