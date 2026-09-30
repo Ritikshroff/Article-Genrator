@@ -176,15 +176,16 @@ Wrap external calls (DB, email, AI) in try/except and raise `HTTPException`.
 
 ## RBAC (Role-Based Access Control) Rules
 
-| Operation | Author | Editor |
-|-----------|--------|--------|
-| Create article | ✅ | ❌ |
-| View own articles | ✅ | ✅ (all) |
-| Edit article | ✅ (draft/revision only) | ✅ |
-| Delete article | ✅ (own drafts only) | ✅ |
-| Submit for review | ✅ (own articles) | ❌ |
-| Review/approve | ❌ | ✅ |
-| Rate quality | ✅ (own articles) | ❌ |
+| Operation | Author | Editor | Admin |
+|-----------|--------|--------|-------|
+| Create article | ✅ | ✅ | ✅ |
+| View own articles | ✅ | ✅ (all) | ✅ (all) |
+| Edit article | ✅ (draft/revision only) | ✅ | ✅ |
+| Delete article | ✅ (own drafts only) | ✅ | ✅ |
+| Submit for review | ✅ (own articles) | ✅ (own articles) | ✅ (own articles) |
+| Review/approve | ❌ | ✅ | ✅ |
+| Rate quality | ✅ (own articles) | ✅ (own articles) | ✅ (own articles) |
+| ASED Monitor (`/analytics`) | ❌ | ❌ | ✅ |
 
 **This table is the source of truth — any new endpoint must enforce these rules.**
 

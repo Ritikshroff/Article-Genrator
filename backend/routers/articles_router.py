@@ -112,11 +112,6 @@ async def create_article(
     current_user: User = Depends(get_current_user),
 ):
     """Save a newly generated article as draft."""
-    if current_user.role == "editor":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Editors do not have permission to generate or save new articles.",
-        )
     article = Article(
         title=body.title,
         publication=body.publication,
@@ -290,10 +285,10 @@ async def review_article(
     """Editor approves or requests revision on a submitted article."""
     article = await _get_article_or_404(article_id)
 
-    if article.status != "submitted":
+    if article.status not in ("submitted", "draft"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Can only review articles with status 'submitted', got '{article.status}'",
+            detail=f"Can only review articles with status 'submitted' or 'draft', got '{article.status}'",
         )
 
     new_status = "approved" if body.action == "approve" else "revision_requested"
@@ -325,17 +320,10 @@ async def submit_author_feedback(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Author rates the AI-generated article quality (1–5 stars).
-    - Only the article's own author may submit feedback.
-    - Editors are not permitted (403).
+    Author or creator rates the AI-generated article quality (1–5 stars).
+    - Only the article's own creator may submit feedback.
     - Rating can be updated (re-submission overwrites previous rating).
     """
-    if current_user.role == "editor":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Editors do not submit author quality ratings.",
-        )
-
     if body.rating < 1 or body.rating > 5:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -343,7 +331,11 @@ async def submit_author_feedback(
         )
 
     article = await _get_article_or_404(article_id)
-    _check_own_article(article, current_user)
+    if article.created_by_id != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the author/creator of this article can submit quality ratings.",
+        )
 
     await article.set({
         "author_rating": body.rating,

@@ -132,12 +132,6 @@ export function useGenerator(isEditor: boolean = false) {
   }, [topicType, generateImage]);
 
   const handleGenerate = async () => {
-    if (isEditor) {
-      setErrorMessage("Article generation is restricted to Authors.");
-      setStatus("error");
-      toast.error("Article generation is restricted to Authors.");
-      return;
-    }
     if (!topicType) {
       setErrorMessage("Please select an Article Type first.");
       setStatus("error");
@@ -245,10 +239,6 @@ export function useGenerator(isEditor: boolean = false) {
   };
 
   const handleSaveArticle = async () => {
-    if (isEditor) {
-      toast.error("Article saving is restricted to Authors.");
-      return;
-    }
     if (!packageData.news) return;
     setIsSaving(true);
     try {

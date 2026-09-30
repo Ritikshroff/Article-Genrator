@@ -175,8 +175,8 @@ export default function ArticleDetailPage() {
   const st = STATUS_LABELS[article.status] || STATUS_LABELS.draft;
   const isOwnArticle = article.created_by_id === user?.id;
   const canSubmit = isOwnArticle && (article.status === "draft" || article.status === "revision_requested");
-  const canReview = isEditor && article.status === "submitted";
-  const canRate = !isEditor && isOwnArticle; // Authors can rate their own articles
+  const canReview = isEditor && (article.status === "submitted" || article.status === "draft");
+  const canRate = isOwnArticle; // Anyone who authored the article can rate it
 
   // Convert article data to EditorialPackage for OutputPanel
   const packageData: EditorialPackage = {
@@ -401,8 +401,8 @@ export default function ArticleDetailPage() {
           </div>
         )}
 
-        {/* Read-only rating display for editors viewing author-rated articles */}
-        {isEditor && article.author_rating && (
+        {/* Read-only rating display for editors viewing another author's rated article */}
+        {isEditor && !isOwnArticle && article.author_rating && (
           <div className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 p-4 flex flex-wrap items-center gap-4">
             <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Author Quality Rating</span>
             <div className="flex items-center gap-1">

@@ -14,6 +14,7 @@ import {
   FolderOpen,
   Save,
   BarChart3,
+  Inbox,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OutputPanel } from "@/components/OutputPanel";
@@ -28,6 +29,7 @@ import { useGenerator } from "@/features/generator/useGenerator";
 export default function Dashboard() {
   const { user, isEditor, canAccessMonitoring, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [editorTab, setEditorTab] = React.useState<"generator" | "queue">("generator");
   const gen = useGenerator(isEditor);
 
   const steps = gen.getStepsForTopic();
@@ -58,13 +60,13 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[200px] sm:max-w-none">
-                {isEditor ? "Review, approve & publish article submissions" : gen.mag.tagline}
+                {isEditor ? "Generate, review, approve & publish articles" : gen.mag.tagline}
               </p>
             </div>
           </div>
 
-          {/* Publication Switcher (for Authors) */}
-          {!isEditor && (
+          {/* Publication Switcher (Visible in Generator Mode) */}
+          {(!isEditor || editorTab === "generator") && (
             <div className="flex items-center p-0.5 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 rounded-xs h-8">
               {magazineList.map((m) => {
                 const isActive = gen.magazine === m.key;
@@ -94,6 +96,38 @@ export default function Dashboard() {
 
           {/* Right Controls */}
           <div className="flex items-center gap-2">
+            {/* Editor Workspace Mode Switcher */}
+            {isEditor && (
+              <div className="flex items-center p-0.5 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 rounded-xs h-8">
+                <button
+                  id="tab-generator"
+                  onClick={() => setEditorTab("generator")}
+                  className={`h-7 px-2.5 text-[11px] font-bold transition-all flex items-center gap-1.5 rounded-xs cursor-pointer ${
+                    editorTab === "generator"
+                      ? "bg-[#e30613] text-white shadow-xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                  title="Switch to Story Generator"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Write Story</span>
+                </button>
+                <button
+                  id="tab-queue"
+                  onClick={() => setEditorTab("queue")}
+                  className={`h-7 px-2.5 text-[11px] font-bold transition-all flex items-center gap-1.5 rounded-xs cursor-pointer ${
+                    editorTab === "queue"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                  title="Switch to Review Queue"
+                >
+                  <Inbox className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Review Queue</span>
+                </button>
+              </div>
+            )}
+
             {canAccessMonitoring && (
               <Link
                 href="/analytics"
@@ -109,10 +143,10 @@ export default function Dashboard() {
               className="h-8 px-3 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors inline-flex items-center gap-1.5 rounded-xs"
             >
               <FolderOpen className="w-3.5 h-3.5" />
-              {isEditor ? "Review Queue & Articles" : "My Articles"}
+              {isEditor ? "All Articles" : "My Articles"}
             </Link>
 
-            {!isEditor && gen.status === "completed" && gen.packageData.news && (
+            {gen.status === "completed" && gen.packageData.news && (
               gen.savedArticleId ? (
                 <Link
                   href={`/articles/${gen.savedArticleId}`}
@@ -176,11 +210,11 @@ export default function Dashboard() {
       </header>
 
       {/* ── DUAL WORKSPACE RENDER ───────────────────────────────────── */}
-      {isEditor ? (
-        /* EDITOR WORKSPACE VIEW */
+      {isEditor && editorTab === "queue" ? (
+        /* EDITOR WORKSPACE VIEW (Review Queue) */
         <EditorDashboardView />
       ) : (
-        /* AUTHOR WORKSPACE VIEW (Article Generator) */
+        /* WORKSPACE VIEW (Article Generator for Authors & Editors) */
         <>
           {/* Global Sticky Generation Progress Banner */}
           {gen.status === "generating" && (

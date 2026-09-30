@@ -135,11 +135,9 @@ export default function ArticlesPage() {
       <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            {!isEditor && (
-              <Link href="/" className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            )}
+            <Link href="/" className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors" title="Back to Generator">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-black text-zinc-900 dark:text-zinc-50">
@@ -164,15 +162,13 @@ export default function ArticlesPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Generate Article button for Authors */}
-            {!isEditor && (
-              <Link
-                href="/"
-                className="px-3.5 py-1.5 text-xs font-bold bg-[#e30613] hover:bg-[#b8040f] text-white transition-colors flex items-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Generate Article
-              </Link>
-            )}
+            {/* Generate Article button for all users */}
+            <Link
+              href="/"
+              className="px-3.5 py-1.5 text-xs font-bold bg-[#e30613] hover:bg-[#b8040f] text-white transition-colors flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Generate Article
+            </Link>
 
             {/* Analytics button for authorized executive (Sudesh Prasad) */}
             {canAccessMonitoring && (
@@ -366,11 +362,9 @@ export default function ArticlesPage() {
             <p className="text-xs text-zinc-400 mt-1">
               {isEditor ? "No articles have been submitted yet." : "Generate an article on the dashboard to see it here."}
             </p>
-            {!isEditor && (
-              <Link href="/" className="inline-block mt-4 px-4 py-2 bg-[#e30613] text-white text-xs font-bold hover:bg-[#b8040f] transition-colors">
-                Go to Article Generator
-              </Link>
-            )}
+            <Link href="/" className="inline-block mt-4 px-4 py-2 bg-[#e30613] text-white text-xs font-bold hover:bg-[#b8040f] transition-colors">
+              Go to Article Generator
+            </Link>
           </div>
         ) : (
           <div className="space-y-3">
