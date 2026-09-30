@@ -98,7 +98,7 @@ async def _check_article_access(article: Article, user: User) -> None:
         )
 
     if user.role == "editor":
-        # Check if the article was created by another editor
+        # Check if the article was created by another editor or is an unsubmitted author draft
         try:
             creator_obj_id = PydanticObjectId(article.created_by_id)
             creator = await User.get(creator_obj_id)
@@ -106,6 +106,11 @@ async def _check_article_access(article: Article, user: User) -> None:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Editors manage their own stories independently. You cannot access another editor's articles.",
+                )
+            if creator and creator.role == "author" and article.status == "draft":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="This article is currently an author's private draft and has not been submitted to the editorial desk yet.",
                 )
         except HTTPException:
             raise
@@ -185,26 +190,37 @@ async def list_articles(
     - Editors: own articles + authors' articles (other editors' articles excluded).
     - Admins: all articles.
     """
-    query_filters = {}
+    and_conditions = []
 
     # Authors can only see their own
     if current_user.role == "author":
-        query_filters["created_by_id"] = str(current_user.id)
+        and_conditions.append({"created_by_id": str(current_user.id)})
     elif current_user.role == "editor":
-        # Other editors' stories are private to them; editors self-review their own stories
         other_editors = await User.find(User.role == "editor", User.id != current_user.id).to_list()
         other_editor_ids = [str(u.id) for u in other_editors]
-        if other_editor_ids:
-            query_filters["created_by_id"] = {"$nin": other_editor_ids}
+        
+        # An editor sees:
+        # 1. Their own articles (drafts, approved, etc.)
+        # 2. Authors' articles that have been formally submitted to the desk (status != 'draft')
+        and_conditions.append({
+            "$or": [
+                {"created_by_id": str(current_user.id)},
+                {
+                    "created_by_id": {"$nin": other_editor_ids + [str(current_user.id)]},
+                    "status": {"$in": ["submitted", "approved", "revision_requested", "published"]},
+                },
+            ]
+        })
 
     if publication:
-        query_filters["publication"] = publication
+        and_conditions.append({"publication": publication})
     if status_filter:
-        query_filters["status"] = status_filter
+        and_conditions.append({"status": status_filter})
     if author:
-        query_filters["created_by_name"] = author
+        and_conditions.append({"created_by_name": author})
 
-    articles = await Article.find(query_filters).project(ArticleListItem).sort("-updated_at").to_list()
+    final_query = {"$and": and_conditions} if and_conditions else {}
+    articles = await Article.find(final_query).project(ArticleListItem).sort("-updated_at").to_list()
 
     return ArticleListResponse(
         articles=articles,
