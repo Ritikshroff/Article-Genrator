@@ -196,7 +196,7 @@ export default function Dashboard() {
                     ⚡ AI ARTICLE GENERATION IN PROGRESS
                   </span>
                   <span className="text-[11px] opacity-90 font-medium">
-                    Step {gen.currentStep || 1} of {steps.length || 4}:{" "}
+                    Step {Math.min(gen.currentStep || 1, steps.length || 4)} of {steps.length || 4}:{" "}
                     {gen.stepMessage || "Writing 11-field PubLive metadata & editorial draft..."} —
                     Please stay on this page!
                   </span>
@@ -204,7 +204,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="hidden sm:inline-block text-[10px] font-black bg-white text-[#e30613] px-3 py-1 uppercase tracking-widest rounded-xs shadow-xs">
-                  {Math.round(((gen.currentStep || 1) / (steps.length || 4)) * 100)}% COMPLETE
+                  {Math.min(100, Math.round(((gen.currentStep || 1) / (steps.length || 4)) * 100))}% COMPLETE
                 </span>
                 <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               </div>

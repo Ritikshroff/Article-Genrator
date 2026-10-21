@@ -608,13 +608,13 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                   ⚡ AI Article Generation In Progress
                 </span>
                 <span className={`px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b]" : "bg-[#e30613]"} text-white rounded-xs animate-pulse`}>
-                  Step {currentStep || 1} of {steps?.length || 4}
+                  Step {Math.min(currentStep || 1, steps?.length || 4)} of {steps?.length || 4}
                 </span>
               </div>
               <div className="h-2.5 bg-zinc-100 dark:bg-zinc-800 overflow-hidden rounded-full border border-zinc-200 dark:border-zinc-700">
                 <div
                   className={`h-full ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b]" : "bg-[#e30613]"} transition-all duration-300 shimmer`}
-                  style={{ width: `${Math.max(15, ((currentStep || 1) / (steps?.length || 4)) * 100)}%` }}
+                  style={{ width: `${Math.min(100, Math.max(15, ((currentStep || 1) / (steps?.length || 4)) * 100))}%` }}
                 />
               </div>
               <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">

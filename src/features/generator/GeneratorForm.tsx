@@ -350,7 +350,7 @@ export function GeneratorForm({
           >
             <Sparkles className={`w-4 h-4 ${status === "generating" ? "animate-spin" : ""}`} />
             {status === "generating"
-              ? `Generating step ${currentStep} of ${totalSteps}...`
+              ? `Generating step ${Math.min(currentStep, totalSteps)} of ${totalSteps}...`
               : "Generate Article"}
           </button>
 

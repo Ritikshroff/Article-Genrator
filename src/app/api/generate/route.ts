@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRAGChunks, RAGChunk } from "@/lib/ragCorpus";
 import { magazines, MagazineKey } from "@/lib/magazineConfig";
 import { formatHtmlForPreview } from "@/lib/htmlUtils";
+import { applyCyberMediaMasterStylesheet } from "@/lib/editorialSanitizer";
 
 export const runtime = "nodejs";
 
@@ -424,6 +425,12 @@ ${isFirstLook ? 'CRITICAL PCQUEST RULE: hands_on_data is false! You MUST set con
 HEADER IMAGE PROMPT RULES:
 Create a custom, dynamic, E-E-A-T compliant image generation prompt (16:9 aspect ratio, 1280x720 resolution) specifically derived from the key subject, product name, and main entity of THIS input press release. DO NOT use generic boilerplate text. Format: "16:9 editorial banner, [specific product/technology/event from this press release], 1280x720 resolution, ${magazineKey === "Voice&Data" ? "telecom blue and amber lighting" : magazineKey === "PCquest" ? "studio hardware rendering" : "enterprise tech corporate style"}, photorealistic, 8k --no text --no brand logos".
 
+CYBERMEDIA EDITORIAL & STYLESHEET MANDATES (NON-NEGOTIABLE):
+- CASING: If publication is "dataquest", "voicedata", or "pcquest", the headline (h1), all subheadings (h2s/h3s), and all FAQ questions MUST be strictly in SENTENCE CASE. Only capitalise the very first word and recognised proper nouns / acronyms (e.g. "Coursera unveils project Helix platform and partners with IIMBx"). NEVER use Title Case! (CIOL uses Title Case, but ${mag.name} strictly mandates Sentence Case).
+- EM-DASHES: NEVER output em-dashes (—). Replace with commas or separate sentences.
+- QUOTES: Strip emphasis quotes around themes/slogans. Keep double quotes only for verbatim spokesperson quotes.
+- UK ENGLISH: Strict UK English across all body paragraphs and FAQs (-ise, programme, centre, fibre, colour, enrolment).
+
 ${customPrompt ? `CUSTOM EDITORIAL INSTRUCTIONS:\n${customPrompt}\n` : ''}
 
 Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
@@ -460,6 +467,9 @@ Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
             is_first_look: isFirstLook,
           };
 
+          // Apply CyberMedia Master Stylesheet Sanitizer (Sentence Case, em-dashes, UK English, toolkit rules)
+          applyCyberMediaMasterStylesheet(newsData, mag.key || magazineKey);
+
           controller.enqueue(
             encoder.encode(
               JSON.stringify({
@@ -482,8 +492,8 @@ Generate the complete draft adhering STRICTLY to the JSON Schema v1.1.
           );
 
           const seoData = {
-            seo_title: pkgV11.title_seo,
-            meta_description: pkgV11.meta_description,
+            seo_title: (mag.key as string) === "CIOL" ? pkgV11.title_seo : newsData.headline,
+            meta_description: newsData.subheadline || pkgV11.meta_description,
             slug: pkgV11.slug,
             primary_keyword: pkgV11.focus_keywords?.[0] || topic || "Technology",
             keywords: pkgV11.focus_keywords || [],

@@ -92,41 +92,25 @@ export function useGenerator(isEditor: boolean = false) {
   }, [packageData.news, pressRelease, toast]);
 
   const getStepsForTopic = useCallback(() => {
-    let steps: { id: number; name: string }[] = [];
-    if (topicType === "Interview") {
-      steps = [
-        { id: 1, name: "Interview Q&A" },
-        { id: 2, name: "Interview Prep & Queries" },
-        { id: 3, name: "SEO Assets" },
-      ];
-    } else if (topicType === "Opinion") {
-      steps = [
-        { id: 1, name: "Opinion Piece" },
-        { id: 2, name: "SEO Assets" },
-        { id: 3, name: "Editorial Review" },
-      ];
-    } else if (topicType === "Feature") {
-      steps = [
-        { id: 1, name: "Feature Article" },
-        { id: 2, name: "Industry Impact Analysis" },
-        { id: 3, name: "SEO Assets" },
-      ];
-    } else if (topicType === "CaseStudy") {
-      steps = [
-        { id: 1, name: "Case Study" },
-        { id: 2, name: "SEO Assets" },
-        { id: 3, name: "Editorial Review" },
-      ];
-    } else {
-      steps = [
-        { id: 1, name: "News Article" },
-        { id: 2, name: "SEO Assets" },
-        { id: 3, name: "Social Media" },
-        { id: 4, name: "Editorial Review" },
-      ];
-    }
+    const articleLabel =
+      topicType === "Interview"
+        ? "Interview Q&A"
+        : topicType === "Opinion"
+        ? "Opinion Editorial"
+        : topicType === "Feature"
+        ? "Feature Article"
+        : topicType === "CaseStudy"
+        ? "Case Study"
+        : "News Article";
+
+    const steps = [
+      { id: 1, name: "Context & Fact Retrieval" },
+      { id: 2, name: articleLabel },
+      { id: 3, name: "SEO & E-E-A-T Assets" },
+      { id: 4, name: "Industry Impact & Social Media" },
+    ];
     if (generateImage) {
-      steps.push({ id: steps.length + 1, name: "Cover Banner" });
+      steps.push({ id: 5, name: "Cover Visual & Banner" });
     }
     return steps;
   }, [topicType, generateImage]);
