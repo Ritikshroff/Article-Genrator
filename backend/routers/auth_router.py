@@ -67,6 +67,7 @@ async def login(body: LoginRequest):
             can_approve=user.can_approve,
             can_publish=user.can_publish,
             can_access_monitoring=getattr(user, "can_access_monitoring", False),
+            allowed_publications=getattr(user, "allowed_publications", []) or [],
             is_active=user.is_active,
             created_at=user.created_at,
         ),
@@ -88,6 +89,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         can_approve=current_user.can_approve,
         can_publish=current_user.can_publish,
         can_access_monitoring=getattr(current_user, "can_access_monitoring", False),
+        allowed_publications=getattr(current_user, "allowed_publications", []) or [],
         is_active=current_user.is_active,
         created_at=current_user.created_at,
     )

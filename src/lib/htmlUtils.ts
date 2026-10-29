@@ -16,7 +16,46 @@ export interface CitationSource {
  * 2. Maps bracket citation markers [id] directly to underlined source links.
  * 3. Extracts any "Also Read" / "Read More" links from the middle of the article text
  *    and appends them cleanly to the very END of the article with explicit underlines.
+ * 4. Converts markdown tables into cleanly aligned, responsive HTML specification tables.
  */
+export function convertMarkdownTablesToHtml(content: string): string {
+  if (!content) return "";
+
+  // Matches markdown tables: header line with pipes, delimiter line, and rows
+  const tableRegex = /((?:\|[^\n]+\|\r?\n)(?:\|[\s:?-]+\|\r?\n)(?:\|[^\n]+\|\r?\n?)+)/g;
+
+  return content.replace(tableRegex, (rawTable) => {
+    const lines = rawTable.trim().split(/\r?\n/).filter((l) => l.includes("|"));
+    if (lines.length < 3) return rawTable;
+
+    const headerCols = lines[0].split("|").slice(1, -1).map((c) => c.trim());
+    const dataRows = lines.slice(2).map((line) => line.split("|").slice(1, -1).map((c) => c.trim()));
+
+    const ths = headerCols
+      .map(
+        (h) =>
+          `<th style="text-align: left; padding: 10px 14px; font-weight: 700; border: 1px solid rgba(150,150,150,0.3); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em;">${h}</th>`
+      )
+      .join("");
+
+    const trs = dataRows
+      .map((row, idx) => {
+        const bg = idx % 2 === 0 ? "background-color: rgba(150,150,150,0.04);" : "";
+        const tds = row
+          .map((cell, cIdx) => {
+            const isFirst = cIdx === 0;
+            const fontStyle = isFirst ? "font-weight: 600; width: 35%; min-width: 140px;" : "";
+            return `<td style="text-align: left; padding: 10px 14px; ${fontStyle} border: 1px solid rgba(150,150,150,0.25);">${cell}</td>`;
+          })
+          .join("");
+        return `<tr style="${bg}">${tds}</tr>`;
+      })
+      .join("");
+
+    return `\n<div class="specs-table-wrapper" style="margin: 1.5rem 0; overflow-x: auto; width: 100%;"><table class="specs-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem; border: 1px solid rgba(150,150,150,0.3);"><thead><tr style="background-color: rgba(150,150,150,0.12);">${ths}</tr></thead><tbody>${trs}</tbody></table></div>\n`;
+  });
+}
+
 export function formatHtmlForPreview(
   html: string,
   ragSources?: CitationSource[],
@@ -24,8 +63,11 @@ export function formatHtmlForPreview(
 ): string {
   if (!html) return "";
 
+  // 0. Convert any markdown-style tables into properly structured HTML tables
+  let clean = convertMarkdownTablesToHtml(html);
+
   // 1. Convert markdown-style [Text](url) to HTML links with underline
-  let clean = html.replace(
+  clean = clean.replace(
     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
     `<a href="$2" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80 font-medium" style="color: ${accentHex}; text-decoration: underline;"><u>$1</u></a>`
   );

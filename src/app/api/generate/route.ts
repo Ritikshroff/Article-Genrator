@@ -430,6 +430,7 @@ CYBERMEDIA EDITORIAL & STYLESHEET MANDATES (NON-NEGOTIABLE):
 - EM-DASHES: NEVER output em-dashes (—). Replace with commas or separate sentences.
 - QUOTES: Strip emphasis quotes around themes/slogans. Keep double quotes only for verbatim spokesperson quotes.
 - UK ENGLISH: Strict UK English across all body paragraphs and FAQs (-ise, programme, centre, fibre, colour, enrolment).
+- HARDWARE SPECIFICATIONS TABLE (MANDATORY): When the press release contains hardware or product specifications (e.g. mobile handset, processor, display, battery, charging, storage, connectivity), format them strictly as an HTML table with class "specs-table": <table class="specs-table"><thead><tr><th style="text-align: left;">Feature</th><th style="text-align: left;">Specification Details</th></tr></thead><tbody><tr><td>Model Name</td><td>...</td></tr>...</tbody></table>. Ensure both columns are left-aligned. Do NOT output unaligned tab-separated lines.
 
 ${customPrompt ? `CUSTOM EDITORIAL INSTRUCTIONS:\n${customPrompt}\n` : ''}
 

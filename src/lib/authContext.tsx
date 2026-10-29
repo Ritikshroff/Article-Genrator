@@ -47,7 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (savedToken && savedUser) {
       try {
         setToken(savedToken);
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+
+        // Silently refresh profile from server to sync latest allowed_publications & permissions
+        apiFetch<AuthUser>("/auth/me")
+          .then((freshUser) => {
+            if (freshUser && freshUser.id) {
+              setUser(freshUser);
+              localStorage.setItem("auth_user", JSON.stringify(freshUser));
+            }
+          })
+          .catch(() => {});
       } catch {
         localStorage.removeItem("auth_token");
         localStorage.removeItem("auth_user");

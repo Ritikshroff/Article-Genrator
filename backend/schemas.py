@@ -34,6 +34,7 @@ class UserResponse(BaseModel):
     can_approve: bool = False
     can_publish: bool = False
     can_access_monitoring: bool = False
+    allowed_publications: list[str] = Field(default_factory=list)
     is_active: bool
     created_at: datetime
 

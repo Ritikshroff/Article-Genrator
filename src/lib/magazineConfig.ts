@@ -4,7 +4,7 @@
 // v1.1 Specification Compliant (Dataquest, Voice&Data, PCQuest)
 // ─────────────────────────────────────────────────────────────
 
-export type MagazineKey = "PCquest" | "Dataquest" | "Voice&Data";
+export type MagazineKey = "PCquest" | "Dataquest" | "Voice&Data" | "CIOL";
 
 export interface AuthorEntity {
   byline: string;
@@ -18,6 +18,7 @@ export interface MagazineConfig {
   shortName: string;
   domain: string;
   tagline: string;
+  logoUrl: string;
   accentBg: string;
   accentText: string;
   accentBorder: string;
@@ -30,6 +31,8 @@ export interface MagazineConfig {
   editorialStyle: string;
   sitemapUrl: string;
 }
+
+export const CYBERMEDIA_LOGO = "/cybermediaLogo.png";
 
 export const BANNED_MARKETING_WORDS = [
   "stylish", "highly anticipated", "must-have", "act fast", "game-changer",
@@ -47,6 +50,7 @@ export const magazines: Record<MagazineKey, MagazineConfig> = {
     shortName: "DQ",
     domain: "dqindia.com",
     tagline: "Impacting Indian ICT Industry Since 1982",
+    logoUrl: "/DQlogo.webp",
     accentBg: "bg-red-600",
     accentText: "text-red-600",
     accentBorder: "border-red-600",
@@ -136,6 +140,7 @@ OUTPUT: Must be valid JSON per schema v1.1.`,
     shortName: "V&D",
     domain: "voicendata.com",
     tagline: "India's Premier Telecom & ICT Publication",
+    logoUrl: "/VandDLOGO.webp",
     accentBg: "bg-[#00839b]",
     accentText: "text-[#00839b]",
     accentBorder: "border-[#00839b]",
@@ -213,6 +218,7 @@ OUTPUT: Must be valid JSON per schema v1.1.`,
     shortName: "PCQ",
     domain: "pcquest.com",
     tagline: "India's No.1 Technology Magazine",
+    logoUrl: "/PCquestLogo.webp",
     accentBg: "bg-red-600",
     accentText: "text-red-600",
     accentBorder: "border-red-600",
@@ -274,7 +280,7 @@ STRUCTURE:
 3. Body (scale with input PR length, see rule 0 above):
    - P1: Factual Hook - technology context & core product announcement
    - P2: Detailed specifications & operational breakdown in clear language (PR facts strictly)
-   - P3: Technical specs table / bullet points (PR facts strictly)
+   - P3: Technical specifications breakdown table (PR facts strictly). When hardware/gadget specifications (e.g. mobile handset, display, battery, processor, connectivity, memory, storage, charging) are provided in the PR, format them cleanly as an HTML table: <table class="specs-table"><thead><tr><th style="text-align: left;">Feature</th><th style="text-align: left;">Specification Details</th></tr></thead><tbody><tr><td>Model Name</td><td>...</td></tr></tbody></table>. Ensure all table headers and cells are left-aligned.
    - P4: Context from archive - e.g., how it compares to previous model, cite as [id] / <a href="URL" style="text-decoration: underline;"><u>Source</u></a> — ONLY if supported by RETRIEVED_CHUNKS
    - P5: Objective target buyer analysis / Official pricing (Rs) & availability + Verbatim quote at bottom
    - End of Body: Place 1-2 'Also Read' internal links with explicit underlines: <p><strong>Also Read: </strong><a href="URL" target="_blank" rel="noopener noreferrer" style="text-decoration: underline;"><u>Title</u></a></p>
@@ -284,25 +290,70 @@ STRUCTURE:
 OUTPUT: Must be valid JSON per schema v1.1.`,
     sitemapUrl: "https://www.pcquest.com/sitemap.xml",
   },
+
+  CIOL: {
+    key: "CIOL",
+    name: "CIOL",
+    shortName: "CIOL",
+    domain: "ciol.com",
+    tagline: "India's Pioneer Enterprise IT & Technology Business Portal",
+    logoUrl: "/cybermediaLogo.png",
+    accentBg: "bg-[#c8102e]/10",
+    accentText: "text-[#c8102e]",
+    accentBorder: "border-[#c8102e]",
+    accentRing: "focus:ring-[#c8102e]",
+    accentHex: "#c8102e",
+    authorEntity: {
+      byline: "CIOL News Bureau",
+      bioShort: "Covering Enterprise IT, Cloud, Digital Transformation & CIO Strategies since 1996.",
+      expertiseTags: ["Enterprise Tech", "Cloud & AI", "CIO Insights", "Digital India"],
+    },
+    systemPromptV11: `You are Senior Editor, CIOL (ciol.com), India's premier technology business and enterprise IT portal since 1996.
+TASK: Create E-E-A-T + RAG compliant first draft following CIOL Editorial Guidelines.
+CRITICAL MANDATES:
+1. HEADLINES (TITLE CASE): CIOL strictly mandates Title Case for Headlines (Capitalise Every Significant Word, unlike DQ and Voice&Data).
+2. NO EM-DASHES: Replace with commas or sentence breaks.
+3. UK ENGLISH: Strict UK English.
+4. ZERO PR HYPE: Objective, factual enterprise tech journalism.
+5. STRICT SOURCE FIDELITY & VERBATIM ACCURACY: Preserve PR facts, specs, numbers, prices, and spokesperson quotes verbatim.
+OUTPUT: Must be valid JSON per schema v1.1.`,
+    editorialStyle: `## CIOL EDITORIAL & STYLESHEET RULES:
+- Audience: CIOs, CTOs, Enterprise IT leaders, Developers, and Tech Decision-Makers in India.
+- Headlines: TITLE CASE (Capitalise Every Major Word).
+- Tone: Objective, factual, analytical, enterprise-focused. Zero PR hype.
+- Quotes: Verbatim spokesperson quotes at the bottom.`,
+    sitemapUrl: "https://www.ciol.com/sitemap.xml",
+  },
 };
 
 export const magazineList: MagazineConfig[] = Object.values(magazines);
 
 export interface PublicationMeta {
   key: MagazineKey;
-  code: "DQ" | "V&D" | "PCQ";
+  code: "DQ" | "V&D" | "PCQ" | "CIOL";
   name: string;
   badgeBg: string;
+  logoUrl: string;
 }
 
 export function resolvePublication(input?: string | null): PublicationMeta {
   const norm = (input || "").toLowerCase().replace(/[^a-z]/g, "");
+  if (norm.includes("ciol")) {
+    return {
+      key: "CIOL",
+      code: "CIOL",
+      name: "CIOL",
+      badgeBg: "bg-[#c8102e]",
+      logoUrl: "/cybermediaLogo.png",
+    };
+  }
   if (norm.includes("voice") || norm.includes("telecom")) {
     return {
       key: "Voice&Data",
       code: "V&D",
       name: "Voice&Data",
       badgeBg: "bg-[#00839b]",
+      logoUrl: "/VandDLOGO.webp",
     };
   }
   if (norm.includes("pc")) {
@@ -311,6 +362,7 @@ export function resolvePublication(input?: string | null): PublicationMeta {
       code: "PCQ",
       name: "PCquest",
       badgeBg: "bg-[#2563eb]",
+      logoUrl: "/PCquestLogo.webp",
     };
   }
   return {
@@ -318,5 +370,6 @@ export function resolvePublication(input?: string | null): PublicationMeta {
     code: "DQ",
     name: "Dataquest",
     badgeBg: "bg-[#e30613]",
+    logoUrl: "/DQlogo.webp",
   };
 }

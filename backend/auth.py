@@ -84,16 +84,17 @@ async def require_editor(
 async def require_monitoring_access(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Dependency that ensures the user is specifically the Admin."""
-    is_admin = (
+    """Dependency that ensures the user has monitoring access (Super Admins: Dhaval, Ritik, Sudesh, and Admin)."""
+    has_access = (
         current_user.role == "admin"
-        or current_user.username == "admin"
+        or current_user.username in ("admin", "sudesh", "sudeshp", "dhaval", "ritik")
+        or getattr(current_user, "can_access_monitoring", False)
         or (current_user.email and current_user.email.lower() == "admin@cybermedia.co.in")
     )
-    if not is_admin:
+    if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access restricted: Only System Admin has access to the ASED Monitoring Portal.",
+            detail="Access restricted: Only Super Admins and Management have access to the ASED Monitoring Portal.",
         )
     return current_user
 

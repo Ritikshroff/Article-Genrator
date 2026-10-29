@@ -7,6 +7,7 @@
 import { dqArticlesDb, DQArticle } from "./dqindiaArticles";
 import { vndArticlesDb, VnDArticle } from "./voicendataArticles";
 import { pcquestArticlesDb } from "./pcquestArticles";
+import type { MagazineKey } from "./magazineConfig";
 
 export interface RAGChunk {
   id: string;
@@ -76,7 +77,7 @@ export const regulatoryCorpus: RAGChunk[] = [
 export function getRAGChunks(
   company: string,
   topic: string,
-  publicationKey: "Dataquest" | "Voice&Data" | "PCquest",
+  publicationKey: MagazineKey,
   pressReleaseText: string = ""
 ): RAGChunk[] {
   const results: RAGChunk[] = [];
@@ -85,11 +86,11 @@ export function getRAGChunks(
   const fullTextLower = `${compLower} ${topicLower} ${pressReleaseText}`.toLowerCase();
 
   // 1. Search publication archives for matching articles
-  const targetDb = publicationKey === "Dataquest" ? dqArticlesDb
-    : publicationKey === "Voice&Data" ? vndArticlesDb
-    : pcquestArticlesDb;
+  const targetDb = publicationKey === "Voice&Data" ? vndArticlesDb
+    : publicationKey === "PCquest" ? pcquestArticlesDb
+    : dqArticlesDb;
 
-  const pubCode = publicationKey === "Dataquest" ? "dq" : publicationKey === "Voice&Data" ? "vd" : "pcq";
+  const pubCode = publicationKey === "Dataquest" ? "dq" : publicationKey === "Voice&Data" ? "vd" : publicationKey === "CIOL" ? "ciol" : "pcq";
 
   Object.entries(targetDb).forEach(([key, articles]) => {
     articles.forEach((art, idx) => {

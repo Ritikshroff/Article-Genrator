@@ -175,7 +175,7 @@ export default function ArticleDetailPage() {
   const st = STATUS_LABELS[article.status] || STATUS_LABELS.draft;
   const isOwnArticle = article.created_by_id === user?.id;
   const canSubmit = isOwnArticle && (article.status === "draft" || article.status === "revision_requested") && !isEditor;
-  const canReview = isEditor && (article.status === "submitted" || article.status === "draft");
+  const canReview = isEditor && !isOwnArticle && article.status === "submitted";
   const canRate = isOwnArticle; // Anyone who authored the article can rate it
 
   // Convert article data to EditorialPackage for OutputPanel
@@ -192,8 +192,8 @@ export default function ArticleDetailPage() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#0a0a0a]">
       {/* Header */}
-      <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-3 sm:px-5 py-3 sticky top-0 z-50">
+        <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href="/articles"
@@ -202,14 +202,32 @@ export default function ArticleDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
+            <Link
+              href="/"
+              className="flex items-center shrink-0 hover:opacity-85 transition-opacity hidden sm:flex"
+              title="Return to Story Generator"
+            >
+              <img
+                src="/cybermediaLogo.png"
+                alt="CyberMedia"
+                className="h-6 w-auto object-contain"
+              />
+            </Link>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 {(() => {
                   const pubMeta = resolvePublication(article.publication);
                   return (
-                    <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${pubMeta.badgeBg}`}>
-                      {pubMeta.code}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <img
+                        src={pubMeta.logoUrl}
+                        alt={pubMeta.name}
+                        className="h-4.5 sm:h-5 w-auto object-contain max-w-[80px] shrink-0"
+                      />
+                      <span className={`px-1.5 py-0.5 text-[9px] font-black text-white ${pubMeta.badgeBg} rounded-2xs`}>
+                        {pubMeta.code}
+                      </span>
+                    </div>
                   );
                 })()}
                 <span className={`px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
@@ -233,17 +251,29 @@ export default function ArticleDetailPage() {
               <button
                 onClick={handleSubmitForReview}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-2 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 {isSubmitting ? "Submitting..." : "Submit for Review"}
+              </button>
+            )}
+
+            {/* Direct Approval for Editor's Own Draft */}
+            {isEditor && isOwnArticle && article.status === "draft" && (
+              <button
+                onClick={() => handleReview("approve")}
+                disabled={isReviewing}
+                className="px-4 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {isReviewing ? "Finalizing..." : "Mark as Approved"}
               </button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+      <main className="w-full px-3 sm:px-5 py-5 space-y-5">
 
         {/* Article Metadata Bar */}
         <div className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 p-4 flex flex-wrap items-center gap-4 text-[11px] text-zinc-500">
@@ -282,21 +312,17 @@ export default function ArticleDetailPage() {
           </div>
         )}
 
-        {/* Editor Review Panel */}
+        {/* Editor Peer-Review Panel (Only for reviewing other authors' submissions) */}
         {canReview && (
-          <div className={`bg-white dark:bg-[#161616] border-2 p-5 space-y-4 ${
-            isOwnArticle ? "border-purple-300 dark:border-purple-800" : "border-blue-300 dark:border-blue-800"
-          }`}>
-            <div className={`flex items-center gap-2 text-sm font-bold ${
-              isOwnArticle ? "text-purple-700 dark:text-purple-300" : "text-blue-700 dark:text-blue-300"
-            }`}>
+          <div className="bg-white dark:bg-[#161616] border-2 border-blue-300 dark:border-blue-800 p-5 space-y-4">
+            <div className="flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-blue-300">
               <FileText className="w-4 h-4" />
-              {isOwnArticle ? "Editor Self-Review & Direct Approval (My Story)" : "Editor Review Panel"}
+              Editor Review Panel
             </div>
             <textarea
               value={reviewNotes}
               onChange={(e) => setReviewNotes(e.target.value)}
-              placeholder={isOwnArticle ? "Add final editorial notes (optional)..." : "Add review notes (optional for approval, recommended for revision requests)..."}
+              placeholder="Add review notes (optional for approval, recommended for revision requests)..."
               rows={3}
               className="w-full px-4 py-3 text-sm bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
             />
@@ -307,18 +333,16 @@ export default function ArticleDetailPage() {
                 className="px-5 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                {isReviewing ? "Processing..." : isOwnArticle ? "Self-Approve & Finalize Article" : "Approve Article"}
+                {isReviewing ? "Processing..." : "Approve Article"}
               </button>
-              {!isOwnArticle && (
-                <button
-                  onClick={() => handleReview("request_revision")}
-                  disabled={isReviewing}
-                  className="px-5 py-2 text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  {isReviewing ? "Processing..." : "Request Revision"}
-                </button>
-              )}
+              <button
+                onClick={() => handleReview("request_revision")}
+                disabled={isReviewing}
+                className="px-5 py-2 text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {isReviewing ? "Processing..." : "Request Revision"}
+              </button>
             </div>
           </div>
         )}
@@ -330,6 +354,7 @@ export default function ArticleDetailPage() {
               packageData={packageData}
               magazine={article.publication}
               articleId={article.id}
+              pressRelease={article.press_release}
               readOnly={user?.role === "author" && article.status !== "draft" && article.status !== "revision_requested"}
             />
           </div>

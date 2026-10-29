@@ -28,7 +28,7 @@ import { useGenerator } from "@/features/generator/useGenerator";
 export default function Dashboard() {
   const { user, isEditor, canAccessMonitoring, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const gen = useGenerator(isEditor);
+  const gen = useGenerator(isEditor, user?.allowed_publications);
 
   const steps = gen.getStepsForTopic();
 
@@ -36,25 +36,35 @@ export default function Dashboard() {
     return <FullPageSkeleton />;
   }
 
+  // Enforce No Cross Access in Publication Switcher
+  const allowedPubs = user?.allowed_publications && user.allowed_publications.length > 0
+    ? user.allowed_publications
+    : (user?.role === "admin" ? magazineList.map((m) => m.key) : ["Dataquest"]);
+  const visibleMagazines = magazineList.filter((m) => allowedPubs.includes(m.key));
+
   return (
-    <div className="min-h-screen lg:h-screen lg:max-h-screen bg-[#f5f5f5] dark:bg-[#0d0d0d] text-zinc-900 dark:text-zinc-100 flex flex-col lg:overflow-hidden">
+    <div className="w-full min-h-screen lg:h-screen lg:max-h-screen bg-[#f5f5f5] dark:bg-[#0d0d0d] text-zinc-900 dark:text-zinc-100 flex flex-col lg:overflow-hidden">
       {/* ── HEADER ────────────────────────────────────────────────── */}
       <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0 sticky top-0 z-50">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="w-full px-3 sm:px-4 lg:px-5 h-14 flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand */}
           <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
-            <div
-              className={`w-1 h-7 sm:h-8 flex-shrink-0 transition-colors ${
-                gen.magazine === "Voice&Data" ? "bg-[#00839b]" : "bg-[#e30613]"
-              }`}
-            />
+            <Link
+              href="/"
+              className="flex items-center shrink-0 hover:opacity-85 transition-opacity"
+              title="CyberMedia Editorial Copilot"
+            >
+              <img
+                src="/cybermediaLogo.png"
+                alt="CyberMedia"
+                className="h-6 sm:h-7 w-auto object-contain"
+              />
+            </Link>
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-serif text-[16px] sm:text-[17px] font-black text-zinc-900 dark:text-zinc-50 leading-none">
-                  CYBERMEDIA
-                </span>
-                <span className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase hidden sm:inline">
-                  {isEditor ? "ASED • Editor Hub" : "AI Stack for Edit desk (ASED)"}
+                <span className="font-bold text-[11px] sm:text-[12px] tracking-wider text-zinc-900 dark:text-zinc-50 uppercase leading-none">
+                  {isEditor ? "ASED • Editor Hub" : "AI Stack for Edit Desk"}
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px] hidden xl:block">
@@ -63,32 +73,52 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Publication Switcher */}
-          <div className="flex items-center p-0.5 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 rounded-xs h-8 flex-shrink-0">
-            {magazineList.map((m) => {
-              const isActive = gen.magazine === m.key;
-              return (
-                <button
-                  key={m.key}
-                  id={`segment-${m.key}`}
-                  onClick={() => {
-                    gen.setMagazine(m.key);
-                    gen.handleClearPR();
-                    gen.handleReset();
-                  }}
-                  className={`h-7 px-2.5 sm:px-3 text-[11px] font-bold transition-all flex items-center justify-center rounded-xs cursor-pointer ${
-                    isActive
-                      ? m.key === "Voice&Data"
-                        ? "bg-[#00839b] text-white shadow-xs"
-                        : "bg-[#e30613] text-white shadow-xs"
-                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  }`}
-                >
-                  {m.name}
-                </button>
-              );
-            })}
-          </div>
+          {/* Publication Switcher (Filtered by User's Allowed Publications — No Cross Access) */}
+          {visibleMagazines.length <= 1 ? (
+            <div className="flex items-center px-2.5 h-8 border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 rounded-xs flex-shrink-0 gap-2">
+              <img
+                src={(visibleMagazines[0] || gen.mag).logoUrl}
+                alt={(visibleMagazines[0] || gen.mag).name}
+                className="h-4 sm:h-4.5 w-auto object-contain max-w-[85px]"
+              />
+              <span className="text-[10px] font-bold text-zinc-400 hidden sm:inline uppercase tracking-wider">
+                Desk
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center p-0.5 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 rounded-xs h-8 flex-shrink-0 gap-1">
+              {visibleMagazines.map((m) => {
+                const isActive = gen.magazine === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    id={`segment-${m.key}`}
+                    onClick={() => {
+                      if (gen.magazine !== m.key) {
+                        gen.setMagazine(m.key);
+                      }
+                    }}
+                    className={`h-7 px-3 transition-all flex items-center justify-center rounded-xs cursor-pointer ${
+                      isActive
+                        ? m.key === "Voice&Data"
+                          ? "bg-[#00839b]/15 border border-[#00839b]"
+                          : m.key === "PCquest"
+                          ? "bg-[#2563eb]/15 border border-[#2563eb]"
+                          : "bg-[#e30613]/15 border border-[#e30613]"
+                        : "opacity-45 hover:opacity-100 border border-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"
+                    }`}
+                    title={`Switch to ${m.name}`}
+                  >
+                    <img
+                      src={m.logoUrl}
+                      alt={m.name}
+                      className="h-4 sm:h-4.5 w-auto object-contain max-w-[85px]"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Right Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
@@ -103,7 +133,7 @@ export default function Dashboard() {
               </Link>
             )}
 
-            {/* Review Queue (for Editors) or My Articles (for Authors) */}
+            {/* Review Article (for Editors) or My Articles (for Authors) */}
             <Link
               href="/articles"
               className={`h-8 px-2.5 sm:px-3 text-[11px] font-bold transition-colors inline-flex items-center gap-1.5 rounded-xs border flex-shrink-0 ${
@@ -111,10 +141,10 @@ export default function Dashboard() {
                   ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60"
                   : "bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               }`}
-              title={isEditor ? "Open Review Queue & Article Submissions" : "Open My Drafts & Articles"}
+              title={isEditor ? "Open Review Article & Article Submissions" : "Open My Drafts & Articles"}
             >
               {isEditor ? <Inbox className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" /> : <FolderOpen className="w-3.5 h-3.5 flex-shrink-0" />}
-              <span className="hidden sm:inline">{isEditor ? "Review Queue" : "My Articles"}</span>
+              <span className="hidden sm:inline">{isEditor ? "Review Article" : "My Articles"}</span>
             </Link>
 
             {/* Save Article Button */}
@@ -217,32 +247,33 @@ export default function Dashboard() {
             className={`${
               gen.magazine === "Voice&Data"
                 ? "bg-[#00839b]/10 border-[#00839b]/20 text-[#00839b]"
+                : gen.magazine === "PCquest"
+                ? "bg-[#2563eb]/10 border-[#2563eb]/20 text-[#2563eb]"
                 : "bg-[#e30613]/10 border-[#e30613]/20 text-[#e30613]"
-            } border-b px-5 py-1.5 flex items-center justify-between text-[11px] font-semibold animate-fadeIn flex-shrink-0`}
+            } border-b px-3 sm:px-4 lg:px-5 py-2 flex items-center justify-between text-[11px] font-semibold animate-fadeIn flex-shrink-0`}
           >
-            <span className="flex items-center gap-2">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  gen.magazine === "Voice&Data" ? "bg-[#00839b]" : "bg-[#e30613]"
-                } animate-pulse`}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <img
+                src={gen.mag.logoUrl}
+                alt={gen.mag.name}
+                className="h-5 sm:h-5.5 w-auto object-contain max-w-[130px]"
               />
-              Active Publication: <strong>{gen.mag.name}</strong> (
+              <div className="h-4 w-px bg-current opacity-20 hidden sm:block" />
               <a
                 href={`https://www.${gen.mag.domain}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors inline-flex items-center gap-0.5"
+                className="underline hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors inline-flex items-center gap-0.5 text-[11px]"
               >
                 {gen.mag.domain} <ExternalLink className="w-2.5 h-2.5" />
               </a>
-              )
-            </span>
+            </div>
             <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">
               Configured for {gen.mag.name} Editorial Style
             </span>
           </div>
 
-          <main className="flex-1 min-h-0 max-w-6xl mx-auto w-full px-4 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:items-stretch lg:overflow-hidden">
+          <main className="flex-1 min-h-0 w-full px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 grid grid-cols-1 lg:grid-cols-2 gap-2.5 sm:gap-3 lg:gap-3.5 lg:items-stretch lg:overflow-hidden">
             {/* LEFT: INPUT FORM */}
             <GeneratorForm
               magazine={gen.magazine}
@@ -286,6 +317,7 @@ export default function Dashboard() {
                 currentStep={gen.currentStep}
                 stepMessage={gen.stepMessage}
                 steps={steps}
+                pressRelease={gen.pressRelease}
               />
             </section>
           </main>

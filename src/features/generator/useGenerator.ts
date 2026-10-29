@@ -11,12 +11,40 @@ import { apiFetch } from "@/lib/apiClient";
 import { useToast } from "@/lib/toastContext";
 import { wordPresets, TopicType } from "./constants";
 
-export function useGenerator(isEditor: boolean = false) {
+export function useGenerator(isEditor: boolean = false, allowedPublications?: string[]) {
   const { toast } = useToast();
 
-  // ── Magazine segment state ───────────────────────────────────────
-  const [magazine, setMagazine] = useState<MagazineKey>("Dataquest");
-  const mag = magazineList.find((m) => m.key === magazine)!;
+  // ── Magazine segment state (Enforce Publication Isolation) ────────
+  const initialMag = (allowedPublications && allowedPublications.length > 0
+    ? (allowedPublications.find((p) => magazineList.some((m) => m.key === p)) || allowedPublications[0])
+    : "Dataquest") as MagazineKey;
+
+  const [magazine, setMagazineState] = useState<MagazineKey>(initialMag);
+
+  // Sync if allowedPublications loads after initial render
+  useEffect(() => {
+    if (allowedPublications && allowedPublications.length > 0) {
+      if (!allowedPublications.includes(magazine)) {
+        const valid = (allowedPublications.find((p) => magazineList.some((m) => m.key === p)) || allowedPublications[0]) as MagazineKey;
+        if (valid && valid !== magazine) {
+          setMagazineState(valid);
+        }
+      }
+    }
+  }, [allowedPublications, magazine]);
+
+  const setMagazine = useCallback(
+    (newMag: MagazineKey) => {
+      if (allowedPublications && allowedPublications.length > 0 && !allowedPublications.includes(newMag)) {
+        toast.error(`Access restricted: You do not have permission to access ${newMag}.`);
+        return;
+      }
+      setMagazineState(newMag);
+    },
+    [allowedPublications, toast]
+  );
+
+  const mag = magazineList.find((m) => m.key === magazine) || magazineList[0];
 
   // Save article state
   const [isSaving, setIsSaving] = useState(false);
@@ -35,7 +63,10 @@ export function useGenerator(isEditor: boolean = false) {
   const [packageData, setPackageData] = useState<EditorialPackage>({});
 
   // Parameters
-  const [topicType, setTopicType] = useState<TopicType>("");
+  const [topicType, setTopicTypeState] = useState<TopicType>("News");
+  const setTopicType = useCallback((val: TopicType) => {
+    setTopicTypeState(val || "News");
+  }, []);
   const [wordPreset, setWordPreset] = useState<keyof typeof wordPresets>("medium");
   const [minWords, setMinWords] = useState<number>(600);
   const [maxWords, setMaxWords] = useState<number>(800);
@@ -88,6 +119,7 @@ export function useGenerator(isEditor: boolean = false) {
     setErrorMessage("");
     setPackageData({});
     setSavedArticleId(null);
+    setTopicType("News");
     toast.info("Workspace reset.");
   }, [packageData.news, pressRelease, toast]);
 

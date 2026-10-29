@@ -9,6 +9,7 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 
@@ -57,6 +58,7 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const lastToastRef = useRef<{ message: string; time: number }>({ message: "", time: 0 });
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -64,8 +66,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback(
     (type: ToastType, message: string, duration: number = 4000) => {
-      const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      setToasts((prev) => [...prev, { id, type, message, duration }]);
+      const now = Date.now();
+      // Guard against identical toast spam within 2 seconds
+      if (lastToastRef.current.message === message && now - lastToastRef.current.time < 2000) {
+        return;
+      }
+      lastToastRef.current = { message, time: now };
+
+      const id = `${now}-${Math.random().toString(36).substring(2, 9)}`;
+      setToasts((prev) => {
+        // Cap max visible toasts to 3 so screen is never flooded
+        const trimmed = prev.length >= 3 ? prev.slice(prev.length - 2) : prev;
+        return [...trimmed, { id, type, message, duration }];
+      });
 
       if (duration > 0) {
         setTimeout(() => {

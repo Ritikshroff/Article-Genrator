@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
   Copy, Check, Briefcase, Cpu, Award, Users,
-  HelpCircle, Eye, ShieldAlert, Sparkles, Clipboard, ArrowRight,
-  ExternalLink, Target, Code, Save, Maximize2, Minimize2, Download
+  HelpCircle, Eye, ShieldAlert, ShieldCheck, Sparkles, Clipboard, ArrowRight,
+  ExternalLink, Target, Code, Save, Maximize2, Minimize2, Download, ZoomIn, X
 } from "lucide-react";
 import { magazines, MagazineKey } from "../lib/magazineConfig";
 import { apiFetch } from "../lib/apiClient";
 import { useToast } from "@/lib/toastContext";
 import { formatHtmlForPreview } from "@/lib/htmlUtils";
+import { FactCheckInspector } from "./FactCheckInspector";
+import { runDeterministicFactCheck, type FactCheckReport } from "@/lib/factCheckEngine";
 export { formatHtmlForPreview };
 
 interface NewsData {
@@ -112,6 +114,7 @@ interface OutputPanelProps {
   articleId?: string;
   readOnly?: boolean;
   onSaveBackend?: (updatedPackage: EditorialPackage) => Promise<void>;
+  pressRelease?: string;
 }
 
 const renderParagraphWithLinks = (text: string) => {
@@ -209,11 +212,58 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
   steps = [],
   articleId,
   readOnly = false,
-  onSaveBackend
+  onSaveBackend,
+  pressRelease = "",
 }) => {
   const { toast } = useToast();
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [imagePrompt, setImagePrompt] = useState("");
+  const [factCheckReport, setFactCheckReport] = useState<FactCheckReport | null>(null);
+  const [isFactChecking, setIsFactChecking] = useState(false);
+  const [showFactCheckInspector, setShowFactCheckInspector] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
+
+  const handleFactCheck = async () => {
+    if (showFactCheckInspector) {
+      setShowFactCheckInspector(false);
+      return;
+    }
+
+    // Cache Optimization: If report already computed for current article, show inspector instantly without re-processing!
+    // Token cost: 0. Latency: 0.
+    if (factCheckReport) {
+      setShowFactCheckInspector(true);
+      return;
+    }
+
+    setIsFactChecking(true);
+    try {
+      const prText = pressRelease || "";
+      const artHtml = packageData.news?.article || "";
+      const rag = packageData.news?.rag_sources || [];
+
+      if (!prText) {
+        toast.info("Source Press Release is empty. Run generation first to audit.");
+        setIsFactChecking(false);
+        return;
+      }
+
+      // ── ULTRA TOKEN OPTIMIZED: Run client-side deterministic engine first (0 TOKENS) ──
+      const report = runDeterministicFactCheck(prText, artHtml, rag);
+      setFactCheckReport(report);
+      setShowFactCheckInspector(true);
+
+      if (report.unverifiedCount === 0) {
+        toast.success(`🛡️ 100% Grounded! All ${report.verifiedCount} facts strictly match the press release (0 tokens burned).`);
+      } else {
+        toast.info(`🛡️ Fact Check complete: ${report.verifiedCount} verified, ${report.unverifiedCount} flagged for review.`);
+      }
+    } catch (err: any) {
+      toast.error("Fact-check error: " + (err.message || "Failed"));
+    } finally {
+      setIsFactChecking(false);
+    }
+  };
 
   useEffect(() => {
     if (packageData.news?.header_image_prompt) {
@@ -542,8 +592,8 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
   return (
     <div className={`w-full flex flex-col h-full bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 overflow-hidden ${isFullWidth ? "fixed inset-0 z-50 overflow-y-auto" : ""}`}>
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 gap-3 bg-zinc-50 dark:bg-[#1a1a1a]">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-2 sm:py-2.5 border-b border-zinc-200 dark:border-zinc-800 gap-2 bg-zinc-50 dark:bg-[#1a1a1a]">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Sparkles className={`w-3.5 h-3.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "text-[#e59e19]" : "text-[#e30613]"}`} />
           <span className="text-[11px] font-bold tracking-[0.14em] uppercase text-zinc-500 dark:text-zinc-400">
             Generated Package
@@ -551,14 +601,47 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         </div>
 
         {!!(packageData?.news || packageData?.seo || packageData?.social) && (
-          <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap overflow-x-auto scroller-none py-0.5">
+            {/* Fact Check Audit Button (Same Screen - Zero Token Optimized) */}
+            {packageData?.news?.article && (
+              <button
+                onClick={handleFactCheck}
+                disabled={isFactChecking}
+                className={`flex items-center gap-1.5 px-3 py-1.5 border text-[11px] font-bold transition-all cursor-pointer rounded-xs shadow-2xs ${
+                  showFactCheckInspector
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "border-emerald-300 dark:border-emerald-800/80 hover:border-emerald-500 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20"
+                }`}
+                title="Instant Zero-Token Source Fidelity & Fact-Check Audit"
+              >
+                {isFactChecking ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    <span>Auditing...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className={`w-3.5 h-3.5 ${showFactCheckInspector ? "text-white" : "text-emerald-600 dark:text-emerald-400"}`} />
+                    <span>{showFactCheckInspector ? "Close Audit" : "Fact Check"}</span>
+                    {factCheckReport && (
+                      <span className={`ml-1 px-1.5 py-0.2 text-[9px] font-black rounded-xs ${
+                        showFactCheckInspector ? "bg-white text-emerald-700" : "bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200"
+                      }`}>
+                        {factCheckReport.fidelityScore}%
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               onClick={() => setIsFullWidth(!isFullWidth)}
               className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-wide cursor-pointer bg-white dark:bg-zinc-800 rounded-xs shadow-2xs"
-              title={isFullWidth ? "Switch to standard container view" : "Expand to full width"}
+              title={isFullWidth ? "Switch to standard container view" : "Expand to full view"}
             >
               {isFullWidth ? <Minimize2 className="w-3 h-3 text-amber-500" /> : <Maximize2 className="w-3 h-3 text-blue-500" />}
-              {isFullWidth ? "Normal View" : "Full Width"}
+              {isFullWidth ? "Normal View" : "Full View"}
             </button>
 
             <button
@@ -595,8 +678,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
         })}
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-5 sm:p-6 scroller">
+      {/* Main Body Area: Content Area + Fact Check Inspector Side-by-Side */}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 scroller">
         {/* 1. Active Generation State — ALWAYS TAKES TOP PRIORITY */}
         {status === "generating" ? (
           <div className="w-full space-y-6 text-left animate-fadeIn p-2 sm:p-4">
@@ -647,42 +732,44 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             </div>
           </div>
         ) : (!packageData?.news && !packageData?.seo && !packageData?.social) ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-5 my-auto">
-            <div className={`w-16 h-16 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#00839b]/10 border-[#00839b]/20 text-[#00839b]" : "bg-[#e30613]/10 border-[#e30613]/20 text-[#e30613]"} border font-black text-xl flex items-center justify-center shadow-inner rounded-xs`}>
-              {magazine === "Voice&Data" ? "V&D" : magazine === "PCquest" ? "PCQ" : "DQ"}
-            </div>
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4 my-auto animate-fadeIn">
+            <img
+              src={mag.logoUrl}
+              alt={mag.name}
+              className="h-9 sm:h-11 w-auto object-contain max-w-[190px]"
+            />
 
-            <div className="max-w-sm space-y-1.5">
+            <div className="max-w-sm space-y-1">
               <h3 className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-50">
-                Ready for {magazine || "CYBERMEDIA"}
+                Editorial Copilot Ready
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Complete the 3 steps on the left and click <strong className="text-zinc-800 dark:text-zinc-200">"Generate Article"</strong> to produce a grounded {magazine || "CYBERMEDIA"} draft.
+                Complete the steps on the left and click <strong className="text-zinc-800 dark:text-zinc-200">"Generate Article"</strong> to produce a grounded {mag.name} draft.
               </p>
             </div>
 
-            <div className="w-full max-w-sm border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 p-4 space-y-2 text-left text-xs">
+            <div className="w-full max-w-sm border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 p-4 space-y-2 text-left text-xs rounded-xs">
               <p className="font-bold text-zinc-400 uppercase tracking-wider text-[10px]">What You'll Receive:</p>
               <ul className="space-y-1.5 text-zinc-600 dark:text-zinc-400">
                 <li className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mag.accentHex }} />
                   <span>Full article text — ready to publish</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mag.accentHex }} />
                   <span>SEO title, meta description & keywords</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mag.accentHex }} />
                   <span>LinkedIn & Twitter posts</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
-                  <span>Editorial review checklist</span>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mag.accentHex }} />
+                  <span>Deterministic fact-check fidelity audit</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 ${magazine === "Voice&Data" || magazine === "VoiceData" ? "bg-[#e59e19]" : "bg-[#e30613]"} rounded-full`} />
-                  <span>AI-generated cover image</span>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mag.accentHex }} />
+                  <span>AI-generated cover & feature graphics</span>
                 </li>
               </ul>
             </div>
@@ -692,6 +779,22 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             {/* TAB 1: News Article */}
             {activeTab === "news" && packageData.news && (
               <div className="space-y-6 animate-fadeIn">
+                <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200/60 dark:border-zinc-800">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={mag.logoUrl}
+                      alt={mag.name}
+                      className="h-4.5 sm:h-5 w-auto object-contain max-w-[120px] shrink-0"
+                    />
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                      Editorial Draft
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-mono hidden sm:inline">
+                    PubLive Verified
+                  </span>
+                </div>
+
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2 py-0.5 text-[10px] font-semibold bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 uppercase tracking-wider rounded">
@@ -705,10 +808,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
                       ))}
                     </div>
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-heading leading-tight">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-heading leading-tight">
                     {packageData.news.headline}
                   </h1>
-                  <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 italic">
+                  <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-300 italic leading-relaxed">
                     {packageData.news.subheadline}
                   </p>
                 </div>
@@ -745,48 +848,139 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             )}
 
             {packageData.creative && (
-              <div className="space-y-3 my-3">
+              <div className="space-y-4 my-4">
                 {packageData.creative.images && packageData.creative.images.length > 1 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                      <span>Generated Article Visual Assets ({packageData.creative.images.length} Images)</span>
+                      <span>Article Visual Assets ({packageData.creative.images.length} High-Res Images)</span>
+                      <span className="text-[10px] text-zinc-400 font-normal">Click any image to view full resolution</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {packageData.creative.images.map((img, idx) => (
-                        <div key={idx} className="group relative border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 rounded-sm overflow-hidden">
-                          <img
-                            src={`data:${img.mimeType || "image/jpeg"};base64,${img.base64}`}
-                            alt={img.title}
-                            className="w-full h-36 object-cover"
-                          />
-                          <div className="p-2 bg-white dark:bg-[#111] border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300 truncate max-w-[170px]">
-                              {img.title}
+
+                    {packageData.creative.images.length === 2 ? (
+                      /* 2 Images: Side-by-side full aspect view */
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        {packageData.creative.images.map((img, idx) => (
+                          <div key={idx} className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 rounded-xs overflow-hidden flex flex-col">
+                            <div 
+                              className="relative cursor-pointer group bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center"
+                              onClick={() => setPreviewImage({ src: `data:${img.mimeType || "image/jpeg"};base64,${img.base64}`, title: img.title || `Visual Asset ${idx + 1}` })}
+                              title="Click to view full resolution"
+                            >
+                              <img
+                                src={`data:${img.mimeType || "image/jpeg"};base64,${img.base64}`}
+                                alt={img.title}
+                                className="w-full h-auto block"
+                              />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold pointer-events-none">
+                                <ZoomIn className="w-4 h-4" /> Full View
+                              </div>
+                            </div>
+                            <div className="p-2.5 bg-white dark:bg-[#111] border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[11px] mt-auto">
+                              <span className="font-bold text-zinc-700 dark:text-zinc-300 truncate max-w-[200px]">
+                                {idx === 0 ? "Image 1: Header Cover" : "Image 2: Feature Graphic"}
+                              </span>
+                              <a
+                                href={`data:${img.mimeType || "image/jpeg"};base64,${img.base64}`}
+                                download={`article_image_${idx + 1}.jpg`}
+                                className="px-2.5 py-1 text-[10px] font-bold bg-[#e30613] text-white hover:bg-[#b8040f] transition-colors rounded-xs flex items-center gap-1"
+                              >
+                                <Download className="w-3 h-3" /> Download
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* 3 Images: Hero Banner Full Width + 2 Secondary Graphics */
+                      <div className="space-y-3.5">
+                        {/* Primary Hero */}
+                        <div className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 rounded-xs overflow-hidden">
+                          <div 
+                            className="relative cursor-pointer group bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center"
+                            onClick={() => setPreviewImage({ src: `data:${packageData.creative!.images![0].mimeType || "image/jpeg"};base64,${packageData.creative!.images![0].base64}`, title: packageData.creative!.images![0].title || "Primary Header Banner" })}
+                            title="Click to view full resolution"
+                          >
+                            <img
+                              src={`data:${packageData.creative.images[0].mimeType || "image/jpeg"};base64,${packageData.creative.images[0].base64}`}
+                              alt={packageData.creative.images[0].title}
+                              className="w-full h-auto block"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold pointer-events-none">
+                              <ZoomIn className="w-4 h-4" /> View Full Resolution
+                            </div>
+                          </div>
+                          <div className="p-2.5 bg-white dark:bg-[#111] border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-zinc-700 dark:text-zinc-300">
+                              Primary Header Cover Banner (1280x720)
                             </span>
                             <a
-                              href={`data:${img.mimeType || "image/jpeg"};base64,${img.base64}`}
-                              download={`article_image_${idx + 1}.jpg`}
-                              className="px-2 py-0.5 text-[10px] font-bold bg-[#e30613] text-white hover:bg-[#b8040f] transition-colors"
+                              href={`data:${packageData.creative.images[0].mimeType || "image/jpeg"};base64,${packageData.creative.images[0].base64}`}
+                              download="article_image_1_hero.jpg"
+                              className="px-2.5 py-1 text-[10px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors rounded-xs flex items-center gap-1"
                             >
-                              Download
+                              <Download className="w-3 h-3" /> Download (1280x720)
                             </a>
                           </div>
                         </div>
-                      ))}
-                    </div>
+
+                        {/* 2 Supporting Graphics */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          {packageData.creative.images.slice(1).map((img, idx) => (
+                            <div key={idx} className="border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 rounded-xs overflow-hidden flex flex-col">
+                              <div 
+                                className="relative cursor-pointer group bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center"
+                                onClick={() => setPreviewImage({ src: `data:${img.mimeType || "image/jpeg"};base64,${img.base64}`, title: img.title || `Feature Graphic ${idx + 2}` })}
+                                title="Click to view full resolution"
+                              >
+                                <img
+                                  src={`data:${img.mimeType || "image/jpeg"};base64,${img.base64}`}
+                                  alt={img.title}
+                                  className="w-full h-auto block"
+                                />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold pointer-events-none">
+                                  <ZoomIn className="w-4 h-4" /> Full View
+                                </div>
+                              </div>
+                              <div className="p-2.5 bg-white dark:bg-[#111] border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[11px] mt-auto">
+                                <span className="font-bold text-zinc-700 dark:text-zinc-300 truncate max-w-[200px]">
+                                  {`Image ${idx + 2}: Feature Graphic`}
+                                </span>
+                                <a
+                                  href={`data:${img.mimeType || "image/jpeg"};base64,${img.base64}`}
+                                  download={`article_image_${idx + 2}.jpg`}
+                                  className="px-2.5 py-1 text-[10px] font-bold bg-[#e30613] text-white hover:bg-[#b8040f] transition-colors rounded-xs flex items-center gap-1"
+                                >
+                                  <Download className="w-3 h-3" /> Download
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : packageData.creative?.base64 && (
+                  /* Single Image: Natural 100% full aspect view without any top/bottom crop */
                   <div className="mt-4 space-y-2">
-                    <img
-                      src={`data:${packageData.creative.mimeType || "image/png"};base64,${packageData.creative.base64}`}
-                      alt={packageData.news.headline}
-                      className="w-full max-h-96 object-cover border border-zinc-200 dark:border-zinc-800 rounded-xs shadow-sm"
-                    />
+                    <div 
+                      className="relative cursor-pointer group border border-zinc-200 dark:border-zinc-800 rounded-xs overflow-hidden bg-zinc-100 dark:bg-zinc-950"
+                      onClick={() => setPreviewImage({ src: `data:${packageData.creative!.mimeType || "image/png"};base64,${packageData.creative!.base64}`, title: packageData.news?.headline || "Header Cover Banner" })}
+                      title="Click to view full resolution"
+                    >
+                      <img
+                        src={`data:${packageData.creative.mimeType || "image/png"};base64,${packageData.creative.base64}`}
+                        alt={packageData.news.headline}
+                        className="w-full h-auto block"
+                      />
+                      <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold pointer-events-none">
+                        <ZoomIn className="w-4 h-4" /> Click to View Full Resolution
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">PubLive Banner Standard: 1280x720 (16:9 Landscape)</span>
                       <button
                         onClick={handleDownloadImage}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer rounded-xs shadow-2xs"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer rounded-xs"
                       >
                         <Download className="w-3.5 h-3.5" /> Download Image (1280x720)
                       </button>
@@ -838,7 +1032,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             {/* Article Content Display */}
             {viewMode === "preview" ? (
               <div
-                className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-sm sm:text-base leading-relaxed [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h2]:border-b [&>h2]:border-zinc-200 dark:[&>h2]:border-zinc-800 [&>h2]:pb-1.5 [&>h3]:text-base [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&>li]:mb-1.5 [&>blockquote]:border-l-4 [&>blockquote]:border-[#e30613] [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 font-sans [&_a]:underline [&_a]:underline-offset-2 [&_a]:decoration-1 [&_a]:font-semibold"
+                className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 font-sans text-[17px] sm:text-[18px] leading-[1.85] [&>p]:text-[17px] sm:[&>p]:text-[18px] [&>p]:leading-[1.85] [&>p]:mb-5 [&>h2]:text-2xl sm:[&>h2]:text-3xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:border-b [&>h2]:border-zinc-200 dark:[&>h2]:border-zinc-800 [&>h2]:pb-2 [&>h3]:text-xl sm:[&>h3]:text-2xl [&>h3]:font-bold [&>h3]:mt-6 [&>h3]:mb-3 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-5 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-5 [&>li]:mb-2.5 [&>li]:text-[17px] sm:[&>li]:text-[18px] [&>li]:leading-[1.8] [&>blockquote]:border-l-4 [&>blockquote]:border-[#e30613] [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&_a]:underline [&_a]:underline-offset-2 [&_a]:decoration-1 [&_a]:font-semibold"
                 dangerouslySetInnerHTML={{ __html: formatHtmlForPreview(packageData.news.article, packageData.news.rag_sources, mag.accentHex) }}
               />
             ) : viewMode === ("edit" as any) ? (
@@ -1684,7 +1878,51 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
       </div>
     )}
 
+        </div>
+
+        {/* Same-Screen Fact Check Inspector Drawer */}
+        <FactCheckInspector
+          report={factCheckReport}
+          isOpen={showFactCheckInspector}
+          onClose={() => setShowFactCheckInspector(false)}
+        />
       </div>
+
+      {/* Full-Screen Image Lightbox Preview Modal */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-xs flex flex-col items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="max-w-5xl w-full flex items-center justify-between text-white pb-3" onClick={(e) => e.stopPropagation()}>
+            <span className="font-bold text-xs sm:text-sm truncate pr-4">{previewImage.title}</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={previewImage.src}
+                download="article-visual-asset.jpg"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" /> Download Full Res
+              </a>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="p-1.5 hover:bg-white/10 rounded-xs text-white transition-colors cursor-pointer"
+                title="Close Lightbox"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <div className="max-w-5xl max-h-[85vh] flex items-center justify-center p-1 bg-black/40 rounded-xs border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={previewImage.src}
+              alt={previewImage.title}
+              className="max-w-full max-h-[82vh] object-contain rounded-xs block"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

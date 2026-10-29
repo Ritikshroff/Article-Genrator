@@ -92,7 +92,7 @@ export function CustomSelect({
       >
         <div className="flex items-center gap-2 truncate">
           {icon && <span className="text-zinc-400 flex-shrink-0">{icon}</span>}
-          <span className="truncate">
+          <span className={`truncate ${!selectedOption ? "text-zinc-500 dark:text-zinc-400 font-normal" : ""}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </div>

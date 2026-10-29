@@ -80,14 +80,24 @@ async def _get_article_or_404(article_id: str) -> Article:
 
 async def _check_article_access(article: Article, user: User) -> None:
     """
-    Enforce ownership and editorial privacy:
+    Enforce ownership, editorial privacy, and publication isolation (No Cross Access):
+    - Admins: can access all articles across all publications.
+    - Publication Isolation: Users can ONLY access articles from their allowed publications.
     - Authors: can only access their own articles.
-    - Editors: can access their own articles and authors' articles (for review).
+    - Editors: can access their own articles and authors' articles (for review) within their publication.
                CANNOT access other editors' articles (editors self-review their own work).
-    - Admins: can access all articles.
     """
     if user.role == "admin":
         return
+
+    # 1. Enforce Publication Isolation (No Cross Access)
+    user_allowed = getattr(user, "allowed_publications", []) or []
+    if user_allowed and article.publication not in user_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: You do not have permission to access {article.publication} articles.",
+        )
+
     if article.created_by_id == str(user.id):
         return  # Creator always has access to their own article
 
@@ -122,8 +132,14 @@ async def _check_article_access(article: Article, user: User) -> None:
 
 @router.get("/review/queue", response_model=ArticleListResponse)
 async def get_review_queue(current_user: User = Depends(require_editor)):
-    """Get all articles with status 'submitted' awaiting editor review (excluding other editors' stories)."""
+    """Get all articles with status 'submitted' awaiting editor review (within editor's allowed publication and excluding other editors' stories)."""
     query_filters = {"status": "submitted"}
+
+    # Enforce Publication Isolation (No Cross Access)
+    user_allowed = getattr(current_user, "allowed_publications", []) or []
+    if current_user.role != "admin" and user_allowed:
+        query_filters["publication"] = {"$in": user_allowed}
+
     if current_user.role == "editor":
         other_editors = await User.find(User.role == "editor", User.id != current_user.id).to_list()
         other_editor_ids = [str(u.id) for u in other_editors]
@@ -148,6 +164,14 @@ async def create_article(
     current_user: User = Depends(get_current_user),
 ):
     """Save a newly generated article as draft."""
+    # Enforce Publication Isolation (No Cross Access)
+    user_allowed = getattr(current_user, "allowed_publications", []) or []
+    if current_user.role != "admin" and user_allowed and body.publication not in user_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: You are not authorized to create articles for {body.publication}.",
+        )
+
     article = Article(
         title=body.title,
         publication=body.publication,
@@ -212,8 +236,18 @@ async def list_articles(
             ]
         })
 
-    if publication:
+    # Enforce Publication Isolation (No Cross Access)
+    user_allowed = getattr(current_user, "allowed_publications", []) or []
+    if current_user.role != "admin" and user_allowed:
+        if publication:
+            if publication not in user_allowed:
+                return ArticleListResponse(articles=[], total=0)
+            and_conditions.append({"publication": publication})
+        else:
+            and_conditions.append({"publication": {"$in": user_allowed}})
+    elif publication:
         and_conditions.append({"publication": publication})
+
     if status_filter:
         and_conditions.append({"status": status_filter})
     if author:

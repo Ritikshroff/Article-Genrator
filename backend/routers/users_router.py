@@ -15,8 +15,18 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 @router.get("", response_model=list[UserResponse])
 async def list_users(current_user: User = Depends(require_editor)):
-    """List all users (Editor only)."""
-    users = await User.find_all().to_list()
+    """List users (Editor only). Non-admins only see team members within their allowed publications."""
+    if current_user.role == "admin":
+        users = await User.find_all().to_list()
+    else:
+        user_allowed = getattr(current_user, "allowed_publications", []) or []
+        # Filter strictly to users who share allowed publications with this editor or own account
+        users = await User.find({
+            "$or": [
+                {"_id": current_user.id},
+                {"allowed_publications": {"$in": user_allowed}},
+            ]
+        }).to_list()
     return [
         UserResponse(
             id=str(u.id),
@@ -29,6 +39,8 @@ async def list_users(current_user: User = Depends(require_editor)):
             can_edit_ai_draft=u.can_edit_ai_draft,
             can_approve=u.can_approve,
             can_publish=u.can_publish,
+            can_access_monitoring=getattr(u, "can_access_monitoring", False),
+            allowed_publications=getattr(u, "allowed_publications", []) or [],
             is_active=u.is_active,
             created_at=u.created_at,
         )
@@ -59,6 +71,8 @@ async def get_user(user_id: str, current_user: User = Depends(require_editor)):
         can_edit_ai_draft=user.can_edit_ai_draft,
         can_approve=user.can_approve,
         can_publish=user.can_publish,
+        can_access_monitoring=getattr(user, "can_access_monitoring", False),
+        allowed_publications=getattr(user, "allowed_publications", []) or [],
         is_active=user.is_active,
         created_at=user.created_at,
     )

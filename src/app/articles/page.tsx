@@ -102,8 +102,15 @@ export default function ArticlesPage() {
       if (isEditor || canAccessMonitoring) {
         apiFetch<UserResponse[]>("/users")
           .then((users) => {
+            const userPubs = user.allowed_publications || [];
             const allowed = isEditor && !canAccessMonitoring
-              ? users.filter((u) => u.role === "author" || u.id === user.id)
+              ? users.filter((u) => {
+                  const uPubs = u.allowed_publications || [];
+                  const sharesPub = uPubs.length > 0 && userPubs.length > 0
+                    ? uPubs.some((p) => userPubs.includes(p))
+                    : false;
+                  return (sharesPub || u.id === user.id) && (u.role === "author" || u.id === user.id);
+                })
               : users;
             const names = allowed.map((u) => u.full_name?.trim()).filter(Boolean);
             setUserAuthors(names);
@@ -135,14 +142,28 @@ export default function ArticlesPage() {
   const totalCount = allArticles.length;
 
   const uniqueAuthors = useMemo(() => {
-    const authorSet = new Set<string>(userAuthors);
+    const userPubs = user?.allowed_publications || [];
+    const authorSet = new Set<string>();
+
+    // 1. Team authors fetched for this editor
+    userAuthors.forEach((name) => authorSet.add(name));
+
+    // 2. Authors from loaded articles, strictly scoped to this editor's publications
     allArticles.forEach((a) => {
-      if (a.created_by_name?.trim()) {
-        authorSet.add(a.created_by_name.trim());
+      const name = a.created_by_name?.trim();
+      if (name) {
+        if (canAccessMonitoring) {
+          authorSet.add(name);
+        } else if (userPubs.length > 0 && userPubs.includes(a.publication)) {
+          if (userAuthors.length === 0 || userAuthors.includes(name)) {
+            authorSet.add(name);
+          }
+        }
       }
     });
+
     return Array.from(authorSet).sort((a, b) => a.localeCompare(b));
-  }, [allArticles, userAuthors]);
+  }, [allArticles, userAuthors, canAccessMonitoring, user?.allowed_publications]);
 
   const displayedArticles = allArticles.filter((a) => {
     if (statusFilter && a.status !== statusFilter) return false;
@@ -158,16 +179,28 @@ export default function ArticlesPage() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-100">
       {/* ── HEADER ────────────────────────────────────────────────── */}
-      <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 py-3.5 sticky top-0 z-50">
-        <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+      <header className="bg-white dark:bg-[#111] border-b border-zinc-200 dark:border-zinc-800 px-3 sm:px-5 py-3 sticky top-0 z-50">
+        <div className="w-full flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <Link href="/" className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors flex-shrink-0" title="Back to Generator">
               <ArrowLeft className="w-5 h-5" />
             </Link>
+            <Link
+              href="/"
+              className="flex items-center shrink-0 hover:opacity-85 transition-opacity"
+              title="Return to Story Generator"
+            >
+              <img
+                src="/cybermediaLogo.png"
+                alt="CyberMedia"
+                className="h-6 w-auto object-contain"
+              />
+            </Link>
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-50 truncate">
-                  {isEditor ? "ASED • Editor Hub & Review Queue" : "ASED • Author Workspace — My Articles"}
+                <h1 className="text-sm sm:text-base font-black text-zinc-900 dark:text-zinc-50 truncate">
+                  {isEditor ? "ASED • Editor Hub & Review Article" : "ASED • Author Workspace — My Articles"}
                 </h1>
                 <span
                   className={`px-2 py-0.5 text-[9px] font-black uppercase text-white rounded-xs flex-shrink-0 ${
@@ -238,7 +271,7 @@ export default function ArticlesPage() {
       </header>
 
       {/* ── MAIN CONTENT ────────────────────────────────────────────── */}
-      <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+      <main className="w-full px-3 sm:px-5 py-5 space-y-5">
         
         {/* Editor Overview Stats Bar */}
         {isEditor && (
@@ -336,7 +369,7 @@ export default function ArticlesPage() {
             <CustomSelect
               options={[
                 { value: "", label: "All Statuses" },
-                { value: "submitted", label: "Submitted (Review Queue)" },
+                { value: "submitted", label: "Submitted (Review Article)" },
                 { value: "draft", label: "Draft" },
                 { value: "approved", label: "Approved" },
                 { value: "revision_requested", label: "Revision Requested" },
@@ -347,17 +380,34 @@ export default function ArticlesPage() {
               className="w-48"
             />
 
-            <CustomSelect
-              options={[
-                { value: "", label: "All Publications" },
-                { value: "Dataquest", label: "DATAQUEST" },
-                { value: "Voice&Data", label: "VOICE&DATA" },
-                { value: "PCquest", label: "PCQUEST" },
-              ]}
-              value={pubFilter}
-              onChange={(val) => setPubFilter(val)}
-              className="w-44"
-            />
+            {(() => {
+              const allowedPubs = user?.allowed_publications && user.allowed_publications.length > 0
+                ? user.allowed_publications
+                : (user?.role === "admin" ? ["Dataquest", "Voice&Data", "PCQuest", "CIOL"] : ["Dataquest"]);
+
+              if (allowedPubs.length <= 1) {
+                return (
+                  <div className="px-3 py-2 text-[11px] font-bold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xs flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    {allowedPubs[0].toUpperCase()} DESK
+                  </div>
+                );
+              }
+
+              const options = [
+                { value: "", label: "All My Publications" },
+                ...allowedPubs.map((p) => ({ value: p, label: p.toUpperCase() })),
+              ];
+
+              return (
+                <CustomSelect
+                  options={options}
+                  value={pubFilter}
+                  onChange={(val) => setPubFilter(val)}
+                  className="w-48"
+                />
+              );
+            })()}
 
             {(isEditor || canAccessMonitoring || uniqueAuthors.length > 1) && (
               <CustomSelect
@@ -445,7 +495,12 @@ export default function ArticlesPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${pubMeta.badgeBg}`}>
+                      <img
+                        src={pubMeta.logoUrl}
+                        alt={pubMeta.name}
+                        className="h-4 w-auto object-contain max-w-[70px] shrink-0"
+                      />
+                      <span className={`px-1.5 py-0.5 text-[9px] font-black text-white ${pubMeta.badgeBg} rounded-2xs`}>
                         {pubMeta.code}
                       </span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold ${st.color}`}>

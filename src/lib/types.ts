@@ -26,6 +26,7 @@ export interface UserResponse {
   can_approve?: boolean;
   can_publish?: boolean;
   can_access_monitoring?: boolean;
+  allowed_publications?: string[];
   is_active: boolean;
   created_at: string;
 }
@@ -42,6 +43,7 @@ export interface AuthUser {
   can_approve?: boolean;
   can_publish?: boolean;
   can_access_monitoring?: boolean;
+  allowed_publications?: string[];
   is_active: boolean;
 }
 

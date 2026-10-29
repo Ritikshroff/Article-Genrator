@@ -25,6 +25,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { KPICards } from "@/features/analytics/KPICards";
 import { TeamTable } from "@/features/analytics/TeamTable";
 import type { AnalyticsOverviewResponse } from "@/lib/types";
+import { resolvePublication } from "@/lib/magazineConfig";
 
 export default function AnalyticsPage() {
   const { user, isEditor, canAccessMonitoring, isLoading: authLoading } = useAuth();
@@ -128,13 +129,25 @@ export default function AnalyticsPage() {
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
+            <Link
+              href="/"
+              className="flex items-center shrink-0 hover:opacity-85 transition-opacity"
+              title="Return to Story Generator"
+            >
+              <img
+                src="/cybermediaLogo.png"
+                alt="CyberMedia"
+                className="h-6 sm:h-7 w-auto object-contain"
+              />
+            </Link>
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-serif text-[17px] font-black text-zinc-900 dark:text-zinc-50 leading-none">
-                  CYBERMEDIA
-                </span>
-                <span className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase">
+                <span className="text-[12px] font-bold text-zinc-900 dark:text-zinc-50 uppercase leading-none">
                   ASED Monitor • Executive Analytics
+                </span>
+                <span className="text-[9px] font-bold text-zinc-400 border border-zinc-200 dark:border-zinc-800 px-1 py-0.2 rounded-xs hidden sm:inline">
+                  Admin
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 mt-0.5">
@@ -179,17 +192,27 @@ export default function AnalyticsPage() {
             const pct = data.total_articles_generated > 0 ? Math.round((count / data.total_articles_generated) * 100) : 0;
             const accentColor = pub === "Voice&Data" ? "text-[#00839b]" : "text-[#e30613]";
             const barColor = pub === "Voice&Data" ? "bg-[#00839b]" : "bg-[#e30613]";
+            const pubMeta = resolvePublication(pub);
 
             return (
               <div
                 key={pub}
                 className="bg-white dark:bg-[#141414] border border-zinc-200 dark:border-zinc-800 p-4 rounded-xs shadow-xs"
               >
-                <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span className={accentColor}>{pub}</span>
-                  <span className="text-zinc-500">{count} articles ({pct}%)</span>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={pubMeta.logoUrl}
+                      alt={pubMeta.name}
+                      className="h-4.5 w-auto object-contain max-w-[75px] shrink-0"
+                    />
+                    <span className={`text-xs font-bold ${accentColor}`}>{pub}</span>
+                  </div>
+                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                    {count} <span className="text-zinc-400 font-normal">({pct}%)</span>
+                  </span>
                 </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-2">
+                <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                   <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
                 </div>
               </div>

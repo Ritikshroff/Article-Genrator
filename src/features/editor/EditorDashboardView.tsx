@@ -216,14 +216,14 @@ export function EditorDashboardView() {
       <div className="bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 p-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-zinc-400" />
-          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Filter Review Queue:</span>
+          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Filter Review Articles:</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <CustomSelect
             options={[
               { value: "", label: "All Statuses" },
-              { value: "submitted", label: "Awaiting Review (Queue)" },
+              { value: "submitted", label: "Awaiting Review" },
               { value: "draft", label: "Draft" },
               { value: "approved", label: "Approved" },
               { value: "revision_requested", label: "Revision Requested" },
@@ -293,7 +293,7 @@ export function EditorDashboardView() {
       ) : displayedArticles.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 text-zinc-400">
           <Inbox className="w-10 h-10 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
-          <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">No articles in this queue</p>
+          <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">No articles for review</p>
           <p className="text-xs mt-1">
             {authorFilter
               ? `No articles by "${authorFilter}" match current filters.`
@@ -329,7 +329,12 @@ export function EditorDashboardView() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className={`px-1.5 py-0.5 text-[10px] font-black text-white ${pubMeta.badgeBg}`}>
+                    <img
+                      src={pubMeta.logoUrl}
+                      alt={pubMeta.name}
+                      className="h-4 w-auto object-contain max-w-[70px] shrink-0"
+                    />
+                    <span className={`px-1.5 py-0.5 text-[9px] font-black text-white ${pubMeta.badgeBg} rounded-2xs`}>
                       {pubMeta.code}
                     </span>
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold ${st.color}`}>
